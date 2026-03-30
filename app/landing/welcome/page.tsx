@@ -26,22 +26,24 @@ export default async function LandingWelcomePage({
       className="flex h-dvh w-dvw items-center justify-center px-4"
       style={{
         background:
-          'radial-gradient(ellipse 80% 60% at 20% 10%, #ffd6e760 0%, transparent 60%), radial-gradient(ellipse 60% 70% at 80% 80%, #ffb3cf40 0%, transparent 60%), var(--bg)',
+          'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
       }}
     >
       <section
         className="w-full max-w-xl rounded-3xl border px-6 py-10 text-center md:px-10"
         style={{
-          background: 'rgba(255, 248, 251, 0.94)',
-          borderColor: 'rgba(247, 85, 144, 0.22)',
-          boxShadow: '0 28px 56px rgba(247, 85, 144, 0.16)',
+          background:
+            'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
+          borderColor: 'rgba(244, 173, 210, 0.28)',
+          boxShadow:
+            '0 36px 74px rgba(0, 0, 0, 0.56), 0 16px 34px rgba(247, 85, 144, 0.22)',
         }}
       >
         <p
           className="mb-2 uppercase tracking-[0.18em]"
           style={{
             fontFamily: 'var(--font-dm-mono)',
-            color: 'var(--text-muted)',
+            color: 'rgba(255, 193, 223, 0.78)',
             fontSize: '0.62rem',
           }}
         >
@@ -51,7 +53,7 @@ export default async function LandingWelcomePage({
         <h1
           style={{
             fontFamily: 'var(--font-cormorant)',
-            color: 'var(--text-primary)',
+            color: 'rgba(255, 236, 246, 0.98)',
             fontSize: 'clamp(2rem, 5vw, 3rem)',
             lineHeight: 1.14,
             fontWeight: 500,
@@ -63,7 +65,7 @@ export default async function LandingWelcomePage({
         <p
           className="mx-auto mt-3 max-w-[40ch]"
           style={{
-            color: 'var(--text-secondary)',
+            color: 'rgba(255, 210, 230, 0.84)',
             fontFamily: 'var(--font-crimson)',
             fontSize: 'clamp(1rem, 2.2vw, 1.18rem)',
             lineHeight: 1.58,

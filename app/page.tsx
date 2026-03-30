@@ -9,22 +9,24 @@ export default function HomePage() {
       className="flex h-dvh w-dvw items-center justify-center px-4"
       style={{
         background:
-          'radial-gradient(ellipse 80% 60% at 20% 10%, #ffd6e760 0%, transparent 60%), radial-gradient(ellipse 60% 70% at 80% 80%, #ffb3cf40 0%, transparent 60%), var(--bg)',
+          'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
       }}
     >
       <section
         className="w-full max-w-2xl rounded-3xl border px-6 py-10 text-center md:px-12"
         style={{
-          background: 'rgba(255, 248, 251, 0.9)',
-          borderColor: 'rgba(247, 85, 144, 0.25)',
-          boxShadow: '0 28px 56px rgba(247, 85, 144, 0.16)',
+          background:
+            'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
+          borderColor: 'rgba(244, 173, 210, 0.28)',
+          boxShadow:
+            '0 36px 74px rgba(0, 0, 0, 0.56), 0 16px 34px rgba(247, 85, 144, 0.22)',
         }}
       >
         <p
           className="mb-3 uppercase tracking-[0.2em]"
           style={{
             fontFamily: 'var(--font-dm-mono)',
-            color: 'var(--text-muted)',
+            color: 'rgba(255, 193, 223, 0.78)',
             fontSize: '0.62rem',
           }}
         >
@@ -35,7 +37,7 @@ export default function HomePage() {
           className="mb-4"
           style={{
             fontFamily: 'var(--font-cormorant)',
-            color: 'var(--text-primary)',
+            color: 'rgba(255, 236, 246, 0.98)',
             fontSize: 'clamp(2rem, 5vw, 3.4rem)',
             lineHeight: 1.12,
             fontWeight: 400,
@@ -47,7 +49,7 @@ export default function HomePage() {
         <p
           className="mx-auto mb-8 max-w-[46ch]"
           style={{
-            color: 'var(--text-secondary)',
+            color: 'rgba(255, 210, 230, 0.84)',
             fontFamily: 'var(--font-crimson)',
             fontSize: 'clamp(1rem, 2.2vw, 1.2rem)',
             lineHeight: 1.6,
@@ -58,7 +60,7 @@ export default function HomePage() {
 
         <div className="flex items-center justify-center">
           <Link
-            href="/landing"
+            href="/login"
             className="inline-flex items-center justify-center rounded-full px-9 py-3"
             style={{
               background:
