@@ -7,18 +7,18 @@
 /* ─── CSS Custom Properties ──────────────────────────────────────────── */
 :root {
   /* Palette */
-  --bg:              #0d0c0a;
-  --bg-lifted:       #141210;
-  --bg-surface:      #1a1814;
+  --bg:              #fdf8f0;
+  --bg-lifted:       #fff8fb;
+  --bg-surface:      #fff8fb;
 
-  --text-primary:    #e2d9c8;
-  --text-secondary:  #9a8e7e;
-  --text-muted:      #5a5248;
+  --text-primary:    #2d1520;
+  --text-secondary:  #7a3050;
+  --text-muted:      #c07090;
 
-  --accent:          #c9a96e;
-  --accent-dim:      #a8884a;
-  --accent-glow:     rgba(201, 169, 110, 0.18);
-  --accent-faint:    rgba(201, 169, 110, 0.07);
+  --accent:          #f75590;
+  --accent-dim:      #e03070;
+  --accent-glow:     rgba(247, 85, 144, 0.22);
+  --accent-faint:    rgba(247, 85, 144, 0.1);
 
   /* Fonts */
   --font-cormorant:  'Cormorant Garamond', Georgia, serif;
@@ -132,7 +132,7 @@ body {
   padding: 0.875rem 1.25rem;
   border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
   background: var(--bg-surface);
-  border: 1px solid rgba(201, 169, 110, 0.08);
+  border: 1px solid rgba(247, 85, 144, 0.15);
   color: var(--text-primary);
   font-family: var(--font-crimson);
   font-size: clamp(1rem, 1.5vw, 1.2rem);
@@ -147,8 +147,8 @@ body {
   width: 12px;
   height: 12px;
   background: var(--bg-surface);
-  border-right: 1px solid rgba(201, 169, 110, 0.08);
-  border-bottom: 1px solid rgba(201, 169, 110, 0.08);
+  border-right: 1px solid rgba(247, 85, 144, 0.15);
+  border-bottom: 1px solid rgba(247, 85, 144, 0.15);
   transform: rotate(45deg);
 }
 
@@ -203,7 +203,7 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 40%,
-    rgba(13, 12, 10, 0.7) 100%
+    rgba(45, 21, 32, 0.4) 100%
   );
   z-index: 1;
 }
@@ -263,7 +263,7 @@ body {
 /* ─── Soft Button ────────────────────────────────────────────────────── */
 .btn-ghost {
   padding: 0.625rem 1.5rem;
-  border: 1px solid rgba(201, 169, 110, 0.2);
+  border: 1px solid rgba(247, 85, 144, 0.24);
   border-radius: 2px;
   background: transparent;
   color: var(--text-secondary);
@@ -275,7 +275,7 @@ body {
 }
 
 .btn-ghost:hover {
-  border-color: rgba(201, 169, 110, 0.4);
+  border-color: rgba(247, 85, 144, 0.45);
   color: var(--text-primary);
   background: var(--accent-faint);
 }
@@ -292,16 +292,18 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--bg-lifted);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255, 248, 251, 0.88);
+  border: 1px solid rgba(247, 85, 144, 0.2);
   cursor: pointer;
   transition: all 0.3s ease;
-  opacity: 0.5;
+  opacity: 0.9;
+  backdrop-filter: blur(8px);
 }
 
 .sound-toggle:hover {
   opacity: 1;
-  border-color: rgba(201, 169, 110, 0.2);
+  border-color: rgba(247, 85, 144, 0.45);
+  box-shadow: 0 8px 22px rgba(247, 85, 144, 0.2);
 }
 
 /* ─── Keyframes ──────────────────────────────────────────────────────── */

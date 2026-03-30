@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useAmbientSound } from '@/hooks/useAmbientSound';
 import { useAppStore } from '@/hooks/useStageController';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { PetalCanvas } from '@/components/ui/PetalCanvas';
 import { GrainOverlay } from '@/components/ui/GrainOverlay';
+import { StageProgressBar } from '@/components/ui/StageProgressBar';
 import { SoundToggle } from '@/components/ui/SoundToggle';
 import { StageRenderer } from '@/components/layout/StageRenderer';
 
@@ -24,19 +25,23 @@ export function AppShell() {
       {/* Layer 1: Background atmosphere */}
       <AmbientBackground stage={currentStage} />
 
-      {/* Layer 2: Stage content */}
+      {/* Layer 2: Particle atmosphere */}
+      <PetalCanvas stage={currentStage} />
+
+      {/* Layer 3: Stage content */}
       <StageRenderer />
 
-      {/* Layer 3: Grain texture (topmost visible) */}
+      {/* Layer 4: Grain texture (topmost visible) */}
       <GrainOverlay intensity="medium" animated />
 
-      {/* Layer 4: Sound control */}
+      {/* Layer 5: Progress + sound control */}
+      <StageProgressBar />
       <SoundToggle />
 
       {/* Accessible skip navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[999] focus:rounded focus:bg-amber-500 focus:px-3 focus:py-2 focus:text-sm focus:text-black"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[999] focus:rounded focus:bg-pink-400 focus:px-3 focus:py-2 focus:text-sm focus:text-white"
       >
         Skip to content
       </a>
