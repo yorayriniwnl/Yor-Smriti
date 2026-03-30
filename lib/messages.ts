@@ -12,25 +12,25 @@ import type {
 export const CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-1',
-    text: 'I know I hurt you.',
-    typingDuration: 1800,
+    text: "I know things haven't been right.",
+    typingDuration: 2200,
     revealDelay: 800,
   },
   {
     id: 'msg-2',
-    text: 'I keep replaying it and wishing I had been kinder.',
-    typingDuration: 3000,
+    text: "And I don't want to pretend it's okay.",
+    typingDuration: 2600,
     revealDelay: 1400,
   },
   {
     id: 'msg-3',
-    text: 'So I made this instead of sending another careless text.',
-    typingDuration: 3200,
+    text: 'So I made something instead of just texting.',
+    typingDuration: 2800,
     revealDelay: 1800,
   },
   {
     id: 'msg-4',
-    text: 'Please read this once, fully.',
+    text: 'Please just hear me out.',
     typingDuration: 1800,
     revealDelay: 2200,
     isLast: true,

@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 function sanitizeNextPath(nextValue: string | null): string | null {
   if (!nextValue) return null;
@@ -12,18 +11,9 @@ function sanitizeNextPath(nextValue: string | null): string | null {
 }
 
 export default function LandingWelcomePage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const nextPath = sanitizeNextPath(searchParams.get('next')) ?? '/apology/80';
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace(nextPath);
-    }, 1700);
-
-    return () => clearTimeout(timer);
-  }, [nextPath, router]);
+  const nextPath = sanitizeNextPath(searchParams.get('next')) ?? '/message';
 
   return (
     <main
@@ -62,7 +52,7 @@ export default function LandingWelcomePage() {
             fontWeight: 500,
           }}
         >
-          Stay with me for this.
+          Are you ready for the good part sweety ?
         </h1>
 
         <p
@@ -74,7 +64,7 @@ export default function LandingWelcomePage() {
             lineHeight: 1.58,
           }}
         >
-          Taking you to the cards now...
+          Tap continue and I will show you all the cards, apology, and everything from my heart.
         </p>
 
         <div className="mt-7 flex items-center justify-center gap-3">
@@ -106,7 +96,7 @@ export default function LandingWelcomePage() {
             boxShadow: '0 10px 28px rgba(247, 85, 144, 0.28)',
           }}
         >
-          Continue Now
+          Continue To The Cards
         </Link>
       </section>
     </main>

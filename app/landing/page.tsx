@@ -31,29 +31,17 @@ export default function LandingPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const nextPath = sanitizeNextPath(searchParams.get('next')) ?? '/apology/80';
+  const nextPath = sanitizeNextPath(searchParams.get('next')) ?? '/message';
   const postLoginPath = buildWelcomePath(nextPath);
   const forceLogin = searchParams.get('forceLogin') === '1';
 
   useEffect(() => {
     if (forceLogin) {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
-      setIsHydrated(true);
-      return;
-    }
-
-    const savedAuth = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    const authenticated = savedAuth === 'ok';
-
-    if (authenticated) {
-      setIsRedirecting(true);
-      setIsHydrated(true);
-      router.replace(postLoginPath);
-      return;
     }
 
     setIsHydrated(true);
-  }, [forceLogin, postLoginPath, router]);
+  }, [forceLogin]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

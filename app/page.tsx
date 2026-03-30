@@ -58,7 +58,7 @@ export default function HomePage() {
 
         <div className="flex items-center justify-center">
           <Link
-            href="/landing?next=/apology/80&forceLogin=1"
+            href="/landing"
             className="inline-flex items-center justify-center rounded-full px-9 py-3"
             style={{
               background:
