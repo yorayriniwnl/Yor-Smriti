@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
+import { DirectorExperienceClient } from '@/components/experiences/director/DirectorExperienceClient';
 import {
-  APOLOGY_SCREEN_COMPONENTS,
   APOLOGY_SCREEN_KEYS,
 } from '@/components/experiences/panda/screens';
+import { getDirectorRouteConfig } from '@/lib/apologyDirectorRouting';
 
 export function generateStaticParams() {
   return APOLOGY_SCREEN_KEYS.map((screen) => ({ screen }));
@@ -14,11 +15,17 @@ interface ApologyScreenPageProps {
 
 export default async function ApologyScreenPage({ params }: ApologyScreenPageProps) {
   const { screen } = await params;
-  const ScreenComponent = APOLOGY_SCREEN_COMPONENTS[screen];
+  const routeConfig = getDirectorRouteConfig(screen);
 
-  if (!ScreenComponent) {
+  if (!routeConfig) {
     notFound();
   }
 
-  return <ScreenComponent />;
+  return (
+    <DirectorExperienceClient
+      startParam={String(routeConfig.start)}
+      endingParam={routeConfig.ending ?? null}
+      pathParam={null}
+    />
+  );
 }
