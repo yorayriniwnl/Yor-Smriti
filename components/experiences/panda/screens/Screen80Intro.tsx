@@ -10,7 +10,7 @@ export function Screen80Intro() {
   return (
     <ApologyExperienceShell
       screenNumber={80}
-      totalScreens={94}
+      totalScreens={87}
       eyebrow="Private Note"
       title="I Love You. I Am Sorry."
       subtitle="No excuses, only my heart and the truth."

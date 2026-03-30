@@ -1,7 +1,4 @@
-'use client';
-
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 function sanitizeNextPath(nextValue: string | null): string | null {
   if (!nextValue) return null;
@@ -10,10 +7,18 @@ function sanitizeNextPath(nextValue: string | null): string | null {
   return nextValue;
 }
 
-export default function LandingWelcomePage() {
-  const searchParams = useSearchParams();
+interface LandingWelcomePageProps {
+  searchParams: Promise<{ next?: string | string[] }>;
+}
 
-  const nextPath = sanitizeNextPath(searchParams.get('next')) ?? '/message';
+export default async function LandingWelcomePage({
+  searchParams,
+}: LandingWelcomePageProps) {
+  const params = await searchParams;
+  const rawNext = Array.isArray(params.next)
+    ? (params.next[0] ?? null)
+    : (params.next ?? null);
+  const nextPath = sanitizeNextPath(rawNext) ?? '/message';
 
   return (
     <main

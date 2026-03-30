@@ -20,7 +20,7 @@ export function Screen82ClearCut() {
   return (
     <ApologyExperienceShell
       screenNumber={82}
-      totalScreens={94}
+      totalScreens={87}
       eyebrow="Confirmation"
       title="Clear Cut"
       subtitle="A better choice, this time."
@@ -221,9 +221,24 @@ export function Screen82ClearCut() {
           </motion.div>
         </div>
 
-        <div className="mt-2 text-center">
+        <div className="mt-2 flex items-center justify-center gap-3">
           <Link
-            href="/"
+            href="/apology/81"
+            className="inline-flex items-center justify-center rounded-full border px-5 py-3"
+            style={{
+              borderColor: 'rgba(245, 190, 216, 0.66)',
+              color: 'rgba(129, 74, 100, 0.94)',
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '0.66rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Back
+          </Link>
+
+          <Link
+            href="/apology/83"
             className="inline-flex items-center justify-center rounded-full px-8 py-3"
             style={{
               background:
@@ -236,7 +251,7 @@ export function Screen82ClearCut() {
               boxShadow: '0 12px 24px rgba(245, 63, 149, 0.26)',
             }}
           >
-            Back Home
+            Continue
           </Link>
         </div>
       </section>

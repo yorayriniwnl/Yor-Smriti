@@ -93,7 +93,7 @@ export function Screen81CutThroughSilence() {
   return (
     <ApologyExperienceShell
       screenNumber={81}
-      totalScreens={94}
+      totalScreens={87}
       eyebrow="Interactive Note"
       title="Cut Through The Silence"
       subtitle="One honest action before words."

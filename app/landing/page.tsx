@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const AUTH_STORAGE_KEY = 'yor-smriti-auth';
@@ -21,7 +21,7 @@ function buildWelcomePath(nextPath: string): string {
 
 // ─── Landing Page ────────────────────────────────────────────────────────────
 
-export default function LandingPage() {
+function LandingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -220,5 +220,13 @@ export default function LandingPage() {
         </p>
       </section>
     </main>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={null}>
+      <LandingPageContent />
+    </Suspense>
   );
 }

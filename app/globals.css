@@ -331,6 +331,11 @@ body {
   66%       { transform: translate(-1.5%, 1.5%); }
 }
 
+@keyframes panda-pulse {
+  0%, 100% { filter: drop-shadow(0 10px 24px rgba(247, 85, 144, 0.35)); }
+  50% { filter: drop-shadow(0 14px 32px rgba(247, 85, 144, 0.55)); }
+}
+
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
