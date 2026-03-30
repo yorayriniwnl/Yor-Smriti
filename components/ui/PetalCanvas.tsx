@@ -6,7 +6,7 @@ import type { StageId } from '@/types';
 // ─── Particle Canvas ─────────────────────────────────────────────────────────
 
 type ParticleMode = 'petals' | 'hearts' | 'mixed' | 'finale';
-type ParticleKind = 'petal' | 'heart' | 'confetti';
+type ParticleKind = 'petal' | 'heart' | 'confetti' | 'bubble';
 
 interface PetalCanvasProps {
   stage: StageId;
@@ -32,6 +32,8 @@ interface Particle {
 
 const PETAL_COLORS = ['#ffd6e7', '#ffb3cf', '#ffcce0', '#f9c0d0', '#ff85b3'];
 const HEART_COLORS = ['#f75590', '#ff85b3', '#e03070', '#ff6b9d', '#ffb3cf'];
+const BUBBLE_COLORS = ['#ffe6f0', '#ffd6e7', '#ffdbe8', '#fff4fa'];
+const QUANTITY_MULTIPLIER = 10;
 
 function randomBetween(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -88,8 +90,29 @@ function spawnHeart(width: number, height: number): Particle {
   };
 }
 
+function spawnBubble(width: number, height: number): Particle {
+  return {
+    x: randomBetween(20, width - 20),
+    y: height + randomBetween(10, 50),
+    vx: randomBetween(-0.15, 0.15),
+    vy: randomBetween(-1.0, -0.45),
+    size: randomBetween(8, 20),
+    opacity: randomBetween(0.22, 0.48),
+    rotation: 0,
+    rotationSpeed: randomBetween(-0.3, 0.3),
+    swayOffset: randomBetween(0, Math.PI * 2),
+    swaySpeed: randomBetween(0.18, 0.5),
+    life: randomBetween(5000, 11000),
+    maxLife: 11000,
+    kind: 'bubble',
+    color: randomFrom(BUBBLE_COLORS),
+    rising: true,
+  };
+}
+
 function spawnConfetti(width: number): Particle {
-  const isHeart = Math.random() < 0.35;
+  const roll = Math.random();
+  const kind: ParticleKind = roll < 0.24 ? 'heart' : roll < 0.34 ? 'bubble' : 'confetti';
   return {
     x: randomBetween(0, width),
     y: randomBetween(-60, -10),
@@ -103,9 +126,14 @@ function spawnConfetti(width: number): Particle {
     swaySpeed: randomBetween(0.15, 0.55),
     life: randomBetween(2500, 6200),
     maxLife: 6200,
-    kind: isHeart ? 'heart' : 'confetti',
-    color: isHeart ? randomFrom(HEART_COLORS) : randomFrom([...PETAL_COLORS, ...HEART_COLORS]),
-    rising: false,
+    kind,
+    color:
+      kind === 'heart'
+        ? randomFrom(HEART_COLORS)
+        : kind === 'bubble'
+        ? randomFrom(BUBBLE_COLORS)
+        : randomFrom([...PETAL_COLORS, ...HEART_COLORS]),
+    rising: kind === 'bubble',
   };
 }
 
@@ -152,6 +180,34 @@ function drawPetal(
   ctx.restore();
 }
 
+function drawBubble(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  alpha: number
+) {
+  const radius = size * 0.5;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.78)';
+  ctx.lineWidth = 1.2;
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Tiny highlight for a glassy bubble look
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.arc(x - radius * 0.25, y - radius * 0.3, radius * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 export function PetalCanvas({ stage }: PetalCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -169,10 +225,23 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
   }, []);
 
   const spawnParticle = useCallback((width: number, height: number): Particle => {
-    if (mode === 'petals') return spawnPetal(width);
-    if (mode === 'hearts') return spawnHeart(width, height);
+    if (mode === 'petals') {
+      const roll = Math.random();
+      if (roll < 0.72) return spawnPetal(width);
+      if (roll < 0.9) return spawnBubble(width, height);
+      return spawnHeart(width, height);
+    }
+
+    if (mode === 'hearts') {
+      return Math.random() < 0.66 ? spawnHeart(width, height) : spawnBubble(width, height);
+    }
+
     if (mode === 'finale') return spawnConfetti(width);
-    return Math.random() < 0.64 ? spawnPetal(width) : spawnHeart(width, height);
+
+    const mixedRoll = Math.random();
+    if (mixedRoll < 0.46) return spawnPetal(width);
+    if (mixedRoll < 0.76) return spawnHeart(width, height);
+    return spawnBubble(width, height);
   }, [mode]);
 
   const drawParticle = useCallback((ctx: CanvasRenderingContext2D, particle: Particle) => {
@@ -181,6 +250,11 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
 
     if (particle.kind === 'heart') {
       drawHeart(ctx, particle.x, particle.y, particle.size, particle.color, alpha);
+      return;
+    }
+
+    if (particle.kind === 'bubble') {
+      drawBubble(ctx, particle.x, particle.y, particle.size, particle.color, alpha);
       return;
     }
 
@@ -241,15 +315,18 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const maxCount = mode === 'finale' ? 72 : 34;
-    const baseRate = mode === 'finale' ? 90 : 330;
+    const maxCount = (mode === 'finale' ? 110 : 56) * QUANTITY_MULTIPLIER;
+    const baseRate = mode === 'finale' ? 70 : 190;
+    const spawnBatch = QUANTITY_MULTIPLIER;
 
     const spawnLoop = () => {
       const activeCanvas = canvasRef.current;
       if (!activeCanvas) return;
 
-      if (particlesRef.current.length < maxCount) {
+      let created = 0;
+      while (particlesRef.current.length < maxCount && created < spawnBatch) {
         particlesRef.current.push(spawnParticle(activeCanvas.width, activeCanvas.height));
+        created += 1;
       }
 
       spawnRef.current = window.setTimeout(spawnLoop, baseRate + Math.random() * 220);
@@ -282,7 +359,7 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
       ref={canvasRef}
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-[2]"
-      style={{ opacity: mode === 'finale' ? 0.95 : 0.78 }}
+      style={{ opacity: mode === 'finale' ? 0.98 : 0.88 }}
     />
   );
 }
