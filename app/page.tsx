@@ -56,22 +56,23 @@ export default function HomePage() {
           Wana see how much I love you ?
         </p>
 
-        <Link
-          href="/landing"
-          className="inline-flex items-center justify-center rounded-full px-8 py-3"
-          style={{
-            background:
-              'linear-gradient(90deg, rgba(255, 133, 179, 0.95), rgba(247, 85, 144, 0.95))',
-            color: '#fff',
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '0.74rem',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            boxShadow: '0 10px 28px rgba(247, 85, 144, 0.28)',
-          }}
-        >
-          Get Started
-        </Link>
+        <div className="flex items-center justify-center">
+          <Link
+            href="/landing?next=/apology/80&forceLogin=1"
+            className="inline-flex items-center justify-center rounded-full px-9 py-3"
+            style={{
+              background:
+                'linear-gradient(90deg, rgba(255, 133, 179, 0.95), rgba(247, 85, 144, 0.95))',
+              color: '#fff',
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '0.76rem',
+              letterSpacing: '0.04em',
+              boxShadow: '0 10px 28px rgba(247, 85, 144, 0.28)',
+            }}
+          >
+            Are you ready for it baby ?
+          </Link>
+        </div>
       </section>
     </main>
   );

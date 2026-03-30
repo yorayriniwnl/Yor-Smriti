@@ -16,7 +16,6 @@ export function ChatStage() {
   const [visibleMessages, setVisibleMessages] = useState<Set<string>>(new Set());
   const [isTyping, setIsTyping] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
-  const [allRevealed, setAllRevealed] = useState(false);
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -33,7 +32,7 @@ export function ChatStage() {
     // Sequence: type → reveal → type → reveal → ...
     let cumulativeDelay = 600; // initial pause before first typing
 
-    CHAT_MESSAGES.forEach((msg, index) => {
+    CHAT_MESSAGES.forEach((msg) => {
       // 1. Show typing indicator
       const showTypingTimer = setTimeout(() => {
         setIsTyping(true);
@@ -46,9 +45,6 @@ export function ChatStage() {
         setIsTyping(false);
         setVisibleMessages((prev) => new Set(Array.from(prev).concat(msg.id)));
 
-        if (msg.isLast) {
-          setAllRevealed(true);
-        }
       }, cumulativeDelay);
       timersRef.current.push(revealTimer);
 

@@ -61,7 +61,7 @@ export function useAmbientSound() {
     let reverb: ConvolverNode | null = null;
     try {
       reverb = createReverb(ctx);
-    } catch (_) {
+    } catch {
       // Reverb unavailable, skip
     }
 
@@ -141,7 +141,7 @@ export function useAmbientSound() {
     const nodes = nodesRef.current;
     fadeOut(nodes, () => {
       nodes.oscillators.forEach((osc) => {
-        try { osc.stop(); } catch (_) { /* already stopped */ }
+        try { osc.stop(); } catch { /* already stopped */ }
       });
       nodes.context.close().catch(() => {});
       nodesRef.current = null;
@@ -164,7 +164,7 @@ export function useAmbientSound() {
       }
 
       fadeIn(nodes);
-    } catch (_) {
+    } catch {
       // Audio unavailable silently
     }
   }, [buildGraph, fadeIn]);
@@ -187,7 +187,7 @@ export function useAmbientSound() {
     return () => {
       if (nodesRef.current) {
         nodesRef.current.oscillators.forEach((osc) => {
-          try { osc.stop(); } catch (_) { /* noop */ }
+          try { osc.stop(); } catch { /* noop */ }
         });
         nodesRef.current.context.close().catch(() => {});
       }

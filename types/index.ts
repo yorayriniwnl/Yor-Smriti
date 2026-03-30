@@ -82,6 +82,7 @@ export interface ApologyLine {
   pauseAfter: number;
   isOptional?: boolean;
   italic?: boolean;
+  emphasis?: boolean;
 }
 
 // ─── Animation Variants ─────────────────────────────────────────────────────

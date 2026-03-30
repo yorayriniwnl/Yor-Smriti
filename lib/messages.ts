@@ -12,25 +12,25 @@ import type {
 export const CHAT_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-1',
-    text: "I know things haven't been right.",
-    typingDuration: 2200,
+    text: 'I know I hurt you.',
+    typingDuration: 1800,
     revealDelay: 800,
   },
   {
     id: 'msg-2',
-    text: "And I don't want to pretend it's okay.",
-    typingDuration: 2600,
+    text: 'I keep replaying it and wishing I had been kinder.',
+    typingDuration: 3000,
     revealDelay: 1400,
   },
   {
     id: 'msg-3',
-    text: "So I made something instead of just texting.",
-    typingDuration: 2800,
+    text: 'So I made this instead of sending another careless text.',
+    typingDuration: 3200,
     revealDelay: 1800,
   },
   {
     id: 'msg-4',
-    text: "Please just hear me out.",
+    text: 'Please read this once, fully.',
     typingDuration: 1800,
     revealDelay: 2200,
     isLast: true,
@@ -43,31 +43,31 @@ export const MEMORIES: Memory[] = [
   {
     id: 'mem-1',
     gradient: 'warm-dusk',
-    caption: 'These mattered to me.',
-    subCaption: 'All of it.',
+    caption: 'These moments still live in me.',
+    subCaption: 'Every little detail.',
     pauseBefore: 800,
     pauseAfter: 2400,
   },
   {
     id: 'mem-2',
     gradient: 'golden-hour',
-    caption: 'You mattered to me.',
-    subCaption: "That hasn't changed.",
+    caption: 'You were never replaceable.',
+    subCaption: 'Not then, not now.',
     pauseBefore: 1200,
     pauseAfter: 2400,
   },
   {
     id: 'mem-3',
     gradient: 'cool-morning',
-    caption: 'I still remember this.',
+    caption: 'I still pause at this memory.',
     pauseBefore: 1600,
     pauseAfter: 2400,
   },
   {
     id: 'mem-4',
     gradient: 'rainy-afternoon',
-    caption: "I didn't forget.",
-    subCaption: 'Not even a little.',
+    caption: 'I did not forget us.',
+    subCaption: 'I never did.',
     pauseBefore: 1200,
     pauseAfter: 2800,
   },
@@ -125,28 +125,28 @@ export function buildGradientCSS(gradient: MemoryGradient): string {
 export const ACCOUNTABILITY_LINES: AccountabilityLine[] = [
   {
     id: 'acc-1',
-    text: 'I messed up.',
+    text: 'I hurt you.',
     pauseAfter: 2000,
     emphasis: true,
   },
   {
     id: 'acc-2',
-    text: "I didn't handle things the way I should have.",
+    text: 'I chose pride when I should have chosen honesty.',
     pauseAfter: 2400,
   },
   {
     id: 'acc-3',
-    text: 'I understand why that hurt you.',
+    text: 'You did not deserve that.',
     pauseAfter: 2400,
   },
   {
     id: 'acc-4',
-    text: "I know saying sorry doesn't undo it.",
+    text: 'I know sorry cannot erase it.',
     pauseAfter: 2400,
   },
   {
     id: 'acc-5',
-    text: "I just didn't want to leave it unsaid.",
+    text: 'But I am taking responsibility, fully.',
     pauseAfter: 3000,
   },
 ];
@@ -156,24 +156,24 @@ export const ACCOUNTABILITY_LINES: AccountabilityLine[] = [
 export const APOLOGY_LINES: ApologyLine[] = [
   {
     id: 'apo-1',
-    text: "I'm really sorry.",
+    text: 'I am truly sorry.',
     pauseAfter: 2600,
     emphasis: true,
-  } as ApologyLine & { emphasis: boolean },
+  },
   {
     id: 'apo-2',
-    text: "Not just saying it… I mean it.",
+    text: 'No performance. No excuses.',
     pauseAfter: 2400,
     italic: true,
   },
   {
     id: 'apo-3',
-    text: 'I know words are small compared to what happened.',
+    text: 'I know trust returns slowly.',
     pauseAfter: 2400,
   },
   {
     id: 'apo-4',
-    text: "I'm trying to be better, even if you don't see it right now.",
+    text: 'If you give me a chance, I will prove change with actions.',
     pauseAfter: 3000,
     isOptional: true,
     italic: true,
@@ -183,31 +183,31 @@ export const APOLOGY_LINES: ApologyLine[] = [
 // ─── Transition Text ──────────────────────────────────────────────────────────
 
 export const TRANSITION_TEXT = {
-  primary: 'This is for you.',
-  sub: 'Take a moment.',
+  primary: 'Before anything else...',
+  sub: 'please feel this.',
 };
 
 // ─── Hold Button ──────────────────────────────────────────────────────────────
 
 export const HOLD_BUTTON_CONFIG = {
-  label: 'Hold to read the last message',
+  label: 'Hold to read my last confession',
   holdDuration: 2400,  // ms
-  revealText: 'I still care about you.',
+  revealText: 'I still love you.',
 };
 
 // ─── Ending Content ───────────────────────────────────────────────────────────
 
 export const ENDING_CONTENT = {
-  finalLine: 'Take care… really.',
+  finalLine: 'I love you. I am sorry.',
   buttons: [
-    { id: 'btn-1', label: 'No pressure to reply' },
-    { id: 'btn-2', label: 'Just wanted you to know' },
+    { id: 'btn-1', label: 'No pressure to reply tonight' },
+    { id: 'btn-2', label: 'I will prove it with actions' },
   ],
 };
 
 // ─── Opening Content ──────────────────────────────────────────────────────────
 
 export const OPENING_CONTENT = {
-  headline: 'Hey… just give me 60 seconds.',
+  headline: 'Hey... give me one honest minute.',
   buttonLabel: 'Okay',
 };

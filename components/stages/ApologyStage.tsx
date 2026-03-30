@@ -35,7 +35,7 @@ export function ApologyStage() {
             textTransform: 'uppercase',
           }}
         >
-          simply
+          from my heart
         </motion.div>
 
         {/* Top accent */}
@@ -47,7 +47,7 @@ export function ApologyStage() {
             id: l.id,
             text: l.text,
             pauseAfter: l.pauseAfter,
-            emphasis: (l as typeof l & { emphasis?: boolean }).emphasis,
+            emphasis: l.emphasis,
             italic: l.italic,
           }))}
           initialDelay={1000}
@@ -111,7 +111,7 @@ export function ApologyStage() {
                   }}
                   className="group-hover:text-[var(--text-secondary)]"
                 >
-                  one last thing
+                  thank you for reading
                 </span>
                 <motion.span
                   animate={{ x: [0, 4, 0] }}
