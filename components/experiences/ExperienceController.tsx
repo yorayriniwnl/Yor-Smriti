@@ -267,6 +267,7 @@ export function ExperienceController({
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
   const [timeContext, setTimeContext] = useState<TimeContext>(() => resolveTimeContext());
   const [isAudioGraceWindow, setIsAudioGraceWindow] = useState(false);
+  const [lastAudibleVolume, setLastAudibleVolume] = useState(0.14);
 
   const restartTimerRef = useRef<number | null>(null);
   const restartFinishTimerRef = useRef<number | null>(null);
@@ -274,7 +275,6 @@ export function ExperienceController({
   const attentionLockTimerRef = useRef<number | null>(null);
   const cursorInactivityTimerRef = useRef<number | null>(null);
   const audioGraceTimerRef = useRef<number | null>(null);
-  const lastAudibleVolumeRef = useRef(0.14);
 
   const activeScreens = useMemo(
     () => buildScreenSequence(screens, flowMode, nonLinearSeed, replayCount),
@@ -369,7 +369,7 @@ export function ExperienceController({
         ? clampNumber(audioProfile.volume * physics.audioGain, 0, 1)
         : 0;
       const graceVolume = shouldDelayAudioCut
-        ? clampNumber(lastAudibleVolumeRef.current * 0.62, 0.02, 0.18)
+        ? clampNumber(lastAudibleVolume * 0.62, 0.02, 0.18)
         : 0;
 
       return {
@@ -389,6 +389,7 @@ export function ExperienceController({
       currentScreenId,
       isAudioGraceWindow,
       isSilentMode,
+      lastAudibleVolume,
       physics.audioGain,
       physics.silenceWeight,
       journeyProgress,
@@ -396,10 +397,17 @@ export function ExperienceController({
   );
 
   useEffect(() => {
-    if (evolvedAudioProfile.enabled && evolvedAudioProfile.volume > 0.01) {
-      lastAudibleVolumeRef.current = evolvedAudioProfile.volume;
+    if (isAudioGraceWindow) {
+      return;
     }
-  }, [evolvedAudioProfile.enabled, evolvedAudioProfile.volume]);
+
+    if (evolvedAudioProfile.enabled && evolvedAudioProfile.volume > 0.01) {
+      setLastAudibleVolume((previous) => {
+        const next = evolvedAudioProfile.volume;
+        return Math.abs(previous - next) < 0.001 ? previous : next;
+      });
+    }
+  }, [evolvedAudioProfile.enabled, evolvedAudioProfile.volume, isAudioGraceWindow]);
 
   useEmotionBackgroundMusic(activeEmotion, musicByEmotion ?? {}, evolvedAudioProfile);
 

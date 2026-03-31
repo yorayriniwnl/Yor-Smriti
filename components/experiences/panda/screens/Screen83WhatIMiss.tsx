@@ -190,7 +190,7 @@ export function Screen83WhatIMiss() {
             transition={{ duration: 0.8, ease: EASE_SOFT }}
           >
             <Link
-              href="/apology/82"
+              href="/apology/3"
               style={{
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '0.62rem',
@@ -204,7 +204,7 @@ export function Screen83WhatIMiss() {
             </Link>
 
             <Link
-              href="/apology/84"
+              href="/apology/5"
               className="rounded-full px-5 py-2.5"
               style={{
                 background:

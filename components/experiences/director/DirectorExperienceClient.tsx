@@ -98,7 +98,7 @@ function parseBooleanFlag(
 export function DirectorExperienceClient({
   startParam,
   pathParam,
-  endingParam,
+  endingParam: _endingParam,
   nameParam,
   memoryParam,
   messageParam,

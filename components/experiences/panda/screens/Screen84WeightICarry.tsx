@@ -118,7 +118,7 @@ export function Screen84WeightICarry() {
               transition={{ duration: 1, ease: EASE_SOFT }}
             >
               <Link
-                href="/apology/83"
+                href="/apology/4"
                 style={{
                   fontFamily: 'var(--font-dm-mono)',
                   fontSize: '0.62rem',
@@ -131,7 +131,7 @@ export function Screen84WeightICarry() {
                 ← Back
               </Link>
               <Link
-                href="/apology/85"
+                href="/apology/6"
                 className="rounded-full px-5 py-2.5"
                 style={{
                   background:

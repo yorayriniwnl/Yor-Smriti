@@ -223,7 +223,7 @@ export function Screen82ClearCut() {
 
         <div className="mt-2 flex items-center justify-center gap-3">
           <Link
-            href="/apology/81"
+            href="/apology/2"
             className="inline-flex items-center justify-center rounded-full border px-5 py-3"
             style={{
               borderColor: 'rgba(245, 190, 216, 0.66)',
@@ -238,7 +238,7 @@ export function Screen82ClearCut() {
           </Link>
 
           <Link
-            href="/apology/83"
+            href="/apology/4"
             className="inline-flex items-center justify-center rounded-full px-8 py-3"
             style={{
               background:

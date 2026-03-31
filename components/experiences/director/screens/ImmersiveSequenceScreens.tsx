@@ -890,7 +890,7 @@ export function MyMistakes95Screen({ emotion }: ExperienceScreenProps) {
               lineHeight: 1.1,
             }}
           >
-            I'm not.
+            I&apos;m not.
           </p>
           <p
             className="relative"
@@ -900,7 +900,7 @@ export function MyMistakes95Screen({ emotion }: ExperienceScreenProps) {
               lineHeight: 1.1,
             }}
           >
-            I'm fine.
+            I&apos;m fine.
           </p>
         </motion.div>
       </motion.div>
@@ -1079,7 +1079,7 @@ export function TheApology99Screen() {
             textShadow: '0 0 24px rgba(255, 214, 214, 0.1)',
           }}
         >
-          I'm sorry.
+          I&apos;m sorry.
         </motion.p>
       </motion.div>
     </section>
@@ -1619,7 +1619,7 @@ export function ReversedExpectation113Screen({
           filter: 'blur(0.2px)',
         }}
       >
-        I almost didn't say this...
+        I almost didn&apos;t say this...
       </motion.p>
 
       {showLateLine ? (
@@ -1833,7 +1833,7 @@ export function StillThere116Screen({ emotion }: ExperienceScreenProps) {
             lineHeight: 1.4,
           }}
         >
-          I didn't think you'd look this closely.
+          I didn&apos;t think you&apos;d look this closely.
         </motion.p>
       ) : null}
     </section>
@@ -1940,7 +1940,7 @@ export function FinalMicroInteraction118Screen({ onNext }: ExperienceScreenProps
             lineHeight: 1.3,
           }}
         >
-          It's okay.
+          It&apos;s okay.
         </motion.p>
       ) : null}
 

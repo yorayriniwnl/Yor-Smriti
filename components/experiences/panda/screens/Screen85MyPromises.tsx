@@ -155,7 +155,7 @@ export function Screen85MyPromises() {
             transition={{ duration: 0.9, ease: EASE_SOFT }}
           >
             <Link
-              href="/apology/84"
+              href="/apology/5"
               style={{
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '0.62rem',
@@ -169,7 +169,7 @@ export function Screen85MyPromises() {
             </Link>
 
             <Link
-              href="/apology/86"
+              href="/apology/7"
               className="rounded-full px-5 py-2.5"
               style={{
                 background:

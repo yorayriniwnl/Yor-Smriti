@@ -213,9 +213,10 @@ const SCREEN_DEFINITIONS: Array<
   },
 ];
 
-export const PANDA_SCREEN_REGISTRY: PandaScreenRegistryItem[] = SCREEN_DEFINITIONS.map((item) => ({
+export const PANDA_SCREEN_REGISTRY: PandaScreenRegistryItem[] = SCREEN_DEFINITIONS.map((item, index) => ({
   ...item,
-  directorStartIndex: Number(item.id) - 80,
+  id: String(index + 1),
+  directorStartIndex: index,
 }));
 
 export const PANDA_SCREEN_IDS = PANDA_SCREEN_REGISTRY.map((item) => item.id);

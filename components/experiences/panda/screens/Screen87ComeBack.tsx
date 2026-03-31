@@ -222,7 +222,7 @@ export function Screen87ComeBack() {
             Return Home
           </Link>
           <Link
-            href="/apology/80"
+            href="/apology/1"
             style={{
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '0.6rem',

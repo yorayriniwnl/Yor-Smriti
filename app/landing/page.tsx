@@ -73,7 +73,7 @@ export default function LandingPage() {
         </div>
 
         <Link
-          href="/apology/80"
+          href="/apology/1"
           className="mt-8 inline-flex items-center justify-center rounded-full px-8 py-3"
           style={{
             background:

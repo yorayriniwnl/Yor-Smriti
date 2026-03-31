@@ -67,7 +67,7 @@ export function Screen86ALetter() {
 
       <div className="mt-5 flex items-center justify-between gap-3">
         <Link
-          href="/apology/85"
+          href="/apology/6"
           style={{
             fontFamily: 'var(--font-dm-mono)',
             fontSize: '0.62rem',
@@ -81,7 +81,7 @@ export function Screen86ALetter() {
         </Link>
 
         <Link
-          href="/apology/87"
+          href="/apology/8"
           className="rounded-full px-5 py-2.5"
           style={{
             background:

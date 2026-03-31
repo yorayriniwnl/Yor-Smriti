@@ -135,7 +135,7 @@ export function Screen80Intro() {
             >
               <motion.div whileHover={{ y: -1, scale: 1.03 }} whileTap={{ scale: 0.98 }}>
                 <Link
-                  href="/apology/81"
+                  href="/apology/2"
                   className="inline-flex items-center justify-center rounded-full px-10 py-3"
                   style={{
                     background:
