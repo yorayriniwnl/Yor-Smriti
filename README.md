@@ -1,76 +1,82 @@
-## Yor Smriti
-
-Yor Smriti is a cinematic, interactive apology and memory web experience built with Next.js.
-It combines narrative screens, motion-heavy transitions, and custom stage flows across multiple routes
-like landing, login, message, panda, and director experiences.
+---
 
 ## Tech Stack
 
-- Next.js (App Router)
-- React + TypeScript
-- Framer Motion
-- Tailwind CSS
+- **Next.js (App Router)**
+- **React + TypeScript**
+- **Framer Motion**
+- **Tailwind CSS**
+
+---
 
 ## Run Locally
 
-1. Install dependencies and start the dev server:
+### 1. Install dependencies
 
 ```bash
-npm install && npm run dev
-```
-
-2. Open:
-
-```text
+npm install
+2. Start development server
+npm run dev
+3. Open in browser
 http://localhost:3000
-```
+Environment Setup
 
-3. Configure login credentials in a local env file before testing login:
+Before testing login, create a .env.local file in the root:
 
-Create `.env.local` in the project root:
-
-```bash
 APP_USERNAME=yorayrin
 APP_PASSWORD=yorayrin
-```
 
-You can change these values to anything you want.
+You can change these values as needed.
 
-## Login Credentials
+Authentication System
 
-Login is validated by `POST /api/login` using environment variables.
+Login is handled via:
 
-- Preferred server-side variables:
-	- `APP_USERNAME`
-	- `APP_PASSWORD`
-- Fallback variables supported by the route:
-	- `NEXT_PUBLIC_APP_USERNAME`
-	- `NEXT_PUBLIC_APP_PASSWORD`
+POST /api/login
+Primary Variables (Recommended)
+APP_USERNAME
+APP_PASSWORD
+Fallback Variables
+NEXT_PUBLIC_APP_USERNAME
+NEXT_PUBLIC_APP_PASSWORD
 
-If credentials are missing, the login API returns a configuration error.
+If credentials are not configured, the API will return a configuration error.
 
-## Deployment Notes
+Deployment
+Vercel (Recommended)
+Import the repository into Vercel
+Go to Project Settings → Environment Variables
+Add:
+APP_USERNAME=your_value
+APP_PASSWORD=your_value
+Deploy
+Default Build Settings
+Install: npm install
+Build: npm run build
+Start: npm start
+Other Hosting Platforms
 
-### Vercel (Recommended)
+For any Node.js hosting provider:
 
-1. Import the repository into Vercel.
-2. Set environment variables in Project Settings -> Environment Variables:
-	 - `APP_USERNAME`
-	 - `APP_PASSWORD`
-3. Deploy.
+Build
+npm run build
+Start
+npm start
 
-Default Next.js settings work out of the box:
+Make sure to configure:
 
-- Install command: `npm install`
-- Build command: `npm run build`
-- Start command: `npm start`
+APP_USERNAME
+APP_PASSWORD
 
-### Other Platforms
+Without these, authentication will fail in production.
 
-For any Node hosting provider:
+Final Note
 
-1. Set the same environment variables (`APP_USERNAME`, `APP_PASSWORD`).
-2. Build with `npm run build`.
-3. Run with `npm start`.
+This project is a feeling turned into code.
+Every transition carries intention.
+Every screen holds a memory.
 
-Without login env vars, authentication will fail in production.
+If you’re here… it was meant for you.
+
+
+If you want, I can upgrade this into a **₹10L brand-level README** with storyte
