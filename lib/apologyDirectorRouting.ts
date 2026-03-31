@@ -6,14 +6,9 @@ export interface DirectorRouteConfig {
   ending?: EndingVariant;
 }
 
-const PUBLIC_START_SCREEN = 1;
-const SCREEN_COUNT = PANDA_SCREEN_IDS.length;
-
-const routeEntries: Array<[string, DirectorRouteConfig]> = [];
-
-for (let index = 0; index < SCREEN_COUNT; index += 1) {
-  routeEntries.push([String(PUBLIC_START_SCREEN + index), { start: index }]);
-}
+const routeEntries: Array<[string, DirectorRouteConfig]> = PANDA_SCREEN_IDS.map(
+  (screenId, index) => [screenId, { start: index }],
+);
 
 export const APOLOGY_DIRECTOR_ROUTE_MAP: Record<string, DirectorRouteConfig> =
   Object.fromEntries(routeEntries);
