@@ -2,6 +2,7 @@
 
 import type { MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 interface HeartSplashState {
@@ -12,7 +13,9 @@ interface HeartSplashState {
   fitScale: number;
 }
 
-const HEART_TRANSITION_MS = 2600;
+const HEART_EXPAND_MS = 2100;
+const HEART_HOLD_MS = 2900;
+const HEART_TOTAL_MS = HEART_EXPAND_MS + HEART_HOLD_MS;
 const HEART_BASE_SIZE = 64;
 
 export default function HomePage() {
@@ -59,7 +62,7 @@ export default function HomePage() {
 
     redirectTimerRef.current = window.setTimeout(() => {
       router.push('/login');
-    }, HEART_TRANSITION_MS);
+    }, HEART_TOTAL_MS);
   };
 
   return (
@@ -148,7 +151,7 @@ export default function HomePage() {
             style={{
               background: 'rgba(8, 3, 9, 0.3)',
               opacity: heartSplash.expanded ? 1 : 0.45,
-              transition: `opacity ${HEART_TRANSITION_MS}ms ease-out`,
+              transition: `opacity ${HEART_EXPAND_MS}ms ease-out`,
             }}
           />
 
@@ -159,7 +162,7 @@ export default function HomePage() {
               top: heartSplash.expanded ? '50vh' : heartSplash.y,
               transform: `translate(-50%, -50%) scale(${heartSplash.expanded ? heartSplash.fitScale : 1})`,
               transformOrigin: 'center',
-              transition: `left ${HEART_TRANSITION_MS}ms cubic-bezier(0.16, 1, 0.3, 1), top ${HEART_TRANSITION_MS}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${HEART_TRANSITION_MS}ms cubic-bezier(0.16, 1, 0.3, 1), opacity ${HEART_TRANSITION_MS}ms ease-out`,
+              transition: `left ${HEART_EXPAND_MS}ms cubic-bezier(0.16, 1, 0.3, 1), top ${HEART_EXPAND_MS}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${HEART_EXPAND_MS}ms cubic-bezier(0.16, 1, 0.3, 1), opacity ${HEART_EXPAND_MS}ms ease-out`,
               opacity: heartSplash.expanded ? 0.98 : 1,
             }}
           >
@@ -182,6 +185,49 @@ export default function HomePage() {
                 filter: 'blur(8px)',
               }}
             />
+
+            <div
+              className="absolute inset-0 flex items-center justify-center text-center"
+              style={{
+                clipPath:
+                  'polygon(50% 92%, 9% 52%, 9% 30%, 26% 13%, 50% 25%, 74% 13%, 91% 30%, 91% 52%)',
+                padding: '0 18%',
+                opacity: heartSplash.expanded ? 1 : 0.25,
+                transition: `opacity ${HEART_EXPAND_MS}ms ease-out`,
+              }}
+            >
+              <motion.span
+                initial={{ opacity: 0, scale: 0.78, y: 8 }}
+                animate={
+                  heartSplash.expanded
+                    ? {
+                      opacity: [0.12, 1, 1, 1],
+                      scale: [0.78, 1, 1.08, 1],
+                      y: [8, 0, -1, 0],
+                    }
+                    : { opacity: 0, scale: 0.78, y: 8 }
+                }
+                transition={
+                  heartSplash.expanded
+                    ? {
+                      duration: HEART_TOTAL_MS / 1000,
+                      times: [0, 0.2, 0.72, 1],
+                      ease: 'easeInOut',
+                    }
+                    : { duration: 0.2 }
+                }
+                style={{
+                  fontFamily: 'var(--font-cormorant)',
+                  fontSize: '0.19rem',
+                  lineHeight: 1.05,
+                  letterSpacing: '0.01em',
+                  color: 'rgba(255, 247, 252, 0.98)',
+                  textShadow: '0 0 3px rgba(140, 22, 72, 0.6), 0 0 10px rgba(255, 255, 255, 0.3)',
+                }}
+              >
+                👸💃Anya ❤️ Ayrin 🕺🤴
+              </motion.span>
+            </div>
           </div>
         </div>
       ) : null}

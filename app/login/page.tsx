@@ -7,14 +7,6 @@ import { useRouter } from 'next/navigation';
 const HARDCODED_USERNAME = 'Anyayrin';
 const HARDCODED_PASSWORD = 'Anyayrin';
 
-const LIP_PRINTS = [
-  { left: '14%', top: '18%', delay: 0.02, rotate: -18, scale: 0.62 },
-  { left: '84%', top: '22%', delay: 0.16, rotate: 16, scale: 0.56 },
-  { left: '20%', top: '78%', delay: 0.3, rotate: -24, scale: 0.72 },
-  { left: '78%', top: '82%', delay: 0.44, rotate: 19, scale: 0.68 },
-  { left: '50%', top: '14%', delay: 0.58, rotate: -6, scale: 0.52 },
-] as const;
-
 function LipPrint({ tint }: { tint: string }) {
   return (
     <svg viewBox="0 0 220 120" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
@@ -260,46 +252,19 @@ export default function LoginPage() {
               }}
             />
 
-            {LIP_PRINTS.map((mark, index) => (
-              <motion.div
-                key={`lip-print-${index}`}
-                className="absolute"
-                initial={{ opacity: 0, scale: 0.24, y: 8, rotate: mark.rotate - 6 }}
-                animate={{ opacity: [0.12, 0.58, 0.2], scale: [mark.scale, mark.scale * 1.16, mark.scale], y: [8, -4, 2], rotate: [mark.rotate - 2, mark.rotate + 4, mark.rotate] }}
-                transition={{ duration: 1.6, delay: mark.delay, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  left: mark.left,
-                  top: mark.top,
-                  width: '7.1rem',
-                  height: '3.9rem',
-                  marginLeft: '-3.55rem',
-                  marginTop: '-1.95rem',
-                  filter: 'drop-shadow(0 0 14px rgba(247, 85, 144, 0.3))',
-                }}
-              >
-                <LipPrint tint="rgba(255, 132, 182, 0.9)" />
-              </motion.div>
-            ))}
-
             <div className="relative h-[16rem] w-[16rem]">
               <motion.div
-                className="absolute left-1/2 h-[5.2rem] w-[10.8rem] -translate-x-1/2 -translate-y-1/2"
-                style={{ top: '38%' }}
-                initial={{ opacity: 0.55, y: -34, scale: 0.5 }}
-                animate={{ opacity: [0.55, 0.94, 0.72], y: [-34, -6, -16], scale: [0.5, 1.56, 1.18] }}
-                transition={{ duration: 1.25, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute left-1/2 top-1/2 h-[6rem] w-[12rem] -translate-x-1/2 -translate-y-1/2"
+                initial={{ opacity: 0.45, scale: 0.46, y: 18 }}
+                animate={{
+                  opacity: [0.45, 0.96, 0.68],
+                  scale: [0.46, 1.65, 1.1],
+                  y: [18, 0, 4],
+                  rotate: [-2, 1, -1],
+                }}
+                transition={{ duration: 1.28, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
               >
-                <LipPrint tint="rgba(255, 120, 176, 0.96)" />
-              </motion.div>
-
-              <motion.div
-                className="absolute left-1/2 h-[5.2rem] w-[10.8rem] -translate-x-1/2 -translate-y-1/2"
-                style={{ top: '62%' }}
-                initial={{ opacity: 0.55, y: 34, scale: 0.5 }}
-                animate={{ opacity: [0.55, 0.94, 0.72], y: [34, 6, 16], scale: [0.5, 1.56, 1.18] }}
-                transition={{ duration: 1.25, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <LipPrint tint="rgba(255, 142, 190, 0.94)" />
+                <LipPrint tint="rgba(255, 126, 182, 0.98)" />
               </motion.div>
 
               <motion.div
@@ -311,6 +276,20 @@ export default function LoginPage() {
                   boxShadow: '0 0 18px rgba(247, 85, 144, 0.28)',
                 }}
               />
+
+              <motion.span
+                className="absolute left-1/2 top-1/2 -translate-x-1/2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.9, 0], y: [18, 38, 56], scale: [0.7, 1, 0.82] }}
+                transition={{ duration: 1.22, repeat: Infinity, ease: 'easeOut', delay: 0.18 }}
+                style={{
+                  fontSize: '2rem',
+                  lineHeight: 1,
+                  filter: 'drop-shadow(0 0 10px rgba(255, 150, 195, 0.35))',
+                }}
+              >
+                💋
+              </motion.span>
             </div>
           </div>
         ) : null}
