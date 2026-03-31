@@ -4,8 +4,8 @@
 Live Demo: https://yor-smriti.vercel.app/login
 
 ```bash
-Username=yorayrin
-Password=yorayrin
+Username =yorayrin
+Password =yorayrin
 ```
 
 Yor Smriti is a cinematic, interactive apology and memory web experience built with Next.js.
