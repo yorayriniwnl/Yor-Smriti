@@ -25,7 +25,7 @@ const MISS_ITEMS = [
   {
     id: 'miss-1',
     emoji: '🌙',
-    text: 'Your 3 AM texts.',
+    text: 'Our 10 AM to 10 PM texts.',
     sub: 'The random ones that made me smile.',
     color: 'rgba(200, 160, 220, 0.18)',
     delay: 0.1,
@@ -33,7 +33,7 @@ const MISS_ITEMS = [
   {
     id: 'miss-2',
     emoji: '☕',
-    text: 'How you said my name.',
+    text: 'How you used to call me Ayrin.',
     sub: 'No one else says it like that.',
     color: 'rgba(255, 180, 140, 0.15)',
     delay: 0.7,
@@ -41,7 +41,7 @@ const MISS_ITEMS = [
   {
     id: 'miss-3',
     emoji: '🎵',
-    text: 'The playlist you made me.',
+    text: "The videocalls, I still remember your face so clearly as if it's next to me.",
     sub: 'I still listen to it.',
     color: 'rgba(140, 200, 255, 0.14)',
     delay: 1.4,
@@ -49,7 +49,7 @@ const MISS_ITEMS = [
   {
     id: 'miss-4',
     emoji: '🌸',
-    text: 'The way you laugh.',
+    text: 'The way you laugh and Scream.',
     sub: 'Especially when you try not to.',
     color: 'rgba(255, 160, 190, 0.17)',
     delay: 2.1,

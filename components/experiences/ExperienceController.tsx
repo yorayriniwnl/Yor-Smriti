@@ -50,6 +50,7 @@ interface ExperienceControllerProps {
   initialPrivateMode?: boolean;
   initialSilentMode?: boolean;
   showControls?: boolean;
+  showPauseButton?: boolean;
   shareEnabled?: boolean;
   className?: string;
 }
@@ -251,6 +252,7 @@ export function ExperienceController({
   initialPrivateMode = true,
   initialSilentMode = false,
   showControls = true,
+  showPauseButton = false,
   shareEnabled = true,
   className,
 }: ExperienceControllerProps) {
@@ -946,6 +948,26 @@ export function ExperienceController({
           whileTap={{ scale: 0.97 }}
         >
           {isSilentMode ? 'Silent' : 'Sound'}
+        </motion.button>
+      ) : null}
+
+      {showPauseButton && autoAdvance && !isUiVoidScreen ? (
+        <motion.button
+          type="button"
+          data-nav-ignore="true"
+          onClick={isPaused ? resume : pause}
+          className="absolute right-24 top-4 z-30 rounded-full border px-3 py-1 text-[0.58rem] uppercase tracking-[0.1em]"
+          style={{
+            borderColor: 'rgba(255,255,255,0.24)',
+            color: activeTheme.textColor,
+            fontFamily: 'var(--font-dm-mono)',
+            opacity: isPrivateMode && cursorHidden ? 0 : 0.62,
+            pointerEvents: isPrivateMode && cursorHidden ? 'none' : 'auto',
+          }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+        >
+          {isPaused ? 'Resume' : 'Pause'}
         </motion.button>
       ) : null}
 

@@ -168,6 +168,7 @@ export function DirectorExperienceClient({
       initialPrivateMode={resolvedPrivateMode}
       initialSilentMode={resolvedSilentMode}
       showControls={false}
+      showPauseButton={true}
       shareEnabled={true}
     />
   );
