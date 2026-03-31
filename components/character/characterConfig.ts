@@ -1,4 +1,4 @@
-export type CharacterVariant = 'anya' | 'ayrin';
+export type CharacterVariant = 'keyrin' | 'ayrin';
 
 export type CharacterAnchor = 'left' | 'right';
 
@@ -19,9 +19,9 @@ export interface CharacterSceneConfig {
 }
 
 const CHARACTER_VARIANT_CONFIG: Record<CharacterVariant, CharacterSceneConfig> = {
-  anya: {
-    variant: 'anya',
-    url: '/models/anya.glb',
+  keyrin: {
+    variant: 'keyrin',
+    url: '/models/keyrin.glb',
     anchor: 'right',
     position: [0.58, -1.36, 0],
     scale: 1.08,
@@ -53,11 +53,11 @@ const CHARACTER_VARIANT_CONFIG: Record<CharacterVariant, CharacterSceneConfig> =
 
 const DIRECTOR_SCREEN_VARIANTS: Partial<Record<number, CharacterVariant>> = {
   82: 'ayrin',
-  83: 'anya',
+  83: 'keyrin',
   84: 'ayrin',
   85: 'ayrin',
-  86: 'anya',
-  87: 'anya',
+  86: 'keyrin',
+  87: 'keyrin',
 };
 
 export function resolveCharacterVariant(screenId: number): CharacterVariant | null {

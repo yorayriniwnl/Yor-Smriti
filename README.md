@@ -30,8 +30,8 @@ http://localhost:3000
 Create `.env.local` in the project root:
 
 ```bash
-APP_USERNAME=Anyayrin
-APP_PASSWORD=YorAyrin
+APP_USERNAME=yorayrin
+APP_PASSWORD=yorayrin
 ```
 
 You can change these values to anything you want.
