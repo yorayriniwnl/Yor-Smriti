@@ -3,6 +3,11 @@
 **Dedicated to the person I love, Keyrin.(Fictional Character)**
 Live Demo: https://yor-smriti.vercel.app/login
 
+```bash
+Username=yorayrin
+Password=yorayrin
+```
+
 Yor Smriti is a cinematic, interactive apology and memory web experience built with Next.js.
 It combines narrative screens, motion-heavy transitions, and custom stage flows across multiple routes
 like landing, login, message, panda, and director experiences.
@@ -31,11 +36,6 @@ http://localhost:3000
 3. Configure login credentials in a local env file before testing login:
 
 Create `.env.local` in the project root:
-
-```bash
-APP_USERNAME=yorayrin
-APP_PASSWORD=yorayrin
-```
 
 You can change these values to anything you want.
 
