@@ -1,5 +1,8 @@
 ## Yor Smriti
 
+**Dedicated to the person I love, Keyrin.(Fictional Character)**
+Live Demo: https://yor-smriti.vercel.app/login
+
 Yor Smriti is a cinematic, interactive apology and memory web experience built with Next.js.
 It combines narrative screens, motion-heavy transitions, and custom stage flows across multiple routes
 like landing, login, message, panda, and director experiences.
