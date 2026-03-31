@@ -66,10 +66,6 @@ function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function toPublicScreenNumber(screenId: number): number {
-  return Math.max(1, screenId - 79);
-}
-
 function resolveLetterGhostLines(screen: number): string[] {
   return [screen - 2, screen - 1]
     .map((id) => LETTER_PAGE_LINE_LOOKUP[id])
@@ -196,6 +192,10 @@ function SceneEyebrow({ text }: { text: string }) {
   );
 }
 
+function toPublicScreenNumber(legacyScreen: number) {
+  return legacyScreen - 79;
+}
+
 function YorSignatureMotif({
   className,
   opacity = 0.58,
@@ -266,8 +266,6 @@ function LetterPageCard({
   useEmotionalScrollResistance(letterScrollRef, 0.4);
   const alignment = LETTER_PAGE_ALIGNMENT[screen] ?? 'center';
   const ghostLines = resolveLetterGhostLines(screen);
-  const publicScreen = toPublicScreenNumber(screen);
-  const letterPage = clampNumber(screen - 100, 1, 5);
   const textAlignClass =
     alignment === 'left'
       ? 'text-left'
@@ -327,7 +325,7 @@ function LetterPageCard({
               color: 'rgba(89, 57, 31, 0.72)',
             }}
           >
-            Screen {publicScreen} · Letter page {letterPage}/5
+            Page {screen - 100} / 5
           </p>
 
           {ghostLines.length > 0 ? (
@@ -386,7 +384,7 @@ export function LetterPeakScreen({ emotion, personalization }: ExperienceScreenP
       transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="text-center">
-        <SceneEyebrow text="screen 7 - the letter" />
+        <SceneEyebrow text={`screen ${toPublicScreenNumber(86)} - the letter`} />
 
         <TextReveal
           text={`I am sorry, ${personalization.name}. Please read this once.`}
@@ -468,7 +466,7 @@ export function Timeline88Screen({ emotion }: ExperienceScreenProps) {
   return (
     <section className="space-y-6">
       <div className="text-center">
-        <SceneEyebrow text="screen 9 - the timeline" />
+        <SceneEyebrow text={`screen ${toPublicScreenNumber(88)} - the timeline`} />
 
         <TextReveal
           text="Do you remember how it all started?"
@@ -555,7 +553,7 @@ export function FirstCrack89Screen({ emotion }: ExperienceScreenProps) {
       </div>
 
       <div className="relative space-y-4">
-        <SceneEyebrow text="screen 10 - the first crack" />
+        <SceneEyebrow text={`screen ${toPublicScreenNumber(89)} - the first crack`} />
 
         <TextReveal
           text="Things... started breaking."
@@ -601,7 +599,7 @@ export function ThingsISaid90Screen({ emotion }: ExperienceScreenProps) {
       </div>
 
       <div className="relative space-y-4">
-        <SceneEyebrow text="screen 11 - the things i said" />
+        <SceneEyebrow text={`screen ${toPublicScreenNumber(90)} - the things i said`} />
 
         <TextReveal
           text="Some words... I wish I could take back."
@@ -673,7 +671,7 @@ export function Distance92Screen({ emotion }: ExperienceScreenProps) {
     <section className="relative flex min-h-[58vh] flex-col items-center justify-center gap-5 overflow-hidden text-center">
       <SymbolMotif kind="distance" />
 
-      <SceneEyebrow text="screen 13 - the distance" />
+      <SceneEyebrow text={`screen ${toPublicScreenNumber(92)} - the distance`} />
 
       <TextReveal
         text="We were still there..."
