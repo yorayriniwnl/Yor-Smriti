@@ -17,31 +17,20 @@ export function Screen80Intro() {
       footer="Made with love, regret, and hope."
       showHeader={false}
       showTopControls={false}
-      panelClassName="relative w-full max-w-[24rem] overflow-hidden rounded-[2.2rem] border pb-5 pt-8"
-      contentClassName="relative z-10 px-0"
+      panelClassName="relative w-full max-w-[24.5rem] overflow-hidden rounded-[2.2rem] border pb-6 pt-8"
+      contentClassName="relative z-10 px-2"
     >
-      <article
-        className="relative overflow-hidden px-3 pb-2"
-      >
-        <div
-          className="pointer-events-none absolute inset-x-3 top-4 h-[8.5rem] rounded-[1.55rem]"
-          aria-hidden="true"
-          style={{
-            background:
-              'linear-gradient(180deg, rgba(255, 247, 252, 0.95) 0%, rgba(248, 226, 239, 0.7) 100%)',
-          }}
-        />
-
+      <article className="relative overflow-hidden px-2 pb-2">
         <motion.section
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.9, ease: EASE_SOFT }}
-          className="relative mx-auto mt-5 w-full max-w-[20.6rem] overflow-hidden rounded-[1.7rem] border pb-7"
+          className="relative mx-auto mt-3 w-full max-w-[21.5rem] overflow-hidden rounded-[1.8rem] border"
           style={{
-            borderColor: 'rgba(236, 195, 213, 0.88)',
+            borderColor: 'rgba(244, 173, 210, 0.35)',
             background:
-              'linear-gradient(180deg, rgba(255, 252, 253, 0.96) 0%, rgba(255, 246, 251, 0.97) 100%)',
-            boxShadow: '0 14px 34px rgba(212, 92, 143, 0.2)',
+              'linear-gradient(180deg, rgba(43, 16, 34, 0.95) 0%, rgba(25, 9, 21, 0.98) 100%)',
+            boxShadow: '0 18px 36px rgba(0, 0, 0, 0.46), 0 10px 24px rgba(247, 85, 144, 0.2)',
           }}
         >
           <div
@@ -49,55 +38,56 @@ export function Screen80Intro() {
             aria-hidden="true"
             style={{
               background:
-                'radial-gradient(circle at 10% 12%, rgba(255, 255, 255, 0.95), transparent 48%), radial-gradient(circle at 88% 76%, rgba(255, 220, 239, 0.45), transparent 40%)',
+                'radial-gradient(circle at 8% 10%, rgba(255, 203, 229, 0.24), transparent 42%), radial-gradient(circle at 92% 86%, rgba(255, 236, 176, 0.12), transparent 44%)',
             }}
           />
 
           <div
-            className="flex items-center justify-between border-b px-4 py-3"
-            style={{ borderColor: 'rgba(234, 203, 221, 0.76)' }}
+            className="relative flex items-center justify-between border-b px-4 py-3"
+            style={{ borderColor: 'rgba(244, 173, 210, 0.24)' }}
           >
             <div className="flex items-center gap-2" aria-hidden="true">
-              <span className="h-3 w-3 rounded-full bg-[#ff7da9]" />
-              <span className="h-3 w-3 rounded-full bg-[#ffd573]" />
-              <span className="h-3 w-3 rounded-full bg-[#9be8a7]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ff7da9]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#ffd573]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#9be8a7]" />
             </div>
 
             <p
               style={{
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '0.62rem',
-                color: 'rgba(168, 95, 127, 0.95)',
+                color: 'rgba(255, 202, 227, 0.84)',
                 letterSpacing: '0.08em',
               }}
             >
-              A Quiet Confession
+              First Note
             </p>
 
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-full border"
+            <span
+              className="rounded-full border px-2 py-1"
               style={{
-                borderColor: 'rgba(237, 194, 214, 0.72)',
-                background:
-                  'radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 220, 235, 0.95) 45%, rgba(252, 170, 205, 0.95) 100%)',
+                borderColor: 'rgba(244, 173, 210, 0.38)',
+                color: 'rgba(255, 226, 241, 0.88)',
+                fontFamily: 'var(--font-dm-mono)',
+                fontSize: '0.58rem',
+                letterSpacing: '0.08em',
               }}
-              aria-hidden="true"
             >
-              <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>o</span>
-            </div>
+              01
+            </span>
           </div>
 
-          <div className="relative px-6 pt-8 text-center sm:px-8">
+          <div className="relative px-6 pb-8 pt-9 text-center sm:px-8">
             <motion.h2
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, delay: 0.06, ease: EASE_SOFT }}
               style={{
                 fontFamily: 'var(--font-cormorant)',
-                color: '#d6367d',
+                color: 'rgba(255, 232, 244, 0.98)',
                 fontSize: 'clamp(2.1rem, 8vw, 2.8rem)',
-                lineHeight: 1.04,
-                fontWeight: 700,
+                lineHeight: 1.05,
+                fontWeight: 600,
                 letterSpacing: '-0.02em',
               }}
             >
@@ -110,12 +100,12 @@ export function Screen80Intro() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.75, delay: 0.2, ease: EASE_SOFT }}
-              className="mx-auto mt-5 max-w-[26ch]"
+              className="mx-auto mt-5 max-w-[27ch]"
               style={{
-                color: 'rgba(115, 74, 96, 0.95)',
+                color: 'rgba(255, 206, 228, 0.9)',
                 fontFamily: 'var(--font-crimson)',
                 fontSize: 'clamp(1rem, 2.8vw, 1.2rem)',
-                lineHeight: 1.52,
+                lineHeight: 1.54,
               }}
             >
               I know I hurt you, and I carry that every day. If you let me, I want to make
@@ -131,7 +121,7 @@ export function Screen80Intro() {
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '0.67rem',
                 letterSpacing: '0.08em',
-                color: 'rgba(196, 92, 133, 0.9)',
+                color: 'rgba(255, 171, 210, 0.86)',
               }}
             >
               Will you read this fully?
@@ -162,55 +152,7 @@ export function Screen80Intro() {
               </motion.div>
             </motion.div>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.3, ease: EASE_SOFT }}
-            className="pointer-events-none absolute -bottom-4 left-2 flex h-16 w-16 items-center justify-center rounded-full border"
-            style={{
-              borderColor: 'rgba(238, 187, 211, 0.7)',
-              background:
-                'radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.94) 0%, rgba(242, 220, 227, 0.96) 56%, rgba(225, 182, 194, 0.96) 100%)',
-            }}
-            aria-hidden="true"
-          >
-            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>x</span>
-          </motion.div>
-
-          <div
-            className="pointer-events-none absolute right-2 top-28 flex h-8 w-8 items-center justify-center rounded-full border"
-            aria-hidden="true"
-            style={{
-              borderColor: 'rgba(233, 178, 206, 0.7)',
-              backgroundColor: 'rgba(255, 241, 248, 0.92)',
-              color: 'rgba(199, 108, 148, 0.9)',
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '0.62rem',
-            }}
-          >
-            01
-          </div>
         </motion.section>
-
-        <div
-          className="pointer-events-none absolute right-8 top-2 h-10 w-16 rounded-full"
-          aria-hidden="true"
-          style={{
-            background:
-              'linear-gradient(180deg, rgba(190, 240, 244, 0.95), rgba(162, 219, 227, 0.95))',
-            boxShadow: 'inset 0 -8px 12px rgba(255, 255, 255, 0.35)',
-          }}
-        >
-          <span
-            className="absolute -left-2 top-3 h-4 w-4 rounded-full"
-            style={{ backgroundColor: 'rgba(182, 236, 242, 0.95)' }}
-          />
-          <span
-            className="absolute right-0 top-[-5px] h-5 w-5 rounded-full"
-            style={{ backgroundColor: 'rgba(173, 228, 235, 0.95)' }}
-          />
-        </div>
       </article>
     </ApologyExperienceShell>
   );

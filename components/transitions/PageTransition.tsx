@@ -3,10 +3,12 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Emotion } from '@/lib/emotionThemes';
+import type { TimingConfig } from '@/lib/timeDistortion';
 
 interface PageTransitionProps {
   transitionKey: string | number;
   emotion?: Emotion;
+  timing?: TimingConfig;
   className?: string;
   children: ReactNode;
 }
@@ -58,10 +60,16 @@ const emotionTransitionConfig: Record<Emotion, {
 export function PageTransition({
   transitionKey,
   emotion = 'silence',
+  timing,
   className,
   children,
 }: PageTransitionProps) {
   const transitionConfig = emotionTransitionConfig[emotion];
+  const resolvedTiming = timing ?? {
+    duration: transitionConfig.duration,
+    delay: 0,
+    easing: 'easeOut' as const,
+  };
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -87,8 +95,9 @@ export function PageTransition({
           filter: `blur(${Math.max(transitionConfig.blurIn - 2, 2)}px)`,
         }}
         transition={{
-          duration: transitionConfig.duration,
-          ease: [0.22, 1, 0.36, 1],
+          duration: resolvedTiming.duration,
+          delay: resolvedTiming.delay,
+          ease: resolvedTiming.easing,
         }}
       >
         {children}

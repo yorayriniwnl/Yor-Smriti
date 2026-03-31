@@ -1,16 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { TextReveal } from '@/components/transitions/TextReveal';
 import type { ExperienceScreenProps } from '@/hooks/useExperienceFlow';
 
 const GROWTH_LINES = [
   'I did not understand then how my words were cutting deeper than I thought.',
   'Now I see love is not only feeling, it is responsibility in the smallest moments.',
-  'I wish I had listened before defending myself.',
+  'I wish I had listened before defending myself. ',
 ];
 
-export function GrowthScreen({ emotion, onNext }: ExperienceScreenProps) {
+export function GrowthScreen({
+  emotion,
+  onNext,
+  personalization,
+}: ExperienceScreenProps) {
   const [revealedCount, setRevealedCount] = useState(1);
   const allRevealed = revealedCount >= GROWTH_LINES.length;
 
@@ -35,9 +40,15 @@ export function GrowthScreen({ emotion, onNext }: ExperienceScreenProps) {
         {GROWTH_LINES.slice(0, revealedCount).map((line, index) => (
           <TextReveal
             key={`growth-line-${index}`}
-            text={line}
+            text={
+              index === GROWTH_LINES.length - 1
+                ? `${line}${personalization.name}.`
+                : line
+            }
             emotion={emotion}
             delay={index * 0.2}
+            mode={index === 0 ? 'typewriter' : 'fade'}
+            speedMs={25}
             className="mx-auto max-w-[35ch] text-[clamp(1.18rem,3.2vw,1.7rem)] leading-relaxed"
           />
         ))}
@@ -45,9 +56,11 @@ export function GrowthScreen({ emotion, onNext }: ExperienceScreenProps) {
 
       <div className="flex flex-wrap items-center justify-center gap-3">
         {!allRevealed ? (
-          <button
+          <motion.button
             type="button"
             onClick={revealNextLine}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             className="rounded-full border px-5 py-2 text-[0.68rem] uppercase tracking-[0.1em]"
             style={{
               borderColor: 'rgba(255,255,255,0.34)',
@@ -56,11 +69,13 @@ export function GrowthScreen({ emotion, onNext }: ExperienceScreenProps) {
             }}
           >
             Tap to reveal
-          </button>
+          </motion.button>
         ) : (
-          <button
+          <motion.button
             type="button"
             onClick={onNext}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             className="rounded-full px-6 py-3 text-[0.68rem] uppercase tracking-[0.1em]"
             style={{
               fontFamily: 'var(--font-dm-mono)',
@@ -70,7 +85,7 @@ export function GrowthScreen({ emotion, onNext }: ExperienceScreenProps) {
             }}
           >
             Continue
-          </button>
+          </motion.button>
         )}
       </div>
     </section>

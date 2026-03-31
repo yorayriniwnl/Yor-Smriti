@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface ApologyExperienceShellProps {
   children: ReactNode;
@@ -16,6 +16,11 @@ interface ApologyExperienceShellProps {
   showTopControls?: boolean;
   panelClassName?: string;
   contentClassName?: string;
+  mainClassName?: string;
+  mainStyle?: CSSProperties;
+  panelStyle?: CSSProperties;
+  showAtmosphereLayers?: boolean;
+  showDecorativePill?: boolean;
 }
 
 export function ApologyExperienceShell({
@@ -30,24 +35,35 @@ export function ApologyExperienceShell({
   showTopControls = true,
   panelClassName,
   contentClassName,
+  mainClassName,
+  mainStyle,
+  panelStyle,
+  showAtmosphereLayers = true,
+  showDecorativePill = true,
 }: ApologyExperienceShellProps) {
   return (
     <main
       id="main-content"
-      className="relative flex min-h-dvh w-dvw items-center justify-center overflow-auto px-4 py-8"
+      className={
+        mainClassName ??
+        'relative flex min-h-dvh w-dvw items-center justify-center overflow-auto px-4 py-8'
+      }
       style={{
         background:
           'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
+        ...mainStyle,
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden="true"
-        style={{
-          background:
-            'radial-gradient(circle at 15% 18%, rgba(255, 196, 224, 0.18), transparent 36%), radial-gradient(circle at 84% 80%, rgba(255, 230, 171, 0.1), transparent 36%)',
-        }}
-      />
+      {showAtmosphereLayers ? (
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
+          style={{
+            background:
+              'radial-gradient(circle at 15% 18%, rgba(255, 196, 224, 0.18), transparent 36%), radial-gradient(circle at 84% 80%, rgba(255, 230, 171, 0.1), transparent 36%)',
+          }}
+        />
+      ) : null}
 
       {showTopControls ? (
         <div className="absolute left-4 top-4 z-20 flex items-center gap-2 sm:left-6 sm:top-6">
@@ -92,6 +108,7 @@ export function ApologyExperienceShell({
             'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
           boxShadow:
             '0 36px 74px rgba(0, 0, 0, 0.56), 0 16px 34px rgba(247, 85, 144, 0.22)',
+          ...panelStyle,
         }}
       >
         <div
@@ -104,24 +121,26 @@ export function ApologyExperienceShell({
           }}
         />
 
-        <div
-          className="pointer-events-none absolute right-8 top-5 h-11 w-20 rounded-full"
-          aria-hidden="true"
-          style={{
-            background:
-              'linear-gradient(180deg, rgba(251, 160, 203, 0.9), rgba(210, 82, 143, 0.88))',
-            boxShadow: 'inset 0 -8px 12px rgba(255, 206, 227, 0.35)',
-          }}
-        >
-          <span
-            className="absolute -left-2 top-4 h-5 w-5 rounded-full"
-            style={{ backgroundColor: 'rgba(250, 173, 209, 0.95)' }}
-          />
-          <span
-            className="absolute right-1 top-[-6px] h-6 w-6 rounded-full"
-            style={{ backgroundColor: 'rgba(236, 128, 184, 0.95)' }}
-          />
-        </div>
+        {showDecorativePill ? (
+          <div
+            className="pointer-events-none absolute right-8 top-5 h-11 w-20 rounded-full"
+            aria-hidden="true"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(251, 160, 203, 0.9), rgba(210, 82, 143, 0.88))',
+              boxShadow: 'inset 0 -8px 12px rgba(255, 206, 227, 0.35)',
+            }}
+          >
+            <span
+              className="absolute -left-2 top-4 h-5 w-5 rounded-full"
+              style={{ backgroundColor: 'rgba(250, 173, 209, 0.95)' }}
+            />
+            <span
+              className="absolute right-1 top-[-6px] h-6 w-6 rounded-full"
+              style={{ backgroundColor: 'rgba(236, 128, 184, 0.95)' }}
+            />
+          </div>
+        ) : null}
 
         {showHeader ? (
           <header className="relative z-10 px-8 pb-6 pt-6 text-center">

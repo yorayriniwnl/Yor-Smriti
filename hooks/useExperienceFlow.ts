@@ -3,14 +3,59 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
 import { emotionAutoPauseMs, type Emotion } from '@/lib/emotionThemes';
+import type { TimingConfig } from '@/lib/timeDistortion';
+
+export type ScreenPacingKind =
+  | 'normal'
+  | 'silence'
+  | 'flash'
+  | 'frozen'
+  | 'memory-fragment'
+  | 'freeze'
+  | 'mute'
+  | 'peak'
+  | 'afterglow';
+
+export type ExperienceMood = 'default' | 'dark' | 'hopeful' | 'minimal';
+
+export type ExperienceFlowMode = 'linear' | 'non-linear';
+
+export interface ExperienceRestartOptions {
+  mood?: ExperienceMood;
+  flowMode?: ExperienceFlowMode;
+  silentMode?: boolean;
+  privateMode?: boolean;
+}
+
+export interface PersonalizationData {
+  name: string;
+  memory: string;
+  message: string;
+}
+
+export const DEFAULT_PERSONALIZATION: PersonalizationData = {
+  name: 'Smriti',
+  memory: 'that rainy chai walk',
+  message: 'I am still here, trying to become better.',
+};
 
 export interface ExperienceScreenProps {
   onNext: () => void;
   onPrev: () => void;
+  onRestart: (options?: ExperienceRestartOptions) => void;
   index: number;
   emotion: Emotion;
   emotionPath: Emotion[];
   pushEmotionSignal: (emotion: Emotion) => void;
+  personalization: PersonalizationData;
+  mood: ExperienceMood;
+  setMood: (mood: ExperienceMood) => void;
+  flowMode: ExperienceFlowMode;
+  setFlowMode: (mode: ExperienceFlowMode) => void;
+  isSilentMode: boolean;
+  toggleSilentMode: () => void;
+  isAttentionLocked: boolean;
+  replayCount?: number;
 }
 
 export type Screen = {
@@ -18,6 +63,9 @@ export type Screen = {
   component: ComponentType<ExperienceScreenProps>;
   emotion: Emotion;
   duration?: number;
+  kind?: ScreenPacingKind;
+  timing?: Partial<TimingConfig>;
+  attentionLockMs?: number;
 };
 
 interface UseExperienceFlowOptions {
@@ -144,7 +192,12 @@ export function useExperienceFlow(
   }, [persistKey]);
 
   useEffect(() => {
-    if (!autoAdvance || isPaused || isLast || !current?.duration) {
+    if (!autoAdvance || isPaused || isLast || !current) {
+      return;
+    }
+
+    const baseDuration = current.duration ?? (current.kind === 'silence' ? 500 : 0);
+    if (baseDuration <= 0) {
       return;
     }
 
@@ -152,9 +205,11 @@ export function useExperienceFlow(
       ? (pauseMsByEmotion?.[current.emotion] ?? emotionAutoPauseMs[current.emotion] ?? 0)
       : 0;
 
+    const silenceLeadDelayMs = current.kind === 'silence' ? 500 : 0;
+
     const timer = setTimeout(() => {
       next();
-    }, current.duration + emotionPauseMs);
+    }, baseDuration + emotionPauseMs + silenceLeadDelayMs);
 
     return () => clearTimeout(timer);
   }, [

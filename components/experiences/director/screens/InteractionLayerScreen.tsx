@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { HoldButton } from '@/components/ui/HoldButton';
 import { TextReveal } from '@/components/transitions/TextReveal';
 import type { ExperienceScreenProps } from '@/hooks/useExperienceFlow';
@@ -27,6 +28,7 @@ export function InteractionLayerScreen({
   onNext,
   onResolveEnding,
   pushEmotionSignal,
+  personalization,
 }: InteractionLayerScreenProps) {
   const [revealedCount, setRevealedCount] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<EndingVariant | null>(null);
@@ -75,18 +77,26 @@ export function InteractionLayerScreen({
         {INTERACTION_LINES.slice(0, revealedCount).map((line, index) => (
           <TextReveal
             key={`interaction-line-${index}`}
-            text={line}
+            text={
+              index === 0
+                ? `${line} ${personalization.name}, this part is truly for you.`
+                : line
+            }
             emotion={emotion}
             delay={index * 0.14}
+            mode={index === 0 ? 'typewriter' : 'fade'}
+            speedMs={24}
             className="mx-auto max-w-[35ch] text-[clamp(1.1rem,3vw,1.55rem)] leading-relaxed"
           />
         ))}
       </div>
 
       {!allRevealed ? (
-        <button
+        <motion.button
           type="button"
           onClick={revealMore}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           className="rounded-full border px-5 py-2 text-[0.68rem] uppercase tracking-[0.1em]"
           style={{
             borderColor: 'rgba(255,255,255,0.34)',
@@ -95,27 +105,30 @@ export function InteractionLayerScreen({
           }}
         >
           Tap to reveal next line
-        </button>
+        </motion.button>
       ) : (
         <div className="w-full max-w-xl space-y-5">
           <div className="grid gap-3">
             {RESPONSE_OPTIONS.map((option) => {
               const selected = selectedVariant === option.variant;
               return (
-                <button
+                <motion.button
                   key={option.variant}
                   type="button"
                   onClick={() => handleSelectVariant(option.variant)}
+                  whileHover={{ scale: 1.01, rotateX: -1.5, rotateY: 1.5 }}
+                  whileTap={{ scale: 0.985 }}
                   className="rounded-xl border px-4 py-3 text-left text-[0.72rem] uppercase tracking-[0.1em]"
                   style={{
                     borderColor: selected ? 'rgba(255,255,255,0.48)' : 'rgba(255,255,255,0.24)',
                     backgroundColor: selected ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)',
                     fontFamily: 'var(--font-dm-mono)',
                     transition: 'background-color 220ms ease, border-color 220ms ease',
+                    transformStyle: 'preserve-3d',
                   }}
                 >
                   {option.label}
-                </button>
+                </motion.button>
               );
             })}
           </div>

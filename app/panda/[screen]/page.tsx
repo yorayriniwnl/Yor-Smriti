@@ -1,19 +1,20 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { DirectorExperienceClient } from '@/components/experiences/director/DirectorExperienceClient';
-import {
-  APOLOGY_SCREEN_KEYS,
-} from '@/components/experiences/panda/screens';
 import { getDirectorRouteConfig } from '@/lib/apologyDirectorRouting';
+import { PANDA_SCREEN_IDS } from '@/lib/pandaScreenRegistry';
 
 export function generateStaticParams() {
-  return APOLOGY_SCREEN_KEYS.map((screen) => ({ screen }));
+  return PANDA_SCREEN_IDS.map((screen) => ({ screen }));
 }
 
 interface PandaScreenPageProps {
   params: Promise<{ screen: string }>;
 }
 
-export default async function PandaScreenPage({ params }: PandaScreenPageProps) {
+export default async function PandaScreenPage({
+  params,
+}: PandaScreenPageProps) {
   const { screen } = await params;
   const routeConfig = getDirectorRouteConfig(screen);
 
@@ -22,10 +23,12 @@ export default async function PandaScreenPage({ params }: PandaScreenPageProps) 
   }
 
   return (
-    <DirectorExperienceClient
-      startParam={String(routeConfig.start)}
-      endingParam={routeConfig.ending ?? null}
-      pathParam={null}
-    />
+    <Suspense fallback={null}>
+      <DirectorExperienceClient
+        startParam={String(routeConfig.start)}
+        endingParam={routeConfig.ending ?? null}
+        pathParam={null}
+      />
+    </Suspense>
   );
 }

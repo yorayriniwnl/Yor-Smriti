@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { MemoryFragment } from '@/components/transitions/MemoryFragment';
 import { TextReveal } from '@/components/transitions/TextReveal';
 import type { ExperienceScreenProps } from '@/hooks/useExperienceFlow';
 
@@ -42,6 +43,7 @@ const MEMORIES: MemoryMoment[] = [
 export function MemoryTimelineScreen({
   emotion,
   onNext,
+  personalization,
 }: ExperienceScreenProps) {
   const [activeMemoryId, setActiveMemoryId] = useState(MEMORIES[0].id);
 
@@ -60,8 +62,9 @@ export function MemoryTimelineScreen({
         </p>
 
         <TextReveal
-          text="The moments that still define us"
+          text={`The moments that still define us, ${personalization.name}`}
           emotion={emotion}
+          fragmentFlicker={true}
           className="mt-2 text-[clamp(1.55rem,4vw,2.35rem)]"
         />
       </div>
@@ -88,7 +91,8 @@ export function MemoryTimelineScreen({
                 initial={{ opacity: 0, x: 24, filter: 'blur(6px)' }}
                 animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                 transition={{ delay: index * 0.14, duration: 0.66, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ y: -3, scale: 1.01 }}
+                whileHover={{ y: -4, scale: 1.02, rotateX: -3, rotateY: 2 }}
+                whileTap={{ scale: 0.985 }}
                 style={{
                   borderColor: isActive ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
                   backgroundColor: isActive ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
@@ -96,6 +100,7 @@ export function MemoryTimelineScreen({
                     ? '0 10px 24px rgba(255,255,255,0.12)'
                     : '0 4px 14px rgba(0,0,0,0.18)',
                   transition: 'border-color 260ms ease, background-color 260ms ease, box-shadow 260ms ease',
+                  transformStyle: 'preserve-3d',
                 }}
               >
                 <p
@@ -122,19 +127,22 @@ export function MemoryTimelineScreen({
                 </span>
 
                 {isActive ? (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 0.92, y: 0 }}
-                    transition={{ duration: 0.44 }}
-                    className="mt-3"
-                    style={{
-                      fontFamily: 'var(--font-crimson)',
-                      fontSize: '1rem',
-                      lineHeight: 1.55,
-                    }}
-                  >
-                    {memory.detail}
-                  </motion.p>
+                  <MemoryFragment delay={0.08} className="mt-3">
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 0.92, y: 0 }}
+                      transition={{ duration: 0.44 }}
+                      style={{
+                        fontFamily: 'var(--font-crimson)',
+                        fontSize: '1rem',
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {memory.id === 'm4'
+                        ? `${memory.detail} I still remember: ${personalization.memory}.`
+                        : memory.detail}
+                    </motion.p>
+                  </MemoryFragment>
                 ) : null}
               </motion.button>
             );
@@ -163,9 +171,11 @@ export function MemoryTimelineScreen({
       </div>
 
       <div className="text-center">
-        <button
+        <motion.button
           type="button"
           onClick={onNext}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           className="rounded-full px-6 py-3 text-[0.68rem] uppercase tracking-[0.1em]"
           style={{
             fontFamily: 'var(--font-dm-mono)',
@@ -175,7 +185,7 @@ export function MemoryTimelineScreen({
           }}
         >
           Continue
-        </button>
+        </motion.button>
       </div>
     </section>
   );
