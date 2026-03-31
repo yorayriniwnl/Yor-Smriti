@@ -4,9 +4,6 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
-const HARDCODED_USERNAME = 'Anyayrin';
-const HARDCODED_PASSWORD = 'Anyayrin';
-
 function LipPrint({ tint }: { tint: string }) {
   return (
     <svg viewBox="0 0 220 120" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
@@ -35,6 +32,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showKissNote, setShowKissNote] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const successTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -45,32 +43,48 @@ export default function LoginPage() {
     };
   }, []);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (showKissNote) {
-      return;
-    }
-
-    const valid =
-      username.trim() === HARDCODED_USERNAME &&
-      password === HARDCODED_PASSWORD;
-
-    if (!valid) {
-      setErrorMessage('Invalid username or password.');
+    if (showKissNote || isAuthenticating) {
       return;
     }
 
     setErrorMessage('');
-    setShowKissNote(true);
+    setIsAuthenticating(true);
 
-    if (successTimerRef.current !== null) {
-      window.clearTimeout(successTimerRef.current);
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        setErrorMessage('Invalid username or password.');
+        return;
+      }
+
+      setErrorMessage('');
+      setShowKissNote(true);
+
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
+
+      successTimerRef.current = window.setTimeout(() => {
+        router.push('/message');
+      }, 2200);
+    } catch {
+      setErrorMessage('Unable to login right now. Please try again.');
+    } finally {
+      setIsAuthenticating(false);
     }
-
-    successTimerRef.current = window.setTimeout(() => {
-      router.push('/message');
-    }, 2200);
   };
 
   return (
@@ -154,7 +168,7 @@ export default function LoginPage() {
               id="username"
               type="text"
               autoComplete="username"
-              disabled={showKissNote}
+              disabled={showKissNote || isAuthenticating}
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               className="h-11 w-full rounded-xl border px-4 outline-none transition"
@@ -162,7 +176,7 @@ export default function LoginPage() {
                 borderColor: 'rgba(247, 85, 144, 0.35)',
                 color: 'rgba(255, 238, 247, 0.95)',
                 backgroundColor: 'rgba(255, 209, 233, 0.09)',
-                opacity: showKissNote ? 0.58 : 1,
+                opacity: showKissNote || isAuthenticating ? 0.58 : 1,
               }}
             />
           </div>
@@ -184,8 +198,8 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              autoComplete="current-password"
-              disabled={showKissNote}
+              autoComplete="off"
+              disabled={showKissNote || isAuthenticating}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="h-11 w-full rounded-xl border px-4 outline-none transition"
@@ -193,7 +207,7 @@ export default function LoginPage() {
                 borderColor: 'rgba(247, 85, 144, 0.35)',
                 color: 'rgba(255, 238, 247, 0.95)',
                 backgroundColor: 'rgba(255, 209, 233, 0.09)',
-                opacity: showKissNote ? 0.58 : 1,
+                opacity: showKissNote || isAuthenticating ? 0.58 : 1,
               }}
             />
           </div>
@@ -217,7 +231,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={showKissNote}
+            disabled={showKissNote || isAuthenticating}
             className="mt-1 h-11 w-full rounded-full px-4"
             style={{
               background:
@@ -228,11 +242,11 @@ export default function LoginPage() {
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               boxShadow: '0 8px 24px rgba(247, 85, 144, 0.28)',
-              opacity: showKissNote ? 0.8 : 1,
-              cursor: showKissNote ? 'wait' : 'pointer',
+              opacity: showKissNote || isAuthenticating ? 0.8 : 1,
+              cursor: showKissNote || isAuthenticating ? 'wait' : 'pointer',
             }}
           >
-            {showKissNote ? 'Sending love...' : 'Login'}
+            {showKissNote ? 'Sending love...' : isAuthenticating ? 'Checking...' : 'Login'}
           </button>
         </form>
 
@@ -294,17 +308,6 @@ export default function LoginPage() {
           </div>
         ) : null}
 
-        <p
-          className="mt-5"
-          style={{
-            color: 'rgba(255, 196, 223, 0.72)',
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '0.62rem',
-            letterSpacing: '0.06em',
-          }}
-        >
-          Hardcoded credentials: Anyayrin / Anyayrin
-        </p>
       </section>
     </main>
   );

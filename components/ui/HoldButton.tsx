@@ -22,6 +22,7 @@ export function HoldButton({
 }: HoldButtonProps) {
   const [state, setState] = useState<HoldButtonState>('idle');
   const [progress, setProgress] = useState(0);
+  const progressValue = Math.round(progress * 100);
 
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -90,7 +91,8 @@ export function HoldButton({
       {/* Hold Button */}
       <AnimatePresence>
         {!isRevealed && (
-          <motion.div
+          <motion.button
+            type="button"
             key="hold-button"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 1.2, delay: 0.4 } }}
@@ -100,7 +102,13 @@ export function HoldButton({
               border: '1px solid rgba(201, 169, 110, 0.2)',
               cursor: 'pointer',
               userSelect: 'none',
+              background: 'transparent',
             }}
+            aria-label={label}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progressValue}
+            aria-valuetext={`${progressValue}% held`}
             onMouseDown={startHolding}
             onMouseUp={stopHolding}
             onMouseLeave={stopHolding}
@@ -110,6 +118,18 @@ export function HoldButton({
             }}
             onTouchEnd={stopHolding}
             onTouchCancel={stopHolding}
+            onKeyDown={(event) => {
+              if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                startHolding();
+              }
+            }}
+            onKeyUp={(event) => {
+              if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                stopHolding();
+              }
+            }}
           >
             {/* Progress fill */}
             <motion.div
@@ -150,7 +170,7 @@ export function HoldButton({
                 }}
               />
             )}
-          </motion.div>
+          </motion.button>
         )}
       </AnimatePresence>
 

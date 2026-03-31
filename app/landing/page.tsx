@@ -58,6 +58,7 @@ export default function LandingPage() {
         </p>
 
         <div className="mt-7 flex items-center justify-center gap-3">
+          <span className="sr-only">Loading</span>
           <span
             className="h-2 w-2 rounded-full animate-pulse"
             style={{ backgroundColor: 'var(--accent)' }}

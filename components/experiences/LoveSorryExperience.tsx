@@ -267,12 +267,22 @@ export default function LoveSorryExperience() {
               I have something to tell you
             </h2>
 
-            <div
+            <button
+              type="button"
               onClick={() => {
                 setEnvelopeOpen(true);
                 setTimeout(() => setScreen('cards'), 900);
               }}
-              style={{ cursor: 'pointer', display: 'inline-block', position: 'relative', userSelect: 'none' }}
+              aria-label="Open envelope"
+              style={{
+                cursor: 'pointer',
+                display: 'inline-block',
+                position: 'relative',
+                userSelect: 'none',
+                border: 'none',
+                background: 'transparent',
+                padding: 0,
+              }}
             >
               <div
                 style={{
@@ -372,7 +382,7 @@ export default function LoveSorryExperience() {
                   💕
                 </div>
               ))}
-            </div>
+            </button>
             <p style={{ color: '#d4548a', fontSize: '14px', marginTop: '20px', fontStyle: 'italic' }}>
               Click to open your surprise
             </p>
@@ -403,9 +413,21 @@ export default function LoveSorryExperience() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {SORRY_CARDS.map((card, i) => (
                 <div key={card.id} className="card-scene" style={{ height: '140px', animationDelay: `${i * 0.12}s` }}>
-                  <div
+                  <button
+                    type="button"
                     className={`card-inner ${flipped[card.id] ? 'flipped' : ''}`}
-                    style={{ height: '140px' }}
+                    aria-label={
+                      flipped[card.id]
+                        ? `Flip card back: ${card.front.hint}`
+                        : `Flip card to reveal message: ${card.front.hint}`
+                    }
+                    style={{
+                      height: '140px',
+                      width: '100%',
+                      border: 'none',
+                      padding: 0,
+                      background: 'transparent',
+                    }}
                     onClick={() => toggleFlip(card.id)}
                   >
                     <div
@@ -479,7 +501,7 @@ export default function LoveSorryExperience() {
                         Tap to flip back
                       </p>
                     </div>
-                  </div>
+                  </button>
                 </div>
               ))}
             </div>
@@ -742,6 +764,7 @@ export default function LoveSorryExperience() {
                   setPlaying((p) => !p);
                   setProgress(0);
                 }}
+                aria-label={playing ? 'Pause song preview' : 'Play song preview'}
                 style={{
                   width: '40px',
                   height: '40px',
@@ -773,13 +796,15 @@ export default function LoveSorryExperience() {
             >
               <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
                 {SONGS.map((song, i) => (
-                  <div
+                  <button
+                    type="button"
                     key={song.id}
                     onClick={() => {
                       setActiveSong(i);
                       setPlaying(true);
                       setProgress(0);
                     }}
+                    aria-label={`Select song: ${song.title} by ${song.artist}`}
                     style={{
                       flexShrink: 0,
                       width: '200px',
@@ -789,6 +814,7 @@ export default function LoveSorryExperience() {
                       padding: '12px',
                       cursor: 'pointer',
                       transition: 'border-color 0.25s,background 0.25s',
+                      textAlign: 'left',
                     }}
                   >
                     <div
@@ -810,7 +836,7 @@ export default function LoveSorryExperience() {
                       {song.artist}
                     </p>
                     <p style={{ margin: 0, fontSize: '11px', color: '#c83c82', fontStyle: 'italic' }}>{song.note}</p>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -940,6 +966,7 @@ export default function LoveSorryExperience() {
               <div style={{ position: 'relative', display: 'inline-block', marginBottom: '18px' }}>
                 <button
                   onClick={spawnHearts}
+                  aria-label="Send love hearts"
                   style={{
                     width: '90px',
                     height: '90px',

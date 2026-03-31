@@ -16,7 +16,26 @@ interface HeartSplashState {
 const HEART_EXPAND_MS = 2100;
 const HEART_HOLD_MS = 2900;
 const HEART_TOTAL_MS = HEART_EXPAND_MS + HEART_HOLD_MS;
-const HEART_BASE_SIZE = 64;
+const HEART_BASE_SIZE_FALLBACK = 64;
+const HEART_BASE_SIZE_STYLE = 'var(--heart-base-size, 64px)';
+
+function resolveHeartBaseSizePx() {
+  if (typeof window === 'undefined') {
+    return HEART_BASE_SIZE_FALLBACK;
+  }
+
+  const cssValue = window
+    .getComputedStyle(document.documentElement)
+    .getPropertyValue('--heart-base-size')
+    .trim();
+  const parsed = Number.parseFloat(cssValue);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return HEART_BASE_SIZE_FALLBACK;
+  }
+
+  return parsed;
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -46,7 +65,7 @@ export default function HomePage() {
     const x = event.clientX > 0 ? event.clientX : rect.left + rect.width / 2;
     const y = event.clientY > 0 ? event.clientY : rect.top + rect.height / 2;
     const viewportFitSize = Math.min(window.innerWidth, window.innerHeight) * 0.92;
-    const fitScale = Math.max(1, viewportFitSize / HEART_BASE_SIZE);
+    const fitScale = Math.max(1, viewportFitSize / resolveHeartBaseSizePx());
 
     setHeartSplash({
       active: true,
@@ -156,8 +175,10 @@ export default function HomePage() {
           />
 
           <div
-            className="absolute h-16 w-16"
+            className="absolute"
             style={{
+              width: HEART_BASE_SIZE_STYLE,
+              height: HEART_BASE_SIZE_STYLE,
               left: heartSplash.expanded ? '50vw' : heartSplash.x,
               top: heartSplash.expanded ? '50vh' : heartSplash.y,
               transform: `translate(-50%, -50%) scale(${heartSplash.expanded ? heartSplash.fitScale : 1})`,
@@ -218,7 +239,7 @@ export default function HomePage() {
                 }
                 style={{
                   fontFamily: 'var(--font-cormorant)',
-                  fontSize: '0.19rem',
+                  fontSize: '1.9rem',
                   lineHeight: 1.05,
                   letterSpacing: '0.01em',
                   color: 'rgba(255, 247, 252, 0.98)',

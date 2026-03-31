@@ -79,13 +79,28 @@ export default function WhySmritiPage() {
           </Link>
 
           <Link
-            href="/message"
+            href="/hub"
             className="inline-flex items-center justify-center rounded-full border px-6 py-3"
             style={{
               borderColor: 'rgba(244, 173, 210, 0.38)',
               color: 'rgba(255, 214, 234, 0.9)',
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '0.68rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            More Experiences ✨
+          </Link>
+
+          <Link
+            href="/message"
+            className="inline-flex items-center justify-center rounded-full border px-6 py-3"
+            style={{
+              borderColor: 'rgba(244, 173, 210, 0.2)',
+              color: 'rgba(255, 200, 225, 0.55)',
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '0.65rem',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
             }}

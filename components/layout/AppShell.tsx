@@ -1,6 +1,6 @@
 'use client';
 
-import { useAmbientSound } from '@/hooks/useAmbientSound';
+import { useAmbientSound } from '@/hooks/useAudioEngine';
 import { useAppStore } from '@/hooks/useStageController';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { PetalCanvas } from '@/components/ui/PetalCanvas';

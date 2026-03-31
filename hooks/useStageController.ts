@@ -10,7 +10,7 @@ import { getNextStage } from '@/lib/stages';
 export const useAppStore = create<AppStore>()(
   subscribeWithSelector((set, get) => ({
     // ─── State ───────────────────────────────────────────────────────────────
-    currentStage: 'opening' as StageId,
+    currentStage: 'opening',
     previousStage: null,
     isTransitioning: false,
     soundEnabled: false,

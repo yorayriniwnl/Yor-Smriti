@@ -1,14 +1,17 @@
 // ─── Stage System ───────────────────────────────────────────────────────────
 
-export type StageId =
-  | 'opening'
-  | 'chat'
-  | 'transition'
-  | 'memory'
-  | 'accountability'
-  | 'apology'
-  | 'hold'
-  | 'ending';
+export const STAGE_IDS = [
+  'opening',
+  'chat',
+  'transition',
+  'memory',
+  'accountability',
+  'apology',
+  'hold',
+  'ending',
+] as const;
+
+export type StageId = (typeof STAGE_IDS)[number];
 
 export interface StageConfig {
   id: StageId;

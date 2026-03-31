@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { AnimatedGradient } from '@/components/background/AnimatedGradient';
 import { FloatingParticles } from '@/components/background/FloatingParticles';
 import { LightGlow } from '@/components/background/LightGlow';
+import { CharacterOverlay } from '@/components/character/CharacterOverlay';
 import { PageTransition } from '@/components/transitions/PageTransition';
 import { useImmersiveNavigation } from '@/components/experiences/panda/hooks/useImmersiveNavigation';
 import { resolveSceneAudioProfile } from '@/components/experiences/panda/audio/sceneAudioProfile';
@@ -30,7 +31,7 @@ import {
 import {
   useEmotionBackgroundMusic,
   type EmotionTrackMap,
-} from '@/hooks/useBackgroundMusic';
+} from '@/hooks/useAudioEngine';
 import { useSubconsciousSoundDesign } from '@/hooks/useSubconsciousSoundDesign';
 import { resolveEndingFromEmotionPath } from '@/lib/experienceEndings';
 import { resolveEmotionTiming } from '@/lib/timeDistortion';
@@ -901,6 +902,7 @@ export function ExperienceController({
       {!shouldFreezeAmbientMotion ? <AnimatedGradient emotion={activeEmotion} /> : null}
       {showDecorativeLayers ? <FloatingParticles emotion={activeEmotion} /> : null}
       {showDecorativeLayers ? <LightGlow emotion={activeEmotion} /> : null}
+      <CharacterOverlay screenId={currentScreenId} />
 
       <div
         className="pointer-events-none absolute inset-0 blur-2xl"

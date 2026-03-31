@@ -1911,6 +1911,15 @@ export function FinalMicroInteraction118Screen({ onNext }: ExperienceScreenProps
     <section
       className="relative flex min-h-[58vh] items-center justify-center overflow-hidden text-center"
       onClick={handleFinalTap}
+      role="button"
+      tabIndex={0}
+      aria-label="Continue through silence"
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleFinalTap();
+        }
+      }}
       data-nav-ignore="true"
     >
       <motion.div
