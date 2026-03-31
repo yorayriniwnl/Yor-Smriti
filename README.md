@@ -31,7 +31,7 @@ Create `.env.local` in the project root:
 
 ```bash
 APP_USERNAME=Anyayrin
-APP_PASSWORD=Anyayrin
+APP_PASSWORD=YorAyrin
 ```
 
 You can change these values to anything you want.
