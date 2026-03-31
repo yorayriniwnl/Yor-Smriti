@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { CSSProperties, ReactNode } from 'react';
+import { RainLayer } from '@/components/background/RainLayer';
 
 interface ApologyExperienceShellProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ interface ApologyExperienceShellProps {
   panelStyle?: CSSProperties;
   showAtmosphereLayers?: boolean;
   showDecorativePill?: boolean;
+  showRainLayer?: boolean;
 }
 
 export function ApologyExperienceShell({
@@ -40,6 +42,7 @@ export function ApologyExperienceShell({
   panelStyle,
   showAtmosphereLayers = true,
   showDecorativePill = true,
+  showRainLayer = false,
 }: ApologyExperienceShellProps) {
   return (
     <main
@@ -64,6 +67,8 @@ export function ApologyExperienceShell({
           }}
         />
       ) : null}
+
+      {showRainLayer ? <RainLayer /> : null}
 
       {showTopControls ? (
         <div className="absolute left-4 top-4 z-20 flex items-center gap-2 sm:left-6 sm:top-6">

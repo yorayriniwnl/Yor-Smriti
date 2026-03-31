@@ -55,6 +55,7 @@ export default function HubPage() {
 
   return (
     <main
+      id="main-content"
       className="relative flex min-h-dvh w-dvw flex-col items-center justify-center overflow-hidden px-4 py-12"
       style={{
         background:

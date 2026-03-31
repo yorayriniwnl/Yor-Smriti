@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { CharacterPageOverlay } from '@/components/character/CharacterPageOverlay';
 
 export const metadata: Metadata = {
   title: "I'm Sorry",
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         >
           Skip to content
         </a>
+        <CharacterPageOverlay />
         {children}
       </body>
     </html>

@@ -186,6 +186,7 @@ export default function LoveSorryExperience() {
 
   return (
     <div
+      id="main-content"
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(160deg,#fff5f8 0%,#fde8f0 50%,#fdf0fb 100%)',

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { AnimatedGradient } from '@/components/background/AnimatedGradient';
 import { FloatingParticles } from '@/components/background/FloatingParticles';
 import { LightGlow } from '@/components/background/LightGlow';
+import { RainLayer } from '@/components/background/RainLayer';
 import { CharacterOverlay } from '@/components/character/CharacterOverlay';
 import { PageTransition } from '@/components/transitions/PageTransition';
 import { useImmersiveNavigation } from '@/components/experiences/panda/hooks/useImmersiveNavigation';
@@ -172,6 +173,37 @@ function resolveTimeContext(): TimeContext {
   return 'day';
 }
 
+function hashStringToSeed(input: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function resolveInitialNonLinearSeed(options: {
+  persistKey?: string;
+  initialIndex?: number;
+  initialMood: ExperienceMood;
+  initialFlowMode: ExperienceFlowMode;
+  personalization: PersonalizationData;
+}): number {
+  const base = [
+    options.persistKey ?? 'yor-smriti',
+    options.initialIndex ?? 0,
+    options.initialMood,
+    options.initialFlowMode,
+    options.personalization.name,
+    options.personalization.memory,
+    options.personalization.message,
+  ].join('|');
+
+  return hashStringToSeed(base) % 1_000_000;
+}
+
 function createSeededRandom(seed: number) {
   let state = seed % 2147483647;
   if (state <= 0) {
@@ -262,13 +294,21 @@ export function ExperienceController({
   const [isPrivateMode, setIsPrivateMode] = useState(initialPrivateMode);
   const [isSilentMode, setIsSilentMode] = useState(initialSilentMode);
   const [replayCount, setReplayCount] = useState(0);
-  const [nonLinearSeed, setNonLinearSeed] = useState(() => Math.floor(Math.random() * 1_000_000));
+  const [nonLinearSeed, setNonLinearSeed] = useState(() =>
+    resolveInitialNonLinearSeed({
+      persistKey,
+      initialIndex,
+      initialMood,
+      initialFlowMode,
+      personalization,
+    }),
+  );
   const [shareMessage, setShareMessage] = useState('');
   const [isRestarting, setIsRestarting] = useState(false);
   const [isAttentionLocked, setIsAttentionLocked] = useState(false);
   const [cursorHidden, setCursorHidden] = useState(false);
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
-  const [timeContext, setTimeContext] = useState<TimeContext>(() => resolveTimeContext());
+  const [timeContext, setTimeContext] = useState<TimeContext>('twilight');
   const [isAudioGraceWindow, setIsAudioGraceWindow] = useState(false);
   const [lastAudibleVolume, setLastAudibleVolume] = useState(0.14);
 
@@ -310,6 +350,7 @@ export function ExperienceController({
   const currentScreenId = current?.id ?? 0;
   const finalScreenId = activeScreens[activeScreens.length - 1]?.id ?? 0;
   const activeKind = current?.kind;
+  const showRainLayer = currentScreenId === 84;
   const emotionalMotion = emotionLinkedMotion[activeEmotion];
   const shouldFreezeAmbientMotion = currentScreenId === 110 || currentScreenId >= 135;
   const activeTheme = emotionThemes[activeEmotion];
@@ -902,6 +943,7 @@ export function ExperienceController({
       {!shouldFreezeAmbientMotion ? <AnimatedGradient emotion={activeEmotion} /> : null}
       {showDecorativeLayers ? <FloatingParticles emotion={activeEmotion} /> : null}
       {showDecorativeLayers ? <LightGlow emotion={activeEmotion} /> : null}
+      {showRainLayer ? <RainLayer count={72} /> : null}
       <CharacterOverlay screenId={currentScreenId} />
 
       <div

@@ -48,6 +48,7 @@ export function Screen05WeightICarry() {
       subtitle="No more hiding from it."
       showHeader={false}
       showTopControls={false}
+      showRainLayer
       panelClassName="relative w-full max-w-[26rem] overflow-hidden rounded-[2.2rem] border pb-6 pt-8"
       contentClassName="relative z-10 px-4"
     >

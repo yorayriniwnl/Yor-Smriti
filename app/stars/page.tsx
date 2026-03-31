@@ -84,6 +84,7 @@ export default function StarsPage() {
 
   return (
     <main
+      id="main-content"
       className="relative flex h-dvh w-dvw flex-col overflow-hidden"
       style={{
         background: 'radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30, 8, 50, 0.8) 0%, rgba(10, 3, 20, 0.98) 40%, #03020a 100%)',

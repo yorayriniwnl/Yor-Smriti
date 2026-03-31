@@ -235,6 +235,7 @@ export default function PromisePage() {
 
   return (
     <main
+      id="main-content"
       className="relative flex h-dvh w-dvw flex-col items-center justify-center overflow-hidden px-4"
       style={{
         background:

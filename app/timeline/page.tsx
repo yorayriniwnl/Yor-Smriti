@@ -237,6 +237,7 @@ function TimelineEntry({ memory, index }: { memory: MemoryEntry; index: number }
 export default function TimelinePage() {
   return (
     <main
+      id="main-content"
       className="relative min-h-dvh w-dvw overflow-x-hidden px-4 py-14"
       style={{
         background:

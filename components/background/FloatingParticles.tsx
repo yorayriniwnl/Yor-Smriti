@@ -9,6 +9,14 @@ interface FloatingParticlesProps {
   count?: number;
 }
 
+function formatPct(value: number): string {
+  return `${value.toFixed(4)}%`;
+}
+
+function formatPx(value: number): string {
+  return `${value.toFixed(5)}px`;
+}
+
 function seededUnit(seed: number): number {
   const raw = Math.sin(seed * 12.9898) * 43758.5453;
   return raw - Math.floor(raw);
@@ -49,10 +57,10 @@ export function FloatingParticles({
           key={particle.id}
           className="absolute rounded-full"
           style={{
-            left: `${particle.left}%`,
-            top: `${particle.top}%`,
-            width: `${particle.size}px`,
-            height: `${particle.size}px`,
+            left: formatPct(particle.left),
+            top: formatPct(particle.top),
+            width: formatPx(particle.size),
+            height: formatPx(particle.size),
             backgroundColor: emotionParticleColor[emotion],
             filter: 'blur(0.2px)',
           }}
