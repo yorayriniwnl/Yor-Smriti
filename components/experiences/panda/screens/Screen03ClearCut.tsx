@@ -16,11 +16,11 @@ const CONFETTI = [
   { left: '89%', color: '#f26da9', delay: 0.15, duration: 2.15, rotate: 20 },
 ];
 
-export function Screen82ClearCut() {
+export function Screen03ClearCut() {
   return (
     <ApologyExperienceShell
-      screenNumber={82}
-      totalScreens={87}
+      screenNumber={3}
+      totalScreens={8}
       eyebrow="Confirmation"
       title="Clear Cut"
       subtitle="A better choice, this time."

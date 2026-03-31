@@ -6,11 +6,11 @@ import { ApologyExperienceShell } from '@/components/experiences/panda/ApologyEx
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
-export function Screen80Intro() {
+export function Screen01Intro() {
   return (
     <ApologyExperienceShell
-      screenNumber={80}
-      totalScreens={87}
+      screenNumber={1}
+      totalScreens={8}
       eyebrow="Private Note"
       title="I Love You. I Am Sorry."
       subtitle="No excuses, only my heart and the truth."

@@ -8,215 +8,114 @@ export interface PandaScreenRegistryItem {
   ending?: EndingVariant;
 }
 
+const SCRIPT_LINES = [
+  'Do you remember?',
+  'Because I do.',
+  'Too clearly.',
+  'Every small thing...',
+  "That I should've valued.",
+  "But didn't.",
+  'Not when it mattered.',
+  'Not when it was you.',
+
+  'It started quietly...',
+  'Things... slipping.',
+  "Words I didn't think twice about.",
+  'But you felt every one.',
+  'And then...',
+  'You went quiet.',
+  'Not angry.',
+  'Just... distant.',
+
+  'We were still there.',
+  'Just not... together.',
+  'Same space.',
+  'Different silence.',
+
+  'I miss you.',
+  'But not just you...',
+  'Us.',
+  'The version that laughed...',
+  'Before things got heavy.',
+
+  "I wasn't careful.",
+  'With you.',
+  'With us.',
+  'And I see that now.',
+
+  'You deserved better.',
+  'And I knew it.',
+
+  "I just... didn't act like it.",
+  'I thought time would fix things.',
+  "It didn't.",
+  'It showed me everything.',
+
+  "I'm sorry.",
+  'Not just for what I did...',
+  "But for what I didn't.",
+  'The effort.',
+  'The patience.',
+  'The understanding.',
+
+  'I see it now.',
+  'Too late, maybe.',
+  'But clearly.',
+  "You weren't asking for much.",
+  'Just... me.',
+
+  "I don't expect anything.",
+  'Not even forgiveness.',
+  'But if someday...',
+  'You think of me-',
+  "I hope it doesn't hurt.",
+
+  "I'll be here.",
+  "Even if you're not.",
+  'Or maybe...',
+  'This is where it ends.',
+
+  'Take care.',
+  'Always.',
+
+  'Still here?',
+  'I thought you might be.',
+] as const;
+
+const SHIFT_LABEL_BY_ID: Partial<Record<number, string>> = {
+  88: 'Memory -> Realization',
+  96: 'Distance',
+  100: 'Longing',
+  105: 'Accountability',
+  109: 'Regret Peak',
+  111: 'Extended Peak',
+  115: 'The Apology Core',
+  121: 'Letter Fragments',
+  126: 'Letting Go / Hope',
+  131: 'Final Emotional Fade',
+  135: 'Final Line',
+  137: 'Afterglow',
+};
+
 const SCREEN_DEFINITIONS: Array<
   Omit<PandaScreenRegistryItem, 'directorStartIndex' | 'ending'>
-> = [
-  {
-    id: '80',
-    title: 'I Love You Intro',
-    description: 'A cinematic opening note for a breakup apology and love confession.',
-  },
-  {
-    id: '81',
-    title: 'Cut Through Silence',
-    description: 'An interaction where a single drag symbolizes cutting through ego.',
-  },
-  {
-    id: '82',
-    title: 'Clear Cut Confirmation',
-    description: 'A visual confirmation that the silence is broken and repair can begin.',
-  },
-  {
-    id: '83',
-    title: 'What I Miss',
-    description: 'Memory timeline and emotional recall.',
-  },
-  {
-    id: '84',
-    title: 'The Weight I Carry',
-    description: 'Growth and reflection with slow reveal pacing.',
-  },
-  {
-    id: '85',
-    title: 'Your Choice Matters',
-    description: 'Interactive layer with tap, hold, and choice-based direction.',
-  },
-  {
-    id: '86',
-    title: 'The Letter',
-    description: 'A scrollable confession letter with cinematic typewriter pacing.',
-  },
-  {
-    id: '87',
-    title: 'Freeze Moment',
-    description: 'A silent two-second stillness that holds attention before release.',
-  },
-  {
-    id: '88',
-    title: 'The Timeline',
-    description: 'Horizontal memory timeline with first talk, laugh, fight, and last silence.',
-  },
-  {
-    id: '89',
-    title: 'The First Crack',
-    description: 'Regret-focused center narrative with subtle crack overlays.',
-  },
-  {
-    id: '90',
-    title: 'The Things I Said',
-    description: 'Guilt peak with floating word fragments and slow zoom.',
-  },
-  {
-    id: '91',
-    title: 'Your Silence',
-    description: 'A heavy silence screen with blinking cursor and muted audio.',
-  },
-  {
-    id: '92',
-    title: 'The Distance',
-    description: 'Separation release with lingering afterglow transition.',
-  },
-  {
-    id: '93',
-    title: 'What I Miss Again',
-    description: 'Longing-driven warm pulse about missing us, not just you.',
-  },
-  {
-    id: '94',
-    title: 'Small Things',
-    description: 'Tender nostalgia list where each memory appears with delay.',
-  },
-  {
-    id: '95',
-    title: 'My Mistakes',
-    description: 'Minimal accountability frame with slow fade on dark background.',
-  },
-  {
-    id: '96',
-    title: 'I Realize Now',
-    description: 'Reflection beat with a center glow expanding outward.',
-  },
-  {
-    id: '97',
-    title: 'You Deserved Better',
-    description: 'Deep regret frame with soft vignette and slight zoom.',
-  },
-  {
-    id: '98',
-    title: 'If I Could Go Back',
-    description: 'What-if sequence with rewind-like background motion.',
-  },
-  {
-    id: '99',
-    title: 'The Apology',
-    description: 'Peak apology frame with dramatic text and forced pause.',
-  },
-  {
-    id: '100',
-    title: 'The Letter Begins',
-    description: 'Transition moment that fades into the letter pages.',
-  },
-  {
-    id: '101',
-    title: 'Letter I',
-    description: 'I did not understand your silence.',
-  },
-  {
-    id: '102',
-    title: 'Letter II',
-    description: 'I thought time would fix things.',
-  },
-  {
-    id: '103',
-    title: 'Letter III',
-    description: 'But time only made me realize.',
-  },
-  {
-    id: '104',
-    title: 'Letter IV',
-    description: 'How much I hurt you.',
-  },
-  {
-    id: '105',
-    title: 'Letter V',
-    description: 'And how much I lost.',
-  },
-  {
-    id: '106',
-    title: 'No Expectations',
-    description: 'Letting go without demanding forgiveness.',
-  },
-  {
-    id: '107',
-    title: 'But If',
-    description: 'Hopeful bridge toward a possible someday.',
-  },
-  {
-    id: '108',
-    title: 'I Will Be Here',
-    description: 'Soft hope statement in two quiet lines.',
-  },
-  {
-    id: '109',
-    title: 'Or Maybe',
-    description: 'Acceptance that this might be where it ends.',
-  },
-  {
-    id: '110',
-    title: 'Goodbye / Fade',
-    description: 'Final closure frame with a single line and deep fade.',
-  },
-  {
-    id: '111',
-    title: 'Ghost Echo',
-    description: 'Unexpected after-end whisper: still here?',
-  },
-  {
-    id: '112',
-    title: 'No-Text Void',
-    description: 'Pure feeling screen: atmosphere, light, and silence only.',
-  },
-  {
-    id: '113',
-    title: 'Almost Missed',
-    description: 'A near-invisible line appears and vanishes before delayed honesty arrives.',
-  },
-  {
-    id: '114',
-    title: 'Fake End',
-    description: 'Looks finished in black, then quietly returns with one last thing.',
-  },
-  {
-    id: '115',
-    title: 'Memory Distortion',
-    description: 'Remembered lines return altered with unread-feeling blur and guilt mirror.',
-  },
-  {
-    id: '116',
-    title: 'Still There',
-    description: 'Long silence asks if the viewer is still present, with hidden long-press text.',
-  },
-  {
-    id: '117',
-    title: 'Story Flip',
-    description: 'Perspective turns toward the viewer and ends with an unfinished sentence.',
-  },
-  {
-    id: '118',
-    title: 'Final Micro Interaction',
-    description: 'Click yields no immediate response, then a gentle it is okay appears.',
-  },
-  {
-    id: '119',
-    title: 'True Final State',
-    description: 'No UI and no prompts, only darkness, silence, and memory.',
-  },
-];
+> = SCRIPT_LINES.map((line, index) => {
+  const screenId = 80 + index;
+  const shiftLabel = SHIFT_LABEL_BY_ID[screenId];
 
-export const PANDA_SCREEN_REGISTRY: PandaScreenRegistryItem[] = SCREEN_DEFINITIONS.map((item, index) => ({
-  ...item,
-  id: String(index + 1),
-  directorStartIndex: index,
-}));
+  return {
+    id: String(screenId),
+    title: line,
+    description: shiftLabel ? `${shiftLabel}: ${line}` : `Narrative beat: ${line}`,
+  };
+});
+
+export const PANDA_SCREEN_REGISTRY: PandaScreenRegistryItem[] = SCREEN_DEFINITIONS.map(
+  (item, index) => ({
+    ...item,
+    id: String(index + 1),
+    directorStartIndex: index,
+  }),
+);
 
 export const PANDA_SCREEN_IDS = PANDA_SCREEN_REGISTRY.map((item) => item.id);

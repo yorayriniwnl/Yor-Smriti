@@ -19,7 +19,7 @@ const LINES = [
   },
 ];
 
-export function Screen84WeightICarry() {
+export function Screen05WeightICarry() {
   const [visibleLines, setVisibleLines] = useState<string[]>([]);
   const [showContinue, setShowContinue] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -41,8 +41,8 @@ export function Screen84WeightICarry() {
 
   return (
     <ApologyExperienceShell
-      screenNumber={84}
-      totalScreens={87}
+      screenNumber={5}
+      totalScreens={8}
       eyebrow="The Truth"
       title="The Weight I Carry"
       subtitle="No more hiding from it."

@@ -14,7 +14,7 @@ const PROMISES = [
   { id: 'p4', text: 'I will show up for you the way you deserved all along.', icon: '🌹' },
 ];
 
-export function Screen85MyPromises() {
+export function Screen06MyPromises() {
   const [kept, setKept] = useState<Set<string>>(new Set());
   const allKept = kept.size === PROMISES.length;
 
@@ -29,8 +29,8 @@ export function Screen85MyPromises() {
 
   return (
     <ApologyExperienceShell
-      screenNumber={85}
-      totalScreens={87}
+      screenNumber={6}
+      totalScreens={8}
       eyebrow="Promises"
       title="My Promises"
       subtitle="Tap each one. I mean them."

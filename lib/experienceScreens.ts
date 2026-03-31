@@ -1,384 +1,166 @@
-import type { Screen } from '@/hooks/useExperienceFlow';
+import type { Screen, ScreenPacingKind } from '@/hooks/useExperienceFlow';
+import type { Emotion } from '@/lib/emotionThemes';
 import {
-  PainScreen,
-  RegretIntroScreen,
-  SilenceScreen,
-} from '@/components/experiences/director/screens/CoreNarrativeScreens';
-import { GrowthScreen } from '@/components/experiences/director/screens/GrowthScreen';
-import { InteractionLayerScreen } from '@/components/experiences/director/screens/InteractionLayerScreen';
-import {
-  ButIf107Screen,
-  Distance92Screen,
-  FakeEnd114Screen,
-  FinalMicroInteraction118Screen,
-  FreezeMomentScreen,
-  GoodbyeFade110Screen,
-  IfICouldGoBack98Screen,
-  IllBeHere108Screen,
-  IRealizeNow96Screen,
-  Letter101Screen,
-  Letter102Screen,
-  Letter103Screen,
-  Letter104Screen,
-  Letter105Screen,
-  LetterBegins100Screen,
-  LetterPeakScreen,
-  MemoryDistortion115Screen,
-  MyMistakes95Screen,
-  NoExpectations106Screen,
-  NoTextVoid112Screen,
-  OrMaybe109Screen,
-  PostEndGhost111Screen,
-  ReversedExpectation113Screen,
-  SmallThings94Screen,
-  StillThere116Screen,
-  TheApology99Screen,
-  ThingsISaid90Screen,
-  Timeline88Screen,
-  TrueFinalState119Screen,
-  UserBecomesStory117Screen,
-  WhatIMiss93Screen,
-  YourSilence91Screen,
-  FirstCrack89Screen,
-  YouDeservedBetter97Screen,
-} from '@/components/experiences/director/screens/ImmersiveSequenceScreens';
-import { MemoryTimelineScreen } from '@/components/experiences/director/screens/MemoryTimelineScreen';
+  SCRIPT_NARRATIVE_LINES,
+  createScriptNarrativeComponent,
+} from '@/components/experiences/director/screens/ScriptNarrativeScreens';
 
-export const directorCoreScreens: Screen[] = [
-  {
-    id: 80,
-    component: RegretIntroScreen,
-    emotion: 'regret',
-    duration: 4200,
-    kind: 'frozen',
-    timing: { duration: 1.56, delay: 0.48, easing: 'easeInOut' },
-  },
-  {
-    id: 81,
-    component: SilenceScreen,
-    emotion: 'silence',
-    duration: 3900,
-    timing: { duration: 1.72, delay: 0.56, easing: 'easeInOut' },
-  },
-  {
-    id: 82,
-    component: PainScreen,
-    emotion: 'pain',
-    duration: 4200,
-    kind: 'memory-fragment',
-    timing: { duration: 1.48, delay: 0.4, easing: 'easeOut' },
-  },
-  {
-    id: 83,
-    component: MemoryTimelineScreen,
-    emotion: 'love',
-    duration: 0,
-    kind: 'memory-fragment',
-    timing: { duration: 1.34, delay: 0.26, easing: 'easeOut' },
-  },
-  {
-    id: 84,
-    component: GrowthScreen,
-    emotion: 'love',
-    duration: 0,
-    timing: { duration: 1.26, delay: 0.22, easing: 'easeOut' },
-  },
-];
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 
-export const directorInteractionScreen: Screen = {
-  id: 85,
-  component: InteractionLayerScreen,
-  emotion: 'silence',
-  duration: 0,
-  kind: 'flash',
-  timing: { duration: 0.52, delay: 0.06, easing: 'linear' },
-};
+function resolveScriptEmotion(screenId: number): Emotion {
+  if (screenId <= 82) {
+    return 'love';
+  }
 
-export const directorCinematicScreens: Screen[] = [
-  {
-    id: 86,
-    component: LetterPeakScreen,
-    emotion: 'love',
-    duration: 6200,
-    kind: 'peak',
-    timing: { duration: 1.34, delay: 0.34, easing: 'easeInOut' },
-  },
-  {
-    id: 87,
-    component: FreezeMomentScreen,
-    emotion: 'silence',
-    duration: 2000,
-    kind: 'freeze',
-    attentionLockMs: 1400,
-    timing: { duration: 1.05, delay: 0.02, easing: 'linear' },
-  },
-  {
-    id: 88,
-    component: Timeline88Screen,
-    emotion: 'love',
-    duration: 5200,
-    kind: 'memory-fragment',
-    timing: { duration: 1.24, delay: 0.22, easing: 'easeOut' },
-  },
-  {
-    id: 89,
-    component: FirstCrack89Screen,
-    emotion: 'regret',
-    duration: 3900,
-    kind: 'frozen',
-    timing: { duration: 1.02, delay: 0.16, easing: 'easeInOut' },
-  },
-  {
-    id: 90,
-    component: ThingsISaid90Screen,
-    emotion: 'pain',
-    duration: 4100,
-    kind: 'peak',
-    timing: { duration: 0.94, delay: 0.1, easing: 'easeInOut' },
-  },
-  {
-    id: 91,
-    component: YourSilence91Screen,
-    emotion: 'silence',
-    duration: 1500,
-    kind: 'mute',
-    attentionLockMs: 1200,
-    timing: { duration: 0.74, delay: 0.08, easing: 'linear' },
-  },
-  {
-    id: 92,
-    component: Distance92Screen,
-    emotion: 'closure',
-    duration: 4200,
-    kind: 'afterglow',
-    timing: { duration: 1.08, delay: 0.14, easing: 'easeOut' },
-  },
-  {
-    id: 93,
-    component: WhatIMiss93Screen,
-    emotion: 'love',
-    duration: 4200,
-    kind: 'afterglow',
-    timing: { duration: 0.96, delay: 0.12, easing: 'easeOut' },
-  },
-  {
-    id: 94,
-    component: SmallThings94Screen,
-    emotion: 'love',
-    duration: 4300,
-    kind: 'memory-fragment',
-    timing: { duration: 0.9, delay: 0.1, easing: 'easeOut' },
-  },
-  {
-    id: 95,
-    component: MyMistakes95Screen,
-    emotion: 'closure',
-    duration: 3400,
-    kind: 'frozen',
-    timing: { duration: 0.58, delay: 0.02, easing: 'linear' },
-  },
-  {
-    id: 96,
-    component: IRealizeNow96Screen,
-    emotion: 'hope',
-    duration: 3900,
-    kind: 'afterglow',
-    timing: { duration: 0.88, delay: 0.08, easing: 'easeOut' },
-  },
-  {
-    id: 97,
-    component: YouDeservedBetter97Screen,
-    emotion: 'regret',
-    duration: 3800,
-    kind: 'frozen',
-    timing: { duration: 0.82, delay: 0.08, easing: 'easeInOut' },
-  },
-  {
-    id: 98,
-    component: IfICouldGoBack98Screen,
-    emotion: 'pain',
-    duration: 4100,
-    kind: 'memory-fragment',
-    timing: { duration: 0.78, delay: 0.06, easing: 'easeOut' },
-  },
-  {
-    id: 99,
-    component: TheApology99Screen,
-    emotion: 'pain',
-    duration: 2500,
-    kind: 'mute',
-    attentionLockMs: 3200,
-    timing: { duration: 0.46, delay: 0.02, easing: 'linear' },
-  },
-  {
-    id: 100,
-    component: LetterBegins100Screen,
-    emotion: 'love',
-    duration: 5400,
-    kind: 'peak',
-    attentionLockMs: 2200,
-    timing: { duration: 0.92, delay: 0.08, easing: 'easeInOut' },
-  },
-  {
-    id: 101,
-    component: Letter101Screen,
-    emotion: 'love',
-    duration: 4000,
-    kind: 'memory-fragment',
-    timing: { duration: 1.14, delay: 0.24, easing: 'easeOut' },
-  },
-  {
-    id: 102,
-    component: Letter102Screen,
-    emotion: 'love',
-    duration: 4000,
-    kind: 'memory-fragment',
-    timing: { duration: 1.2, delay: 0.28, easing: 'easeOut' },
-  },
-  {
-    id: 103,
-    component: Letter103Screen,
-    emotion: 'love',
-    duration: 4000,
-    kind: 'memory-fragment',
-    timing: { duration: 1.26, delay: 0.3, easing: 'easeOut' },
-  },
-  {
-    id: 104,
-    component: Letter104Screen,
-    emotion: 'love',
-    duration: 4000,
-    kind: 'memory-fragment',
-    timing: { duration: 1.32, delay: 0.32, easing: 'easeOut' },
-  },
-  {
-    id: 105,
-    component: Letter105Screen,
-    emotion: 'love',
-    duration: 4000,
-    kind: 'memory-fragment',
-    timing: { duration: 1.36, delay: 0.34, easing: 'easeOut' },
-  },
-  {
-    id: 106,
-    component: NoExpectations106Screen,
-    emotion: 'closure',
-    duration: 3600,
-    kind: 'frozen',
-    timing: { duration: 1.24, delay: 0.3, easing: 'easeInOut' },
-  },
-  {
-    id: 107,
-    component: ButIf107Screen,
-    emotion: 'hope',
-    duration: 3500,
-    kind: 'afterglow',
-    timing: { duration: 1.3, delay: 0.34, easing: 'easeOut' },
-  },
-  {
-    id: 108,
-    component: IllBeHere108Screen,
-    emotion: 'hope',
-    duration: 3400,
-    kind: 'afterglow',
-    timing: { duration: 1.36, delay: 0.38, easing: 'easeOut' },
-  },
-  {
-    id: 109,
-    component: OrMaybe109Screen,
-    emotion: 'closure',
-    duration: 3300,
-    kind: 'frozen',
-    timing: { duration: 1.44, delay: 0.44, easing: 'easeInOut' },
-  },
-  {
-    id: 110,
-    component: GoodbyeFade110Screen,
-    emotion: 'closure',
-    duration: 5000,
-    kind: 'mute',
-    attentionLockMs: 1800,
-    timing: { duration: 1.56, delay: 0.82, easing: 'easeInOut' },
-  },
-  {
-    id: 111,
-    component: PostEndGhost111Screen,
-    emotion: 'closure',
-    duration: 3400,
-    kind: 'afterglow',
-    attentionLockMs: 1400,
-    timing: { duration: 1.24, delay: 0.7, easing: 'easeOut' },
-  },
-  {
-    id: 112,
-    component: NoTextVoid112Screen,
-    emotion: 'closure',
-    duration: 2800,
-    kind: 'mute',
-    attentionLockMs: 2200,
-    timing: { duration: 1.32, delay: 0.82, easing: 'easeInOut' },
-  },
-  {
-    id: 113,
-    component: ReversedExpectation113Screen,
-    emotion: 'closure',
-    duration: 5200,
-    kind: 'mute',
-    attentionLockMs: 1800,
-    timing: { duration: 1.44, delay: 0.92, easing: 'easeInOut' },
-  },
-  {
-    id: 114,
-    component: FakeEnd114Screen,
-    emotion: 'closure',
-    duration: 4300,
-    kind: 'mute',
-    attentionLockMs: 1700,
-    timing: { duration: 1.35, delay: 0.7, easing: 'easeInOut' },
-  },
-  {
-    id: 115,
-    component: MemoryDistortion115Screen,
-    emotion: 'regret',
-    duration: 4600,
-    kind: 'afterglow',
-    attentionLockMs: 1300,
-    timing: { duration: 1.16, delay: 0.42, easing: 'easeOut' },
-  },
-  {
-    id: 116,
-    component: StillThere116Screen,
-    emotion: 'silence',
-    duration: 5400,
-    kind: 'mute',
-    attentionLockMs: 2200,
-    timing: { duration: 1.24, delay: 0.76, easing: 'easeInOut' },
-  },
-  {
-    id: 117,
-    component: UserBecomesStory117Screen,
-    emotion: 'closure',
-    duration: 4700,
-    kind: 'mute',
-    attentionLockMs: 1700,
-    timing: { duration: 1.2, delay: 0.52, easing: 'easeOut' },
-  },
-  {
-    id: 118,
-    component: FinalMicroInteraction118Screen,
-    emotion: 'closure',
-    duration: 0,
-    kind: 'afterglow',
-    attentionLockMs: 1200,
-    timing: { duration: 1.05, delay: 0.3, easing: 'easeInOut' },
-  },
-  {
-    id: 119,
-    component: TrueFinalState119Screen,
-    emotion: 'silence',
-    duration: 0,
-    kind: 'mute',
-    attentionLockMs: 0,
-    timing: { duration: 1.48, delay: 0.82, easing: 'easeInOut' },
-  },
-];
+  if (screenId <= 87) {
+    return 'regret';
+  }
+
+  if (screenId <= 92) {
+    return 'pain';
+  }
+
+  if (screenId <= 95) {
+    return 'silence';
+  }
+
+  if (screenId <= 99) {
+    return 'closure';
+  }
+
+  if (screenId <= 104) {
+    return 'love';
+  }
+
+  if (screenId <= 108) {
+    return 'regret';
+  }
+
+  if (screenId <= 120) {
+    return 'pain';
+  }
+
+  if (screenId <= 125) {
+    return 'closure';
+  }
+
+  if (screenId <= 130) {
+    return 'hope';
+  }
+
+  if (screenId <= 136) {
+    return 'closure';
+  }
+
+  return 'silence';
+}
+
+function resolveScriptKind(screenId: number): ScreenPacingKind {
+  if (screenId === 85) {
+    return 'flash';
+  }
+
+  if (screenId === 110 || screenId === 136) {
+    return 'mute';
+  }
+
+  if (screenId >= 137) {
+    return 'afterglow';
+  }
+
+  if (screenId >= 115 && screenId <= 120) {
+    return 'peak';
+  }
+
+  if (screenId >= 109 && screenId <= 114) {
+    return 'frozen';
+  }
+
+  if (screenId >= 96 && screenId <= 99) {
+    return 'silence';
+  }
+
+  if (screenId >= 100 && screenId <= 108) {
+    return 'memory-fragment';
+  }
+
+  return 'normal';
+}
+
+function resolveScriptDuration(screenId: number, line: string): number {
+  if (screenId === 138) {
+    return 0;
+  }
+
+  const baseDuration = 1700 + line.length * 48;
+
+  if (screenId >= 115 && screenId <= 120) {
+    return clampNumber(baseDuration + 700, 2800, 4600);
+  }
+
+  if (screenId >= 135) {
+    return clampNumber(baseDuration + 840, 3000, 5200);
+  }
+
+  if (screenId >= 109 && screenId <= 114) {
+    return clampNumber(baseDuration + 520, 2600, 4300);
+  }
+
+  return clampNumber(baseDuration, 2200, 3900);
+}
+
+function resolveAttentionLockMs(screenId: number): number | undefined {
+  if (screenId === 110 || screenId === 136) {
+    return 1500;
+  }
+
+  if (screenId === 137) {
+    return 1200;
+  }
+
+  if (screenId >= 115 && screenId <= 120) {
+    return 900;
+  }
+
+  return undefined;
+}
+
+function resolveTiming(screenId: number): Screen['timing'] {
+  const drift = (screenId - 80) % 6;
+  const duration = clampNumber(0.82 + drift * 0.08, 0.72, 1.34);
+  const delay = screenId >= 111 ? 0.22 : 0.1;
+
+  return {
+    duration,
+    delay,
+    easing: screenId >= 109 ? 'easeInOut' : 'easeOut',
+  };
+}
+
+const directorScriptScreens: Screen[] = SCRIPT_NARRATIVE_LINES.map((definition) => ({
+  id: definition.id,
+  component: createScriptNarrativeComponent(definition),
+  emotion: resolveScriptEmotion(definition.id),
+  duration: resolveScriptDuration(definition.id, definition.line),
+  kind: resolveScriptKind(definition.id),
+  attentionLockMs: resolveAttentionLockMs(definition.id),
+  timing: resolveTiming(definition.id),
+}));
+
+export const directorCoreScreens: Screen[] = directorScriptScreens.filter(
+  (screen) => screen.id >= 80 && screen.id <= 84,
+);
+
+const interactionScreen = directorScriptScreens.find((screen) => screen.id === 85);
+
+if (!interactionScreen) {
+  throw new Error('Missing script interaction screen definition (id 85).');
+}
+
+export const directorInteractionScreen: Screen = interactionScreen;
+
+export const directorCinematicScreens: Screen[] = directorScriptScreens.filter(
+  (screen) => screen.id >= 86,
+);

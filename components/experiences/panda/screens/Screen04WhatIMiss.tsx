@@ -40,7 +40,7 @@ const MISS_ITEMS = [
   },
 ];
 
-export function Screen83WhatIMiss() {
+export function Screen04WhatIMiss() {
   const [visibleCount, setVisibleCount] = useState(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -61,8 +61,8 @@ export function Screen83WhatIMiss() {
 
   return (
     <ApologyExperienceShell
-      screenNumber={83}
-      totalScreens={87}
+      screenNumber={4}
+      totalScreens={8}
       eyebrow="What I Miss"
       title="Things I Miss About You"
       subtitle="A list that keeps growing every day."

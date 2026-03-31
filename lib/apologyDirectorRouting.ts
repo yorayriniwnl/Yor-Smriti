@@ -1,4 +1,5 @@
 import type { EndingVariant } from '@/lib/experienceEndings';
+import { PANDA_SCREEN_IDS } from '@/lib/pandaScreenRegistry';
 
 export interface DirectorRouteConfig {
   start: number;
@@ -6,7 +7,7 @@ export interface DirectorRouteConfig {
 }
 
 const PUBLIC_START_SCREEN = 1;
-const SCREEN_COUNT = 40;
+const SCREEN_COUNT = PANDA_SCREEN_IDS.length;
 
 const routeEntries: Array<[string, DirectorRouteConfig]> = [];
 

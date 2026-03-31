@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { APOLOGY_SCREEN_METADATA } from '@/components/experiences/panda/screens';
+import { PANDA_SCREEN_REGISTRY } from '@/lib/pandaScreenRegistry';
 
 export default function PandaIndexPage() {
   return (
@@ -57,10 +57,10 @@ export default function PandaIndexPage() {
         </p>
 
         <div className="mt-6 grid gap-4">
-          {APOLOGY_SCREEN_METADATA.map((item) => (
+          {PANDA_SCREEN_REGISTRY.map((item) => (
             <Link
-              key={item.screen}
-              href={`/apology/${item.screen}`}
+              key={item.id}
+              href={`/apology/${item.id}`}
               className="group rounded-2xl border px-5 py-4 transition-colors"
               style={{
                 borderColor: 'rgba(247, 201, 226, 0.36)',
@@ -77,7 +77,7 @@ export default function PandaIndexPage() {
                       fontSize: '0.62rem',
                     }}
                   >
-                    Screen {item.screen}
+                    Screen {item.id}
                   </p>
                   <h2
                     className="mt-1"
@@ -156,5 +156,6 @@ export default function PandaIndexPage() {
     </main>
   );
 }
+
 
 

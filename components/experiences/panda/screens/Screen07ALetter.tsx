@@ -16,11 +16,11 @@ const LETTER_PARAGRAPHS = [
   'With all the love I still carry,\n- Ayrin',
 ];
 
-export function Screen86ALetter() {
+export function Screen07ALetter() {
   return (
     <ApologyExperienceShell
-      screenNumber={86}
-      totalScreens={92}
+      screenNumber={7}
+      totalScreens={8}
       eyebrow="Letter"
       title="A Letter For You"
       subtitle="Read at your own pace."

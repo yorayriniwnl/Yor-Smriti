@@ -210,7 +210,7 @@ function buildScreenSequence(
     workingScreens = screens
       .filter((screen) => !hiddenScreenIds.has(screen.id))
       .map((screen) => {
-        if (!screen.duration || screen.duration <= 0 || screen.id < 88 || screen.id > 118) {
+        if (!screen.duration || screen.duration <= 0 || screen.id < 88 || screen.id > 138) {
           return screen;
         }
 
@@ -305,9 +305,10 @@ export function ExperienceController({
 
   const activeEmotion: Emotion = current?.emotion ?? 'silence';
   const currentScreenId = current?.id ?? 0;
+  const finalScreenId = activeScreens[activeScreens.length - 1]?.id ?? 0;
   const activeKind = current?.kind;
   const emotionalMotion = emotionLinkedMotion[activeEmotion];
-  const shouldFreezeAmbientMotion = currentScreenId === 110 || currentScreenId === 119;
+  const shouldFreezeAmbientMotion = currentScreenId === 110 || currentScreenId >= 135;
   const activeTheme = emotionThemes[activeEmotion];
   const timeVisual = timeContextVisuals[timeContext];
   const isSilenceScreen = activeKind === 'silence';
@@ -364,7 +365,7 @@ export function ExperienceController({
             ? 1.3
             : 1;
 
-      const shouldDelayAudioCut = currentScreenId === 119 && isAudioGraceWindow && !isSilentMode;
+      const shouldDelayAudioCut = currentScreenId === finalScreenId && isAudioGraceWindow && !isSilentMode;
       const baseVolume = audioProfile.enabled
         ? clampNumber(audioProfile.volume * physics.audioGain, 0, 1)
         : 0;
@@ -387,6 +388,7 @@ export function ExperienceController({
     [
       audioProfile,
       currentScreenId,
+      finalScreenId,
       isAudioGraceWindow,
       isSilentMode,
       lastAudibleVolume,
@@ -412,7 +414,7 @@ export function ExperienceController({
   useEmotionBackgroundMusic(activeEmotion, musicByEmotion ?? {}, evolvedAudioProfile);
 
   useSubconsciousSoundDesign({
-    enabled: !isSilentMode && (currentScreenId < 119 || isAudioGraceWindow),
+    enabled: !isSilentMode && (currentScreenId < finalScreenId || isAudioGraceWindow),
     screenId: currentScreenId,
     emotion: activeEmotion,
     kind: activeKind,
@@ -424,7 +426,7 @@ export function ExperienceController({
       audioGraceTimerRef.current = null;
     }
 
-    if (currentScreenId !== 119 || isSilentMode) {
+    if (currentScreenId !== finalScreenId || isSilentMode) {
       setIsAudioGraceWindow(false);
       return;
     }
@@ -441,7 +443,7 @@ export function ExperienceController({
         audioGraceTimerRef.current = null;
       }
     };
-  }, [currentScreenId, isSilentMode]);
+  }, [currentScreenId, finalScreenId, isSilentMode]);
 
   useEffect(() => {
     setTimeContext(resolveTimeContext());

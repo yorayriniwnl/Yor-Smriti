@@ -11,7 +11,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function Screen81CutThroughSilence() {
+export function Screen02CutThroughSilence() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [progress, setProgress] = useState(0.08);
   const [isDragging, setIsDragging] = useState(false);
@@ -92,8 +92,8 @@ export function Screen81CutThroughSilence() {
 
   return (
     <ApologyExperienceShell
-      screenNumber={81}
-      totalScreens={87}
+      screenNumber={2}
+      totalScreens={8}
       eyebrow="Interactive Note"
       title="Cut Through The Silence"
       subtitle="One honest action before words."

@@ -14,7 +14,7 @@ interface Heart {
   size: number;
 }
 
-export function Screen87ComeBack() {
+export function Screen08ComeBack() {
   const [hearts, setHearts] = useState<Heart[]>([]);
   const [taps, setTaps] = useState(0);
   const nextHeartIdRef = useRef(1);
@@ -61,8 +61,8 @@ export function Screen87ComeBack() {
 
   return (
     <ApologyExperienceShell
-      screenNumber={87}
-      totalScreens={87}
+      screenNumber={8}
+      totalScreens={8}
       eyebrow="Come Back"
       title="Come Back To Me"
       subtitle="If you want to."
