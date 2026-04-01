@@ -1,0 +1,73 @@
+name: Sync Vercel Env
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      APP_USERNAME: ${{ secrets.APP_USERNAME }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          missing=0
+
+          for secret_name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID APP_USERNAME APP_PASSWORD; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error title=Missing secret::$secret_name is not set"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Upsert Vercel environment variables
+        shell: bash
+        run: |
+          upsert_env() {
+            local key="$1"
+            local value="$2"
+            local environment="$3"
+
+            printf '%s' "$value" | vercel env add "$key" "$environment" --force --token "$VERCEL_TOKEN"
+          }
+
+          for environment in production preview; do
+            upsert_env APP_USERNAME "$APP_USERNAME" "$environment"
+            upsert_env APP_PASSWORD "$APP_PASSWORD" "$environment"
+          done
+
+      - name: Deploy production build
+        run: vercel deploy --prod --yes --token="$VERCEL_TOKEN"
