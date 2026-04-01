@@ -1,5 +1,7 @@
 ## Yor Smriti
 
+Is your girlfriend or wife angry at you ? Or did you had a breakup.
+Send them this to show how much you care about them. 
 **Dedicated to the person I love, Keyrin.(Fictional Character)**
 Live Demo: https://yor-smriti.vercel.app/login
 
