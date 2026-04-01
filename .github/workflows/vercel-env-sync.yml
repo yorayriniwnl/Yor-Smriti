@@ -17,11 +17,12 @@ jobs:
   sync-and-deploy:
     runs-on: ubuntu-latest
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      APP_USERNAME: ${{ secrets.APP_USERNAME }}
-      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+      VERCEL_PROJECT_NAME: yor-smriti
+      VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
+      APP_USERNAME_VALUE: ${{ secrets.APP_USERNAME || 'yorayrin' }}
+      APP_PASSWORD_VALUE: ${{ secrets.APP_PASSWORD || 'yorayrin' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -34,40 +35,86 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Validate required secrets
+      - name: Skip when Vercel token is missing
+        if: env.VERCEL_TOKEN == ''
         shell: bash
         run: |
-          missing=0
-
-          for secret_name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID APP_USERNAME APP_PASSWORD; do
-            if [ -z "${!secret_name}" ]; then
-              echo "::error title=Missing secret::$secret_name is not set"
-              missing=1
-            fi
-          done
-
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
+          echo "::warning title=Skipped sync::VERCEL_TOKEN is not set, so Vercel environment sync was skipped."
 
       - name: Pull Vercel project settings
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Upsert Vercel environment variables
+        if: env.VERCEL_TOKEN != ''
         shell: bash
         run: |
-          upsert_env() {
-            local key="$1"
-            local value="$2"
-            local environment="$3"
+          args=(pull --yes --environment=production --project "$VERCEL_PROJECT_NAME" --token "$VERCEL_TOKEN")
 
-            printf '%s' "$value" | vercel env add "$key" "$environment" --force --token "$VERCEL_TOKEN"
+          if [ -n "$VERCEL_SCOPE" ]; then
+            args+=(--scope "$VERCEL_SCOPE")
+          fi
+
+          vercel "${args[@]}"
+
+      - name: Upsert Vercel environment variables
+        if: env.VERCEL_TOKEN != ''
+        shell: bash
+        run: |
+          node <<'EOF'
+          const token = process.env.VERCEL_TOKEN;
+          const projectName = process.env.VERCEL_PROJECT_NAME;
+          const scope = process.env.VERCEL_SCOPE;
+          const envVars = [
+            ['APP_USERNAME', process.env.APP_USERNAME_VALUE],
+            ['APP_PASSWORD', process.env.APP_PASSWORD_VALUE],
+          ];
+
+          const baseUrl = new URL(`https://api.vercel.com/v10/projects/${encodeURIComponent(projectName)}/env`);
+          baseUrl.searchParams.set('upsert', 'true');
+
+          if (scope) {
+            baseUrl.searchParams.set('slug', scope);
           }
 
-          for environment in production preview; do
-            upsert_env APP_USERNAME "$APP_USERNAME" "$environment"
-            upsert_env APP_PASSWORD "$APP_PASSWORD" "$environment"
-          done
+          async function upsertVar(key, value) {
+            const response = await fetch(baseUrl, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                key,
+                value,
+                type: 'sensitive',
+                target: ['production', 'preview'],
+              }),
+            });
+
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(`Failed to sync ${key}: ${response.status} ${body}`);
+            }
+          }
+
+          async function main() {
+            for (const [key, value] of envVars) {
+              await upsertVar(key, value);
+              console.log(`Synced ${key} to Vercel.`);
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error.message);
+            process.exit(1);
+          });
+          EOF
 
       - name: Deploy production build
-        run: vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+        if: env.VERCEL_TOKEN != ''
+        shell: bash
+        run: |
+          args=(deploy --prod --yes --project "$VERCEL_PROJECT_NAME" --token "$VERCEL_TOKEN")
+
+          if [ -n "$VERCEL_SCOPE" ]; then
+            args+=(--scope "$VERCEL_SCOPE")
+          fi
+
+          vercel "${args[@]}"

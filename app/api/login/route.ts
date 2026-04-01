@@ -5,22 +5,24 @@ interface LoginRequestBody {
   password?: string;
 }
 
+const DEFAULT_USERNAME = 'yorayrin';
+const DEFAULT_PASSWORD = 'yorayrin';
+
 function getConfiguredCredentials() {
-  const username = process.env.APP_USERNAME ?? process.env.NEXT_PUBLIC_APP_USERNAME;
-  const password = process.env.APP_PASSWORD ?? process.env.NEXT_PUBLIC_APP_PASSWORD;
+  const username =
+    process.env.APP_USERNAME ??
+    process.env.NEXT_PUBLIC_APP_USERNAME ??
+    DEFAULT_USERNAME;
+  const password =
+    process.env.APP_PASSWORD ??
+    process.env.NEXT_PUBLIC_APP_PASSWORD ??
+    DEFAULT_PASSWORD;
 
   return { username, password };
 }
 
 export async function POST(request: Request) {
   const { username: configuredUsername, password: configuredPassword } = getConfiguredCredentials();
-
-  if (!configuredUsername || !configuredPassword) {
-    return NextResponse.json(
-      { ok: false, error: 'Login credentials are not configured on the server.' },
-      { status: 500 },
-    );
-  }
 
   let body: LoginRequestBody;
   try {

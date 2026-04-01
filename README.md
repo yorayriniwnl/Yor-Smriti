@@ -43,7 +43,16 @@ You can change these values to anything you want.
 
 ## Login Credentials
 
-Login is validated by `POST /api/login` using environment variables.
+Login is validated by `POST /api/login`.
+
+By default, the app accepts these demo credentials:
+
+```bash
+Username =yorayrin
+Password =yorayrin
+```
+
+You can override them with environment variables.
 
 - Preferred server-side variables:
 	- `APP_USERNAME`
@@ -52,7 +61,7 @@ Login is validated by `POST /api/login` using environment variables.
 	- `NEXT_PUBLIC_APP_USERNAME`
 	- `NEXT_PUBLIC_APP_PASSWORD`
 
-If credentials are missing, the login API returns a configuration error.
+If no environment variables are set, the built-in demo credentials above are used.
 
 ## Deployment Notes
 
