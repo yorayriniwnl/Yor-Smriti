@@ -66,7 +66,19 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        setErrorMessage('Invalid username or password.');
+        let apiError = 'Invalid username or password.';
+
+        try {
+          const data = (await response.json()) as { error?: string };
+
+          if (typeof data.error === 'string' && data.error.trim()) {
+            apiError = data.error;
+          }
+        } catch {
+          // Fall back to the generic message when the error response is not JSON.
+        }
+
+        setErrorMessage(apiError);
         return;
       }
 
