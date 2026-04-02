@@ -8,7 +8,7 @@ import { TextReveal } from '@/components/transitions/TextReveal';
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
 const LETTER_PARAGRAPHS = [
-  'Keyrin,',
+  'Anya,',
   'I have been carrying this for a while. And I think it is time I stopped hiding it in late-night overthinking and actually gave it to you.',
   'You are one of the most important people in my life. I ruined something beautiful and rare, and I know that.',
   'I was wrong. Specifically. Repeatedly. I chose myself when I should have chosen us.',

@@ -124,7 +124,7 @@ export default function HomePage() {
             fontWeight: 400,
           }}
         >
-          Keyrin are you mad at Ayrin ?
+            Anya are you mad at Ayrin ?
         </h1>
 
         <p
@@ -246,7 +246,7 @@ export default function HomePage() {
                   textShadow: '0 0 3px rgba(140, 22, 72, 0.6), 0 0 10px rgba(255, 255, 255, 0.3)',
                 }}
               >
-                👸💃Keyrin ❤️ Ayrin 🕺🤴
+                👸💃Anya ❤️ Ayrin 🕺🤴
               </motion.span>
             </div>
           </div>

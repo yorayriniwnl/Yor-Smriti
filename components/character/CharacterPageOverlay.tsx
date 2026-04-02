@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useAnimationControls } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { KeyrinCharacter } from '@/components/character/KeyrinCharacter';
+import { AnyaCharacter } from '@/components/character/AnyaCharacter';
 import { AyrinCharacter } from '@/components/character/AyrinCharacter';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
@@ -165,7 +165,7 @@ export function CharacterPageOverlay() {
 								animate={leftHairControls}
 								style={{ width: '100%', height: '100%', transformOrigin: 'bottom center' }}
 							>
-								<KeyrinCharacter />
+								<AnyaCharacter />
 							</motion.div>
 						</motion.div>
 					</motion.div>,
