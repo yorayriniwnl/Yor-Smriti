@@ -117,7 +117,7 @@ export default function HubPage() {
           }}
         >
           Choose where to go,{' '}
-          <em style={{ fontStyle: 'italic', color: 'rgba(255, 180, 215, 0.9)' }}>Anya</em>
+          <em style={{ fontStyle: 'italic', color: 'rgba(255, 180, 215, 0.9)' }}>Keyrin</em>
         </h1>
         <p
           className="mx-auto mt-3 max-w-[36ch]"
