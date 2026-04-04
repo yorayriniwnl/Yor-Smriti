@@ -82,6 +82,12 @@ interface HairState {
   microOffset: number;
 }
 
+interface FaceBaseState {
+  showPores: boolean;
+  leftCheekTransform: string;
+  rightCheekTransform: string;
+}
+
 type CharacterState =
   | 'idle'
   | 'engaged'
@@ -123,8 +129,31 @@ interface CharacterRig {
   eyeR: Bone;
   browL: Bone;
   browR: Bone;
+  cheekL: Bone;
+  cheekR: Bone;
   lipCornerL: Bone;
   lipCornerR: Bone;
+}
+
+interface ExpressionTargets {
+  mouthOpen: number;
+  smile: number;
+  browRaise: number;
+  browPinch: number;
+  eyeSquint: number;
+  sadness: number;
+  gazeX: number;
+  gazeY: number;
+}
+
+interface MuscleState {
+  zygomaticMajor: number;
+  orbicularisOculi: number;
+  frontalis: number;
+  corrugator: number;
+  depressorAnguli: number;
+  mentalis: number;
+  platysma: number;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -302,6 +331,8 @@ const BASE_RIG: CharacterRig = {
   eyeR: createBone(153, 114),
   browL: createBone(104, 102),
   browR: createBone(156, 102),
+  cheekL: createBone(98, 141),
+  cheekR: createBone(162, 141),
   lipCornerL: createBone(117, 186),
   lipCornerR: createBone(144, 186),
 };
@@ -314,58 +345,101 @@ function cloneRig(rig: CharacterRig): CharacterRig {
     eyeR: { ...rig.eyeR },
     browL: { ...rig.browL },
     browR: { ...rig.browR },
+    cheekL: { ...rig.cheekL },
+    cheekR: { ...rig.cheekR },
     lipCornerL: { ...rig.lipCornerL },
     lipCornerR: { ...rig.lipCornerR },
   };
 }
 
+function resolveExpressionTargets(face: FaceState): ExpressionTargets {
+  return {
+    mouthOpen: clamp(face.lowerLipDrop * 1.45 + Math.max(0, face.microLipTension) * 0.4, 0, 1),
+    smile: clamp(Math.max(0, -(face.mouthCornerL + face.mouthCornerR) * 0.46), 0, 1),
+    browRaise: clamp(Math.max(0, -(face.browLiftL + face.browLiftR) * 0.34), 0, 1),
+    browPinch: clamp((Math.abs(face.browAngleL) + Math.abs(face.browAngleR)) * 0.13, 0, 1),
+    eyeSquint: clamp(((face.lidDropL + face.lidDropR) * 0.5 + (face.microLidL + face.microLidR) * 8), 0, 1),
+    sadness: clamp(Math.max(0, (face.mouthCornerL + face.mouthCornerR) * 0.42), 0, 1),
+    gazeX: clamp(face.microGazeX / 2, -1, 1),
+    gazeY: clamp(face.microGazeY / 1.5, -1, 1),
+  };
+}
+
+function resolveMuscles(face: FaceState, targets: ExpressionTargets): MuscleState {
+  return {
+    zygomaticMajor: clamp(targets.smile * (0.82 + targets.eyeSquint * 0.14), 0, 1.1),
+    orbicularisOculi: clamp(targets.eyeSquint * 0.86 + targets.smile * 0.24, 0, 1),
+    frontalis: clamp(targets.browRaise, 0, 1),
+    corrugator: clamp(targets.browPinch * (0.66 + targets.sadness * 0.24), 0, 1),
+    depressorAnguli: clamp(targets.sadness * (0.82 + targets.mouthOpen * 0.18), 0, 1),
+    mentalis: clamp(targets.mouthOpen * 0.76 + Math.max(0, face.microLipTension) * 1.8, 0, 1),
+    platysma: clamp(targets.sadness * 0.45 + targets.mouthOpen * 0.22, 0, 1),
+  };
+}
+
 function resolveRigTarget(face: FaceState): CharacterRig {
-  const leftCornerYOffset = clamp(face.mouthCornerL * 1.35 + face.microLipAsym * 0.65, -4, 4);
-  const rightCornerYOffset = clamp(face.mouthCornerR * 1.35 - face.microLipAsym * 0.65, -4, 4);
+  const targets = resolveExpressionTargets(face);
+  const muscles = resolveMuscles(face, targets);
+  const leftCornerYOffset = clamp(-muscles.zygomaticMajor * 2.2 + muscles.depressorAnguli * 3.2 + face.microLipAsym * 0.65, -4, 4);
+  const rightCornerYOffset = clamp(-muscles.zygomaticMajor * 2.2 + muscles.depressorAnguli * 3.2 - face.microLipAsym * 0.65, -4, 4);
+  const browPinchOffset = muscles.corrugator * 0.82;
+  const browRaiseOffset = muscles.frontalis * 2.7;
+  const cheekLift = muscles.zygomaticMajor * 1.3;
+  const cheekDrop = muscles.mentalis * 0.55 + muscles.platysma * 0.3;
 
   return {
     head: {
       ...BASE_RIG.head,
       x: BASE_RIG.head.x + clamp(face.eyeOffsetX * 0.15, -1.2, 1.2),
-      y: BASE_RIG.head.y + clamp(face.headTiltY * 1.2, -6, 6),
-      rotation: clamp(face.headTiltX, -8, 4),
+      y: BASE_RIG.head.y + clamp(face.headTiltY * 1.2 + muscles.platysma * 0.9 - muscles.zygomaticMajor * 0.3, -6, 6),
+      rotation: clamp(face.headTiltX + muscles.platysma * 0.8 - muscles.zygomaticMajor * 0.2, -8, 4),
     },
     jaw: {
       ...BASE_RIG.jaw,
-      y: BASE_RIG.jaw.y + clamp(face.lowerLipDrop * 2.1 + Math.max(0, face.microLipTension) * 1.2, 0, 4.5),
-      rotation: clamp(face.lowerLipDrop * 12 + Math.abs(face.microLipTension) * 4.5, 0, 14),
+      y: BASE_RIG.jaw.y + clamp(targets.mouthOpen * 4.1 + muscles.mentalis * 1.2, 0, 4.8),
+      rotation: clamp(targets.mouthOpen * 14 + muscles.mentalis * 2.2, 0, 14),
     },
     eyeL: {
       ...BASE_RIG.eyeL,
-      x: BASE_RIG.eyeL.x + clamp(face.microGazeX, -2, 2),
-      y: BASE_RIG.eyeL.y + clamp(face.microGazeY, -1.5, 1.5),
+      x: BASE_RIG.eyeL.x + clamp(targets.gazeX * 2 + muscles.corrugator * 0.08, -2, 2),
+      y: BASE_RIG.eyeL.y + clamp(targets.gazeY * 1.5 + muscles.orbicularisOculi * 0.22, -1.5, 1.5),
     },
     eyeR: {
       ...BASE_RIG.eyeR,
-      x: BASE_RIG.eyeR.x + clamp(face.microGazeX, -2, 2),
-      y: BASE_RIG.eyeR.y + clamp(face.microGazeY, -1.5, 1.5),
+      x: BASE_RIG.eyeR.x + clamp(targets.gazeX * 2 - muscles.corrugator * 0.08, -2, 2),
+      y: BASE_RIG.eyeR.y + clamp(targets.gazeY * 1.5 + muscles.orbicularisOculi * 0.22, -1.5, 1.5),
     },
     browL: {
       ...BASE_RIG.browL,
-      x: BASE_RIG.browL.x + clamp(face.browAngleL * 0.18, -1.2, 1.2),
-      y: BASE_RIG.browL.y + clamp(face.browLiftL + face.microBrowL, -3, 3),
-      rotation: clamp(face.browAngleL, -8, 8),
+      x: BASE_RIG.browL.x + clamp(face.browAngleL * 0.18 + browPinchOffset, -1.2, 1.2),
+      y: BASE_RIG.browL.y + clamp(face.browLiftL * 0.45 + face.microBrowL * 0.55 - browRaiseOffset + muscles.corrugator * 0.9, -3, 3),
+      rotation: clamp(face.browAngleL - muscles.corrugator * 2.4, -8, 8),
     },
     browR: {
       ...BASE_RIG.browR,
-      x: BASE_RIG.browR.x + clamp(face.browAngleR * 0.18, -1.2, 1.2),
-      y: BASE_RIG.browR.y + clamp(face.browLiftR + face.microBrowR, -3, 3),
-      rotation: clamp(face.browAngleR, -8, 8),
+      x: BASE_RIG.browR.x + clamp(face.browAngleR * 0.18 - browPinchOffset, -1.2, 1.2),
+      y: BASE_RIG.browR.y + clamp(face.browLiftR * 0.45 + face.microBrowR * 0.55 - browRaiseOffset + muscles.corrugator * 0.9, -3, 3),
+      rotation: clamp(face.browAngleR + muscles.corrugator * 2.4, -8, 8),
+    },
+    cheekL: {
+      ...BASE_RIG.cheekL,
+      x: BASE_RIG.cheekL.x + clamp(-muscles.zygomaticMajor * 0.8 + muscles.depressorAnguli * 0.35, -1.5, 1.2),
+      y: BASE_RIG.cheekL.y + clamp(-cheekLift + cheekDrop + targets.mouthOpen * 1.2, -2.2, 2.6),
+    },
+    cheekR: {
+      ...BASE_RIG.cheekR,
+      x: BASE_RIG.cheekR.x + clamp(muscles.zygomaticMajor * 0.8 - muscles.depressorAnguli * 0.35, -1.2, 1.5),
+      y: BASE_RIG.cheekR.y + clamp(-cheekLift + cheekDrop + targets.mouthOpen * 1.2, -2.2, 2.6),
     },
     lipCornerL: {
       ...BASE_RIG.lipCornerL,
-      x: BASE_RIG.lipCornerL.x + clamp(face.mouthCornerL * 0.7, -2.4, 2.4),
-      y: BASE_RIG.lipCornerL.y + leftCornerYOffset + clamp(face.lowerLipDrop * 0.35, -0.5, 1.2),
+      x: BASE_RIG.lipCornerL.x + clamp(-muscles.zygomaticMajor * 3.8 + muscles.depressorAnguli * 1.7, -2.8, 2.8),
+      y: BASE_RIG.lipCornerL.y + leftCornerYOffset + clamp(targets.mouthOpen * 0.9, -0.5, 1.4),
     },
     lipCornerR: {
       ...BASE_RIG.lipCornerR,
-      x: BASE_RIG.lipCornerR.x - clamp(face.mouthCornerR * 0.7, -2.4, 2.4),
-      y: BASE_RIG.lipCornerR.y + rightCornerYOffset + clamp(face.lowerLipDrop * 0.35, -0.5, 1.2),
+      x: BASE_RIG.lipCornerR.x + clamp(muscles.zygomaticMajor * 3.8 - muscles.depressorAnguli * 1.7, -2.8, 2.8),
+      y: BASE_RIG.lipCornerR.y + rightCornerYOffset + clamp(targets.mouthOpen * 0.9, -0.5, 1.4),
     },
   };
 }
@@ -391,6 +465,11 @@ function constrainRig(rig: CharacterRig): CharacterRig {
   next.browR.x = clamp(next.browR.x, BASE_RIG.browR.x - 1.2, BASE_RIG.browR.x + 1.2);
   next.browR.y = clamp(next.browR.y, BASE_RIG.browR.y - 3, BASE_RIG.browR.y + 3);
   next.browR.rotation = clamp(next.browR.rotation, -8, 8);
+
+  next.cheekL.x = clamp(next.cheekL.x, BASE_RIG.cheekL.x - 1.5, BASE_RIG.cheekL.x + 1.2);
+  next.cheekL.y = clamp(next.cheekL.y, BASE_RIG.cheekL.y - 2.2, BASE_RIG.cheekL.y + 2.6);
+  next.cheekR.x = clamp(next.cheekR.x, BASE_RIG.cheekR.x - 1.2, BASE_RIG.cheekR.x + 1.5);
+  next.cheekR.y = clamp(next.cheekR.y, BASE_RIG.cheekR.y - 2.2, BASE_RIG.cheekR.y + 2.6);
 
   next.lipCornerL.x = clamp(next.lipCornerL.x, BASE_RIG.lipCornerL.x - 2.8, BASE_RIG.lipCornerL.x + 2.8);
   next.lipCornerL.y = clamp(next.lipCornerL.y, BASE_RIG.lipCornerL.y - 4, BASE_RIG.lipCornerL.y + 4);
@@ -419,6 +498,8 @@ function stepRig(current: CharacterRig, face: FaceState): CharacterRig {
     eyeR: stepBone(current.eyeR, target.eyeR, 0.18, 0.16),
     browL: stepBone(current.browL, target.browL, 0.14, 0.16),
     browR: stepBone(current.browR, target.browR, 0.14, 0.16),
+    cheekL: stepBone(current.cheekL, target.cheekL, 0.1, 0.1),
+    cheekR: stepBone(current.cheekR, target.cheekR, 0.1, 0.1),
     lipCornerL: stepBone(current.lipCornerL, target.lipCornerL, 0.12, 0.12),
     lipCornerR: stepBone(current.lipCornerR, target.lipCornerR, 0.12, 0.12),
   });
@@ -1031,7 +1112,7 @@ const LeftEarComponent = memo(() => (
 ));
 LeftEarComponent.displayName='LeftEarComponent';
 
-const FaceBaseComponent = memo(({ showPores }: { showPores: boolean }) => (
+const FaceBaseComponent = memo(({ faceBaseState }: { faceBaseState: FaceBaseState }) => (
   <>
     <path fill="url(#g-face)" d="
       M 87,115
@@ -1042,7 +1123,7 @@ const FaceBaseComponent = memo(({ showPores }: { showPores: boolean }) => (
       C 123,209 118,205 112,197
       C 95,176 87,148 87,115 Z
     "/>
-    {showPores&&(
+    {faceBaseState.showPores&&(
       <path fill="url(#p-pore)" clipPath="url(#cp-face)" d="
         M 87,115 C 87,76 107,56 130,54 C 153,56 173,76 173,115
         C 173,148 165,176 148,197 C 142,205 137,209 130,209
@@ -1053,21 +1134,29 @@ const FaceBaseComponent = memo(({ showPores }: { showPores: boolean }) => (
     <ellipse cx="91" cy="148" rx="30" ry="50" fill="url(#g-sss)" opacity="0.52"/>
     <ellipse cx="91" cy="114" rx="14" ry="24" fill="url(#g-temple)" opacity="0.68"/>
     <ellipse cx="169" cy="114" rx="14" ry="24" fill="url(#g-temple)" opacity="0.68"/>
-    <ellipse cx="100" cy="134" rx="13" ry="7" fill="url(#g-malar)" opacity="0.68" transform="rotate(-12,100,134)"/>
-    <ellipse cx="160" cy="134" rx="13" ry="7" fill="url(#g-malar)" opacity="0.6" transform="rotate(12,160,134)"/>
-    <ellipse cx="94" cy="147" rx="21" ry="14" fill="url(#g-blush)" opacity="0.72"/>
-    <ellipse cx="166" cy="147" rx="21" ry="14" fill="url(#g-blush)" opacity="0.66"/>
+    <g transform={faceBaseState.leftCheekTransform}>
+      <ellipse cx="100" cy="134" rx="13" ry="7" fill="url(#g-malar)" opacity="0.68" transform="rotate(-12,100,134)"/>
+      <ellipse cx="94" cy="147" rx="21" ry="14" fill="url(#g-blush)" opacity="0.72"/>
+    </g>
+    <g transform={faceBaseState.rightCheekTransform}>
+      <ellipse cx="160" cy="134" rx="13" ry="7" fill="url(#g-malar)" opacity="0.6" transform="rotate(12,160,134)"/>
+      <ellipse cx="166" cy="147" rx="21" ry="14" fill="url(#g-blush)" opacity="0.66"/>
+    </g>
     <ellipse cx="124" cy="78" rx="27" ry="17" fill="url(#g-fhl)" opacity="1"/>
     <ellipse cx="130" cy="100" rx="8.5" ry="5.5" fill="rgba(0,0,0,0.048)" opacity="0.68"/>
     <ellipse cx="130" cy="211" rx="30" ry="11" fill="url(#g-jaw-d)" opacity="0.78"/>
     <rect x="127.5" y="140" width="5" height="25" rx="2.5" fill="url(#g-nb)" opacity="0.5"/>
     <ellipse cx="130" cy="173" rx="8" ry="5" fill="url(#g-ntip)" opacity="0.72"/>
-    {showPores&&<>
+    {faceBaseState.showPores&&<>
       <path d="M 109,160 C 108,168 108,176 111,182 C 113,186 116,188 117,189" fill="none" stroke="rgba(78,32,12,0.19)" strokeWidth="1.4" strokeLinecap="round" opacity="0.7"/>
       <path d="M 151,161 C 152,169 152,177 149,183 C 147,187 144,189 143,190" fill="none" stroke="rgba(78,32,12,0.17)" strokeWidth="1.4" strokeLinecap="round" opacity="0.68"/>
     </>}
   </>
-), (prev, next) => prev.showPores === next.showPores);
+), (prev, next) => (
+  prev.faceBaseState.showPores === next.faceBaseState.showPores &&
+  prev.faceBaseState.leftCheekTransform === next.faceBaseState.leftCheekTransform &&
+  prev.faceBaseState.rightCheekTransform === next.faceBaseState.rightCheekTransform
+));
 FaceBaseComponent.displayName='FaceBaseComponent';
 
 const BrowsComponent = memo(({ browState }: { browState: BrowState }) => (
@@ -1267,6 +1356,18 @@ export function AyrinCharacter({
     'M 149,274 C 153,330 153,396 149,452',
     'M 121,270 C 118,326 118,392 121,448',
   ].slice(0,lodCfg.foldCount)), [lodCfg.foldCount]);
+
+  const faceBaseState=useMemo<FaceBaseState>(() => ({
+    showPores: lodCfg.showPores,
+    leftCheekTransform: `translate(${(rig.cheekL.x-BASE_RIG.cheekL.x).toFixed(2)}px, ${(rig.cheekL.y-BASE_RIG.cheekL.y).toFixed(2)}px)`,
+    rightCheekTransform: `translate(${(rig.cheekR.x-BASE_RIG.cheekR.x).toFixed(2)}px, ${(rig.cheekR.y-BASE_RIG.cheekR.y).toFixed(2)}px)`,
+  }), [
+    lodCfg.showPores,
+    rig.cheekL.x,
+    rig.cheekL.y,
+    rig.cheekR.x,
+    rig.cheekR.y,
+  ]);
 
   const leftEyeState=useMemo<EyeState>(() => ({
     gazeX: rig.eyeL.x-BASE_RIG.eyeL.x,
@@ -1749,7 +1850,7 @@ export function AyrinCharacter({
             <HairComponent hairState={hairState}/>
             <FringeComponent strandCount={hairState.strandCount}/>
             <LeftEarComponent />
-            <FaceBaseComponent showPores={lodCfg.showPores} />
+            <FaceBaseComponent faceBaseState={faceBaseState} />
             <BrowsComponent browState={browState} />
 
             {/* LEFT EYE */}
