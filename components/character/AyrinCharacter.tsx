@@ -78,6 +78,33 @@ interface HairState {
   microOffset: number;
 }
 
+type CharacterState =
+  | 'idle'
+  | 'engaged'
+  | 'affection'
+  | 'thinking'
+  | 'surprised'
+  | 'sad';
+
+type CharacterEvent =
+  | 'MOUSE_ENTER'
+  | 'MOUSE_LEAVE'
+  | 'CLICK'
+  | 'TIME_PASS'
+  | 'FOCUS';
+
+interface AnimationGraphNode {
+  base: EmotionKey;
+  overlay?: EmotionKey;
+  overlayWeight: number;
+}
+
+interface SpringConfig {
+  stiffness: number;
+  damping: number;
+  precision: number;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    LOD CONFIG
 ═══════════════════════════════════════════════════════════════ */
@@ -104,6 +131,53 @@ const EMOTIONS: Record<EmotionKey, EmotionTarget> = {
   warmAttention:  { browLiftL:-1.2, browLiftR:-1.0, browAngleL:0.2,  browAngleR:-0.2, lidDropL:0.12, lidDropR:0.1,  eyeOffsetX:0,    eyeOffsetY:0,   pupilScale:1.14, mouthCornerL:-0.4, mouthCornerR:-0.2, lowerLipDrop:0.2, headTiltX:-2.8, headTiltY:0,   breathScale:1.0,  blinkFreq:3400 },
   quietSadness:   { browLiftL:1.6,  browLiftR:2.0,  browAngleL:2.5,  browAngleR:3.0,  lidDropL:0.3,  lidDropR:0.32, eyeOffsetX:0,    eyeOffsetY:1.6, pupilScale:1.03, mouthCornerL:1.0,  mouthCornerR:1.1,  lowerLipDrop:0.2, headTiltX:-4.6, headTiltY:-0.4,breathScale:0.96, blinkFreq:5600 },
   subtleSurprise: { browLiftL:-2.4, browLiftR:-2.0, browAngleL:-0.4, browAngleR:0.4,  lidDropL:0.02, lidDropR:0.02, eyeOffsetX:0,    eyeOffsetY:-0.8,pupilScale:1.14, mouthCornerL:0.2,  mouthCornerR:0.1,  lowerLipDrop:0.6, headTiltX:-1.4, headTiltY:0,   breathScale:1.05, blinkFreq:2800 },
+};
+
+const STATE_TRANSITIONS: Record<CharacterState, Partial<Record<CharacterEvent, CharacterState>>> = {
+  idle: {
+    MOUSE_ENTER: 'engaged',
+    CLICK: 'affection',
+    FOCUS: 'thinking',
+  },
+  engaged: {
+    MOUSE_LEAVE: 'idle',
+    CLICK: 'affection',
+    FOCUS: 'thinking',
+  },
+  affection: {
+    TIME_PASS: 'idle',
+    MOUSE_LEAVE: 'idle',
+  },
+  thinking: {
+    TIME_PASS: 'idle',
+    MOUSE_ENTER: 'engaged',
+    CLICK: 'affection',
+  },
+  surprised: {
+    TIME_PASS: 'engaged',
+    MOUSE_LEAVE: 'idle',
+  },
+  sad: {
+    TIME_PASS: 'idle',
+    MOUSE_ENTER: 'engaged',
+    CLICK: 'affection',
+  },
+};
+
+const STATE_TIMEOUTS: Partial<Record<CharacterState, number>> = {
+  affection: 2200,
+  thinking: 4200,
+  surprised: 1800,
+  sad: 5200,
+};
+
+const STATE_GRAPH: Record<CharacterState, AnimationGraphNode> = {
+  idle: { base: 'calm', overlayWeight: 0 },
+  engaged: { base: 'calm', overlay: 'warmAttention', overlayWeight: 0.78 },
+  affection: { base: 'warmAttention', overlay: 'softSmile', overlayWeight: 0.84 },
+  thinking: { base: 'thoughtful', overlay: 'reflective', overlayWeight: 0.42 },
+  surprised: { base: 'calm', overlay: 'subtleSurprise', overlayWeight: 0.9 },
+  sad: { base: 'reflective', overlay: 'quietSadness', overlayWeight: 0.82 },
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -142,6 +216,14 @@ const T = {
   breathAsymDelay:     240,
 } as const;
 
+const DEFAULT_EMOTION_SPRING: SpringConfig = {
+  stiffness: 0.085,
+  damping: 0.72,
+  precision: 0.0012,
+};
+
+const EMOTION_TARGET_KEYS = Object.keys(EMOTIONS.calm) as (keyof EmotionTarget)[];
+
 /* ═══════════════════════════════════════════════════════════════
    EASING
 ═══════════════════════════════════════════════════════════════ */
@@ -153,6 +235,37 @@ const seededRng  = (seed: number) => {
   let s = seed;
   return () => { s=(s*16807+0)%2147483647; return (s-1)/2147483646; };
 };
+
+function blendEmotionTargets(a: EmotionTarget, b: EmotionTarget, weight: number): EmotionTarget {
+  const out = { ...a };
+
+  for (const key of EMOTION_TARGET_KEYS) {
+    out[key] = lerp(a[key], b[key], weight);
+  }
+
+  return out;
+}
+
+function createZeroEmotionTarget(): EmotionTarget {
+  return {
+    browLiftL: 0,
+    browLiftR: 0,
+    browAngleL: 0,
+    browAngleR: 0,
+    lidDropL: 0,
+    lidDropR: 0,
+    eyeOffsetX: 0,
+    eyeOffsetY: 0,
+    pupilScale: 0,
+    mouthCornerL: 0,
+    mouthCornerR: 0,
+    lowerLipDrop: 0,
+    headTiltX: 0,
+    headTiltY: 0,
+    breathScale: 0,
+    blinkFreq: 0,
+  };
+}
 
 /* ═══════════════════════════════════════════════════════════════
    WEBGL SHADER  — softened for warm skin, less drama
@@ -334,6 +447,22 @@ interface MicroState {
   lightPulse:number;rimPulse:number;postBlinkDroopL:number;postBlinkDroopR:number;blinkAmt:number;
 }
 
+const EMPTY_MICRO_STATE: MicroState = {
+  microBrowL: 0,
+  microBrowR: 0,
+  microGazeX: 0,
+  microGazeY: 0,
+  microLidL: 0,
+  microLidR: 0,
+  microLipTension: 0,
+  microLipAsym: 0,
+  lightPulse: 0,
+  rimPulse: 0,
+  postBlinkDroopL: 0,
+  postBlinkDroopR: 0,
+  blinkAmt: 0,
+};
+
 function useMicroRealism(baseBlinkFreq:number){
   const mRef=useRef<MicroState>({
     microBrowL:0,microBrowR:0,microGazeX:0,microGazeY:0,
@@ -369,25 +498,115 @@ function useMicroRealism(baseBlinkFreq:number){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   useEmotionBlend
+   CHARACTER ENGINE
 ═══════════════════════════════════════════════════════════════ */
-function useEmotionBlend(activeKey:EmotionKey){
-  const curRef=useRef<EmotionTarget>({...EMOTIONS.calm});
-  const fromRef=useRef<EmotionTarget>({...EMOTIONS.calm});
-  const toRef=useRef<EmotionTarget>({...EMOTIONS.calm});
-  const blendStart=useRef(0),rafR=useRef(0);
-  const [live,setLive]=useState<EmotionTarget>({...EMOTIONS.calm});
-  useEffect(()=>{fromRef.current={...curRef.current};toRef.current={...EMOTIONS[activeKey]};blendStart.current=performance.now();},[activeKey]);
-  useEffect(()=>{
-    const tick=()=>{
-      const t=Math.min(1,(performance.now()-blendStart.current)/T.emotionBlend);
-      const ease=easeInOut(t),f=fromRef.current,g=toRef.current,out:any={};
-      for(const k of Object.keys(f) as (keyof EmotionTarget)[]) out[k]=lerp((f as any)[k],(g as any)[k],ease);
-      curRef.current=out; setLive({...out}); rafR.current=requestAnimationFrame(tick);
+function resolveGraphTarget(state: CharacterState): EmotionTarget {
+  const node = STATE_GRAPH[state];
+  const base = EMOTIONS[node.base];
+
+  if (!node.overlay || node.overlayWeight <= 0) {
+    return { ...base };
+  }
+
+  return blendEmotionTargets(base, EMOTIONS[node.overlay], node.overlayWeight);
+}
+
+function composeFaceState(base: EmotionTarget, micro: MicroState): FaceState {
+  return {
+    ...base,
+    microBrowL: micro.microBrowL,
+    microBrowR: micro.microBrowR,
+    microGazeX: base.eyeOffsetX + micro.microGazeX,
+    microGazeY: base.eyeOffsetY + micro.microGazeY,
+    microLidL: micro.microLidL,
+    microLidR: micro.microLidR,
+    microLipTension: micro.microLipTension,
+    microLipAsym: micro.microLipAsym,
+    lightPulse: micro.lightPulse,
+    rimPulse: micro.rimPulse,
+    postBlinkDroopL: micro.postBlinkDroopL,
+    postBlinkDroopR: micro.postBlinkDroopR,
+  };
+}
+
+function useStateMachine(initialState: CharacterState) {
+  const [state, setState] = useState<CharacterState>(initialState);
+
+  const send = useCallback((event: CharacterEvent) => {
+    setState((current) => STATE_TRANSITIONS[current][event] ?? current);
+  }, []);
+
+  useEffect(() => {
+    const timeoutMs = STATE_TIMEOUTS[state];
+    if (!timeoutMs) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      send('TIME_PASS');
+    }, timeoutMs);
+
+    return () => {
+      window.clearTimeout(timer);
     };
-    rafR.current=requestAnimationFrame(tick); return ()=>cancelAnimationFrame(rafR.current);
-  },[]);
-  return live;
+  }, [send, state]);
+
+  return { state, send };
+}
+
+function useAnimationGraph(state: CharacterState, emotionOverride?: EmotionKey) {
+  return useMemo<EmotionTarget>(() => {
+    if (emotionOverride) {
+      return { ...EMOTIONS[emotionOverride] };
+    }
+
+    return resolveGraphTarget(state);
+  }, [emotionOverride, state]);
+}
+
+function useSpringEmotionTarget(
+  target: EmotionTarget,
+  config: SpringConfig = DEFAULT_EMOTION_SPRING
+) {
+  const liveRef = useRef<EmotionTarget>({ ...target });
+  const velocityRef = useRef<EmotionTarget>(createZeroEmotionTarget());
+  const targetRef = useRef(target);
+
+  useEffect(() => {
+    targetRef.current = target;
+  }, [target]);
+
+  useEffect(() => {
+    let raf = 0;
+
+    const tick = () => {
+      const next = { ...liveRef.current };
+      const nextVelocity = { ...velocityRef.current };
+
+      for (const key of EMOTION_TARGET_KEYS) {
+        const current = liveRef.current[key];
+        const goal = targetRef.current[key];
+        const velocity = velocityRef.current[key];
+        const force = (goal - current) * config.stiffness;
+        const steppedVelocity = (velocity + force) * config.damping;
+
+        nextVelocity[key] = steppedVelocity;
+        next[key] =
+          Math.abs(steppedVelocity) < config.precision && Math.abs(goal - current) < config.precision
+            ? goal
+            : current + steppedVelocity;
+      }
+
+      velocityRef.current = nextVelocity;
+      liveRef.current = next;
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [config.damping, config.precision, config.stiffness]);
+
+  return liveRef;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -806,7 +1025,7 @@ interface AyrinCharacterProps {
 }
 
 export function AyrinCharacter({
-  emotion:emotionProp='calm',
+  emotion:emotionProp,
   onEmotionChange,
   reducedMotion=false,
 }:AyrinCharacterProps={}){
@@ -815,8 +1034,10 @@ export function AyrinCharacter({
   const canvasRef=useRef<HTMLCanvasElement>(null);
   const lodLevel=useLOD(containerRef);
   const lodCfg=LOD[lodLevel];
-  const emotionBase=useEmotionBlend(emotionProp);
-  const microRef=useMicroRealism(emotionBase.blinkFreq);
+  const { state: characterState, send } = useStateMachine('idle');
+  const animationTarget = useAnimationGraph(characterState, emotionProp);
+  const springEmotionRef = useSpringEmotionTarget(animationTarget);
+  const microRef=useMicroRealism(animationTarget.blinkFreq);
   const [cSize,setCSize]=useState({w:260,h:720});
   useLayoutEffect(()=>{
     const el=containerRef.current; if(!el) return;
@@ -824,30 +1045,16 @@ export function AyrinCharacter({
     ro.observe(el); return ()=>ro.disconnect();
   },[]);
 
-  const [face,setFace]=useState<FaceState>(()=>({
-    ...EMOTIONS.calm,
-    microBrowL:0,microBrowR:0,microGazeX:0,microGazeY:0,
-    microLidL:0,microLidR:0,microLipTension:0,microLipAsym:0,
-    lightPulse:0,rimPulse:0,postBlinkDroopL:0,postBlinkDroopR:0,
-  }));
+  const [face,setFace]=useState<FaceState>(()=>composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
 
   useEffect(()=>{
     let raf:number;
     const merge=()=>{
-      const E=emotionBase,M=microRef.current;
-      setFace({
-        ...E,
-        microBrowL:M.microBrowL,microBrowR:M.microBrowR,
-        microGazeX:E.eyeOffsetX+M.microGazeX,microGazeY:E.eyeOffsetY+M.microGazeY,
-        microLidL:M.microLidL,microLidR:M.microLidR,
-        microLipTension:M.microLipTension,microLipAsym:M.microLipAsym,
-        lightPulse:M.lightPulse,rimPulse:M.rimPulse,
-        postBlinkDroopL:M.postBlinkDroopL,postBlinkDroopR:M.postBlinkDroopR,
-      });
+      setFace(composeFaceState(springEmotionRef.current, microRef.current));
       raf=requestAnimationFrame(merge);
     };
     raf=requestAnimationFrame(merge); return ()=>cancelAnimationFrame(raf);
-  },[emotionBase,microRef]);
+  },[microRef,springEmotionRef]);
 
   useWebGLOverlay(canvasRef,lodCfg,face,cSize);
 
@@ -867,6 +1074,13 @@ export function AyrinCharacter({
   const M=microRef.current;
   const blinkAmt=reducedMotion?0:M.blinkAmt;
   const headRot=face.headTiltX;
+  const breathStyle=useMemo(() => ({
+    transformOrigin: '130px 490px',
+    transform: `translateY(${((1-face.breathScale)*7).toFixed(2)}px) scaleY(${face.breathScale.toFixed(4)})`,
+  }), [face.breathScale]);
+  const headOffsetStyle=useMemo(() => ({
+    transform: `translateY(${face.headTiltY.toFixed(2)}px)`,
+  }), [face.headTiltY]);
 
   const folds=useMemo(() => ([
     'M 91,262 C 86,320 86,386 91,448',
@@ -943,13 +1157,28 @@ export function AyrinCharacter({
     microOffset: face.microBrowL*0.45,
   }), [lodCfg.hairStrandCount, face.microBrowL]);
 
+  const handleMouseEnter=useCallback(() => {
+    send('MOUSE_ENTER');
+    onEmotionChange?.('warmAttention');
+  }, [onEmotionChange, send]);
+
+  const handleMouseLeave=useCallback(() => {
+    send('MOUSE_LEAVE');
+    onEmotionChange?.(emotionProp ?? 'calm');
+  }, [emotionProp, onEmotionChange, send]);
+
+  const handleClick=useCallback(() => {
+    send('CLICK');
+    onEmotionChange?.('softSmile');
+  }, [onEmotionChange, send]);
+
   return(
     <div
       ref={containerRef}
       style={{position:'relative',width:'100%',height:'100%',display:'inline-block'}}
-      onMouseEnter={()=>onEmotionChange?.('warmAttention')}
-      onMouseLeave={()=>onEmotionChange?.('calm')}
-      onClick={()=>onEmotionChange?.('softSmile')}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       {lodCfg.shaderQuality!=='off'&&(
         <canvas ref={canvasRef} width={cSize.w||260} height={cSize.h||720}
@@ -1236,7 +1465,8 @@ export function AyrinCharacter({
         <ellipse cx="130" cy="714" rx="39" ry="4"  fill="rgba(0,0,0,0.11)"/>
 
         {/* ════════════════════════════ BREATH ════════════════════════════ */}
-        <g className="ayrin-breath">
+        <g style={breathStyle}>
+          <g className="ayrin-breath">
 
           {/* PANTS */}
           <path fill="url(#g-trsr)" d="M 97,508 C 86,572 84,635 92,695 C 99,709 119,709 126,695 C 134,633 135,571 127,508 Z"/>
@@ -1326,7 +1556,8 @@ export function AyrinCharacter({
           <path d="M 111,232 C 120,228 126,226 130,226 C 134,226 140,228 149,232" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.0" strokeLinecap="round"/>
 
           {/* ═══════ HEAD GROUP ═══════ */}
-          <g className="ayrin-head">
+          <g style={headOffsetStyle}>
+            <g className="ayrin-head">
 
             {/* HAIR */}
             <HairComponent hairState={hairState}/>
@@ -1428,8 +1659,10 @@ export function AyrinCharacter({
               C 123,209 118,205 112,197 C 95,176 87,148 87,115 Z"
               fill="none" stroke="url(#g-rim)" strokeWidth="3.4" className="ayrin-rim-light" opacity="0.42"/>
 
-          </g>{/* .ayrin-head */}
+            </g>{/* .ayrin-head */}
+          </g>
         </g>{/* .ayrin-breath */}
+        </g>
       </svg>
     </div>
   );
