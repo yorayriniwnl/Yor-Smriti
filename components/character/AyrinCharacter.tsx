@@ -156,6 +156,50 @@ interface MuscleState {
   platysma: number;
 }
 
+interface PerceptionState {
+  mouseX: number;
+  mouseY: number;
+  mouseSpeed: number;
+  isHovering: boolean;
+  clickIntensity: number;
+  idleMs: number;
+  lastInteractionAt: number;
+}
+
+interface InteractionMemory {
+  clicks: number;
+  lastInteractionAt: number;
+  familiarity: number;
+  trust: number;
+  comfort: number;
+  interest: number;
+}
+
+interface InterpretationState {
+  userAttention: number;
+  curiosity: number;
+  familiarity: number;
+  trust: number;
+  comfort: number;
+  interest: number;
+  idleDepth: number;
+  clickAfterglow: number;
+  focusX: number;
+  focusY: number;
+}
+
+interface IntentState {
+  lookAtUser: number;
+  expressWarmth: number;
+  microCuriosity: number;
+  lookAway: number;
+  smileBias: number;
+  gazeX: number;
+  gazeY: number;
+  headTiltX: number;
+  headTiltY: number;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    LOD CONFIG
 ═══════════════════════════════════════════════════════════════ */
@@ -767,6 +811,293 @@ function composeFaceState(base: EmotionTarget, micro: MicroState): FaceState {
   };
 }
 
+function interpretPerception(
+  perception: PerceptionState,
+  memory: InteractionMemory,
+  now: number
+): InterpretationState {
+  const attentionCycle = perception.isHovering
+    ? 0.78 + Math.sin(now * 0.00135 + memory.familiarity * 1.8) * 0.14
+    : 0;
+
+  return {
+    userAttention: clamp(attentionCycle - clamp((perception.idleMs - 9000) / 9000, 0, 0.28), 0, 1),
+    curiosity: clamp(
+      perception.mouseSpeed * 0.78 +
+      (perception.isHovering ? 0.2 : 0.04) +
+      (1 - memory.familiarity) * 0.14,
+      0,
+      1
+    ),
+    familiarity: memory.familiarity,
+    trust: memory.trust,
+    comfort: memory.comfort,
+    interest: memory.interest,
+    idleDepth: clamp((perception.idleMs - 5000) / 9000, 0, 1),
+    clickAfterglow: perception.clickIntensity,
+    focusX: perception.mouseX,
+    focusY: perception.mouseY,
+  };
+}
+
+function generateIntent(
+  interpretation: InterpretationState,
+  now: number
+): IntentState {
+  const lookAtUser = clamp(
+    interpretation.userAttention * (0.72 + interpretation.interest * 0.2),
+    0,
+    1
+  );
+  const lookAway = clamp(
+    Math.max(0, Math.sin(now * 0.00105 + interpretation.familiarity * 2.2)) * 0.22 +
+    interpretation.idleDepth * 0.75,
+    0,
+    1
+  );
+  const gazeBlend = clamp(lookAtUser - lookAway * 0.4, 0, 1);
+  const idleSweepX = Math.sin(now * 0.00042 + 1.6) * 0.42 * (1 - gazeBlend);
+  const idleSweepY = Math.cos(now * 0.00033 + 0.4) * 0.24 * (1 - gazeBlend);
+
+  return {
+    lookAtUser,
+    expressWarmth: clamp(
+      interpretation.familiarity * 0.4 +
+      interpretation.trust * 0.4 +
+      interpretation.comfort * 0.2,
+      0,
+      1
+    ),
+    microCuriosity: clamp(
+      interpretation.curiosity + interpretation.interest * 0.18,
+      0,
+      1
+    ),
+    lookAway,
+    smileBias: clamp(
+      interpretation.clickAfterglow * 0.3 +
+      interpretation.trust * 0.26 +
+      interpretation.comfort * 0.2 -
+      interpretation.idleDepth * 0.15,
+      0,
+      1
+    ),
+    gazeX: clamp(interpretation.focusX * gazeBlend + idleSweepX, -1, 1),
+    gazeY: clamp(
+      interpretation.focusY * gazeBlend * 0.78 +
+      idleSweepY +
+      interpretation.idleDepth * 0.08,
+      -1,
+      1
+    ),
+    headTiltX: clamp(
+      interpretation.focusX * gazeBlend * 0.4 - interpretation.idleDepth * 0.25,
+      -1,
+      1
+    ),
+    headTiltY: clamp(
+      interpretation.focusY * gazeBlend * 0.26 +
+      interpretation.idleDepth * 0.35 -
+      lookAway * 0.12,
+      -1,
+      1
+    ),
+  };
+}
+
+function applyIntentToEmotion(
+  base: EmotionTarget,
+  interpretation: InterpretationState,
+  intent: IntentState
+): EmotionTarget {
+  const next = { ...base };
+  const smile = intent.smileBias * 0.85 + intent.expressWarmth * 0.35;
+
+  next.eyeOffsetX = clamp(
+    base.eyeOffsetX + intent.gazeX * (1.4 + interpretation.curiosity * 0.5),
+    -2.6,
+    2.6
+  );
+  next.eyeOffsetY = clamp(
+    base.eyeOffsetY + intent.gazeY * (1 + interpretation.userAttention * 0.18),
+    -2,
+    2.4
+  );
+  next.mouthCornerL = clamp(base.mouthCornerL - smile, -2.2, 1.6);
+  next.mouthCornerR = clamp(base.mouthCornerR - smile * 0.94, -2.2, 1.6);
+  next.lowerLipDrop = clamp(
+    base.lowerLipDrop + interpretation.clickAfterglow * 0.08 + intent.lookAway * 0.04,
+    0,
+    0.85
+  );
+  next.browLiftL = clamp(
+    base.browLiftL - intent.expressWarmth * 0.28 + intent.microCuriosity * 0.16 + interpretation.idleDepth * 0.18,
+    -3,
+    3
+  );
+  next.browLiftR = clamp(
+    base.browLiftR - intent.expressWarmth * 0.24 + intent.microCuriosity * 0.12 + interpretation.idleDepth * 0.18,
+    -3,
+    3
+  );
+  next.browAngleL = clamp(base.browAngleL - intent.lookAway * 0.25 + intent.microCuriosity * 0.18, -3.5, 3.5);
+  next.browAngleR = clamp(base.browAngleR + intent.lookAway * 0.25 - intent.microCuriosity * 0.18, -3.5, 3.5);
+  next.lidDropL = clamp(base.lidDropL + intent.lookAway * 0.12 - interpretation.userAttention * 0.04 + intent.expressWarmth * 0.02, 0.02, 0.34);
+  next.lidDropR = clamp(base.lidDropR + intent.lookAway * 0.11 - interpretation.userAttention * 0.04 + intent.expressWarmth * 0.02, 0.02, 0.34);
+  next.pupilScale = clamp(
+    base.pupilScale + interpretation.userAttention * 0.06 + intent.microCuriosity * 0.04 - intent.lookAway * 0.05,
+    0.92,
+    1.18
+  );
+  next.headTiltX = clamp(base.headTiltX + intent.headTiltX * 0.9, -5.5, 1.2);
+  next.headTiltY = clamp(base.headTiltY + intent.headTiltY * 1.1, -2.6, 2.6);
+  next.breathScale = clamp(base.breathScale + intent.expressWarmth * 0.015 - interpretation.idleDepth * 0.01, 0.95, 1.06);
+  next.blinkFreq = clamp(
+    base.blinkFreq * (1 - interpretation.userAttention * 0.08 + intent.lookAway * 0.12),
+    2400,
+    6200
+  );
+
+  return next;
+}
+
+function usePerceptionLayer(containerRef: React.RefObject<HTMLDivElement | null>) {
+  const perceptionRef = useRef<PerceptionState>({
+    mouseX: 0,
+    mouseY: 0,
+    mouseSpeed: 0,
+    isHovering: false,
+    clickIntensity: 0,
+    idleMs: 0,
+    lastInteractionAt: performance.now(),
+  });
+  const memoryRef = useRef<InteractionMemory>({
+    clicks: 0,
+    lastInteractionAt: performance.now(),
+    familiarity: 0.34,
+    trust: 0.52,
+    comfort: 0.58,
+    interest: 0.5,
+  });
+  const pointerRef = useRef({
+    x: 0,
+    y: 0,
+    ts: performance.now(),
+  });
+  const sampleTimeRef = useRef(performance.now());
+
+  const markInteraction = useCallback(() => {
+    const now = performance.now();
+    perceptionRef.current.lastInteractionAt = now;
+    memoryRef.current.lastInteractionAt = now;
+  }, []);
+
+  const handlePointerEnter = useCallback(() => {
+    perceptionRef.current.isHovering = true;
+    markInteraction();
+    memoryRef.current.interest = clamp(memoryRef.current.interest + 0.04, 0.22, 1);
+    memoryRef.current.comfort = clamp(memoryRef.current.comfort + 0.02, 0.2, 1);
+  }, [markInteraction]);
+
+  const handlePointerLeave = useCallback(() => {
+    perceptionRef.current.isHovering = false;
+    perceptionRef.current.mouseSpeed = 0;
+    markInteraction();
+  }, [markInteraction]);
+
+  const handlePointerMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+
+    const mouseX = clamp(((event.clientX - rect.left) / rect.width) * 2 - 1, -1, 1);
+    const mouseY = clamp(((event.clientY - rect.top) / rect.height) * 2 - 1, -1, 1);
+    const now = performance.now();
+    const dx = mouseX - pointerRef.current.x;
+    const dy = mouseY - pointerRef.current.y;
+    const dt = Math.max(now - pointerRef.current.ts, 16);
+    const speed = clamp((Math.sqrt(dx * dx + dy * dy) / dt) * 18, 0, 1);
+
+    pointerRef.current = { x: mouseX, y: mouseY, ts: now };
+
+    perceptionRef.current.mouseX = mouseX;
+    perceptionRef.current.mouseY = mouseY;
+    perceptionRef.current.mouseSpeed = speed;
+    perceptionRef.current.isHovering = true;
+    perceptionRef.current.lastInteractionAt = now;
+
+    memoryRef.current.lastInteractionAt = now;
+    memoryRef.current.interest = clamp(memoryRef.current.interest + 0.012 + speed * 0.02, 0.22, 1);
+    memoryRef.current.comfort = clamp(memoryRef.current.comfort + 0.004, 0.2, 1);
+  }, [containerRef]);
+
+  const handlePointerClick = useCallback(() => {
+    const now = performance.now();
+
+    perceptionRef.current.clickIntensity = 1;
+    perceptionRef.current.lastInteractionAt = now;
+
+    memoryRef.current.clicks += 1;
+    memoryRef.current.lastInteractionAt = now;
+    memoryRef.current.familiarity = clamp(memoryRef.current.familiarity + 0.03, 0.2, 1);
+    memoryRef.current.trust = clamp(memoryRef.current.trust + 0.025, 0.2, 1);
+    memoryRef.current.comfort = clamp(memoryRef.current.comfort + 0.02, 0.2, 1);
+    memoryRef.current.interest = clamp(memoryRef.current.interest + 0.045, 0.22, 1);
+  }, []);
+
+  const samplePerception = useCallback(() => {
+    const now = performance.now();
+    const deltaMs = Math.min(now - sampleTimeRef.current, 64);
+    const step = deltaMs / 16.7;
+
+    sampleTimeRef.current = now;
+
+    perceptionRef.current.idleMs = now - perceptionRef.current.lastInteractionAt;
+    perceptionRef.current.clickIntensity = perceptionRef.current.clickIntensity < 0.001
+      ? 0
+      : perceptionRef.current.clickIntensity * Math.pow(perceptionRef.current.isHovering ? 0.955 : 0.92, step);
+    perceptionRef.current.mouseSpeed = perceptionRef.current.mouseSpeed < 0.001
+      ? 0
+      : perceptionRef.current.mouseSpeed * Math.pow(0.84, step);
+
+    const interestDecay = perceptionRef.current.idleMs > 9000
+      ? 0.0038
+      : perceptionRef.current.idleMs > 4500
+        ? 0.0023
+        : 0.0009;
+
+    memoryRef.current.interest = clamp(memoryRef.current.interest - interestDecay * step, 0.22, 1);
+    if (!perceptionRef.current.isHovering && perceptionRef.current.idleMs > 10000) {
+      memoryRef.current.comfort = clamp(memoryRef.current.comfort - 0.0011 * step, 0.24, 1);
+    }
+    if (perceptionRef.current.isHovering) {
+      memoryRef.current.interest = clamp(memoryRef.current.interest + 0.0025 * step, 0.22, 1);
+      memoryRef.current.familiarity = clamp(memoryRef.current.familiarity + 0.0006 * step, 0.2, 1);
+      memoryRef.current.comfort = clamp(memoryRef.current.comfort + 0.0014 * step, 0.2, 1);
+    }
+
+    return {
+      now,
+      perception: { ...perceptionRef.current },
+      memory: { ...memoryRef.current },
+    };
+  }, []);
+
+  return {
+    handlePointerEnter,
+    handlePointerLeave,
+    handlePointerMove,
+    handlePointerClick,
+    samplePerception,
+  };
+}
+
 function useStateMachine(initialState: CharacterState) {
   const [state, setState] = useState<CharacterState>(initialState);
 
@@ -1298,9 +1629,21 @@ export function AyrinCharacter({
   const lodLevel=useLOD(containerRef);
   const lodCfg=LOD[lodLevel];
   const { state: characterState, send } = useStateMachine('idle');
+  const {
+    handlePointerEnter,
+    handlePointerLeave,
+    handlePointerMove,
+    handlePointerClick,
+    samplePerception,
+  } = usePerceptionLayer(containerRef);
   const animationTarget = useAnimationGraph(characterState, emotionProp);
   const springEmotionRef = useSpringEmotionTarget(animationTarget);
   const microRef=useMicroRealism(animationTarget.blinkFreq);
+  const hoverIntentTimer=useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clickIntentTimer=useRef<ReturnType<typeof setTimeout> | null>(null);
+  const awarenessEventRef=useRef({
+    lastFocusAt: 0,
+  });
   const [cSize,setCSize]=useState({w:260,h:720});
   useLayoutEffect(()=>{
     const el=containerRef.current; if(!el) return;
@@ -1314,13 +1657,36 @@ export function AyrinCharacter({
   useEffect(()=>{
     let raf:number;
     const merge=()=>{
-      const nextFace=composeFaceState(springEmotionRef.current, microRef.current);
+      const { now, perception, memory } = samplePerception();
+      const interpretation = interpretPerception(perception, memory, now);
+      const intent = generateIntent(interpretation, now);
+      const awareEmotion = applyIntentToEmotion(springEmotionRef.current, interpretation, intent);
+      const nextFace=composeFaceState(awareEmotion, microRef.current);
+
+      if (
+        !perception.isHovering &&
+        perception.idleMs > 5200 &&
+        now - awarenessEventRef.current.lastFocusAt > 9000
+      ) {
+        awarenessEventRef.current.lastFocusAt = now;
+        send('FOCUS');
+      }
+
       rigRef.current=stepRig(rigRef.current, nextFace);
       setFace(nextFace);
       raf=requestAnimationFrame(merge);
     };
     raf=requestAnimationFrame(merge); return ()=>cancelAnimationFrame(raf);
-  },[microRef,springEmotionRef]);
+  },[microRef,samplePerception,send,springEmotionRef]);
+
+  useEffect(() => () => {
+    if (hoverIntentTimer.current) {
+      clearTimeout(hoverIntentTimer.current);
+    }
+    if (clickIntentTimer.current) {
+      clearTimeout(clickIntentTimer.current);
+    }
+  }, []);
 
   useWebGLOverlay(canvasRef,lodCfg,face,cSize);
 
@@ -1445,19 +1811,40 @@ export function AyrinCharacter({
   }), [lodCfg.hairStrandCount, rig.browL.y, rig.head.rotation]);
 
   const handleMouseEnter=useCallback(() => {
-    send('MOUSE_ENTER');
-    onEmotionChange?.('warmAttention');
-  }, [onEmotionChange, send]);
+    handlePointerEnter();
+    if (hoverIntentTimer.current) {
+      clearTimeout(hoverIntentTimer.current);
+    }
+    hoverIntentTimer.current = setTimeout(() => {
+      send('MOUSE_ENTER');
+      onEmotionChange?.('warmAttention');
+    }, 120);
+  }, [handlePointerEnter, onEmotionChange, send]);
 
   const handleMouseLeave=useCallback(() => {
+    handlePointerLeave();
+    if (hoverIntentTimer.current) {
+      clearTimeout(hoverIntentTimer.current);
+      hoverIntentTimer.current = null;
+    }
     send('MOUSE_LEAVE');
     onEmotionChange?.(emotionProp ?? 'calm');
-  }, [emotionProp, onEmotionChange, send]);
+  }, [emotionProp, handlePointerLeave, onEmotionChange, send]);
+
+  const handleMouseMove=useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    handlePointerMove(event);
+  }, [handlePointerMove]);
 
   const handleClick=useCallback(() => {
-    send('CLICK');
-    onEmotionChange?.('softSmile');
-  }, [onEmotionChange, send]);
+    handlePointerClick();
+    if (clickIntentTimer.current) {
+      clearTimeout(clickIntentTimer.current);
+    }
+    clickIntentTimer.current = setTimeout(() => {
+      send('CLICK');
+      onEmotionChange?.('softSmile');
+    }, 95);
+  }, [handlePointerClick, onEmotionChange, send]);
 
   return(
     <div
@@ -1465,6 +1852,7 @@ export function AyrinCharacter({
       style={{position:'relative',width:'100%',height:'100%',display:'inline-block'}}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
       onClick={handleClick}
     >
       {lodCfg.shaderQuality!=='off'&&(
