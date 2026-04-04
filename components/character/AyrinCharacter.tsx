@@ -200,6 +200,51 @@ interface IntentState {
   headTiltY: number;
 }
 
+type VoicePhase = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
+
+interface VoiceFusionSample {
+  overlayEmotion: EmotionKey;
+  overlayBlend: number;
+  moodEmotion: EmotionKey;
+  moodBlend: number;
+  speechOpen: number;
+  isSpeaking: boolean;
+}
+
+interface BrowserSpeechRecognitionAlternative {
+  transcript: string;
+  confidence?: number;
+}
+
+interface BrowserSpeechRecognitionResultLike {
+  0: BrowserSpeechRecognitionAlternative;
+  isFinal: boolean;
+  length: number;
+}
+
+interface BrowserSpeechRecognitionEventLike {
+  results: ArrayLike<BrowserSpeechRecognitionResultLike>;
+}
+
+interface BrowserSpeechRecognitionErrorEventLike {
+  error?: string;
+}
+
+interface BrowserSpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: BrowserSpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: BrowserSpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+type BrowserSpeechRecognitionCtor = new () => BrowserSpeechRecognitionLike;
+
 /* ═══════════════════════════════════════════════════════════════
    LOD CONFIG
 ═══════════════════════════════════════════════════════════════ */
@@ -1098,6 +1143,412 @@ function usePerceptionLayer(containerRef: React.RefObject<HTMLDivElement | null>
   };
 }
 
+function normalizeConversationEmotion(value?: string | null): EmotionKey {
+  const key = (value ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+
+  switch (key) {
+    case 'affection':
+    case 'affectionate':
+    case 'love':
+      return 'affectionate';
+    case 'softsmile':
+    case 'smile':
+    case 'warm':
+      return 'softSmile';
+    case 'attention':
+    case 'warmattention':
+      return 'warmAttention';
+    case 'thoughtful':
+      return 'thoughtful';
+    case 'reflective':
+      return 'reflective';
+    case 'serious':
+      return 'serious';
+    case 'sad':
+    case 'sadness':
+    case 'quietsadness':
+      return 'quietSadness';
+    case 'surprised':
+    case 'surprise':
+    case 'subtlesurprise':
+      return 'subtleSurprise';
+    case 'concern':
+    case 'concerned':
+      return 'concerned';
+    case 'shy':
+      return 'shy';
+    case 'calm':
+    default:
+      return 'calm';
+  }
+}
+
+function emotionToMoodTarget(emotion: EmotionKey) {
+  switch (emotion) {
+    case 'affectionate':
+    case 'softSmile':
+    case 'warmAttention':
+      return 0.72;
+    case 'thoughtful':
+    case 'reflective':
+      return 0.12;
+    case 'serious':
+    case 'concerned':
+      return -0.1;
+    case 'quietSadness':
+      return -0.58;
+    case 'subtleSurprise':
+      return 0.04;
+    case 'shy':
+      return 0.24;
+    case 'calm':
+    default:
+      return 0.08;
+  }
+}
+
+function resolveMoodEmotion(mood: number): EmotionKey {
+  if (mood > 0.48) {
+    return 'softSmile';
+  }
+  if (mood > 0.2) {
+    return 'warmAttention';
+  }
+  if (mood < -0.34) {
+    return 'quietSadness';
+  }
+  if (mood < -0.08) {
+    return 'reflective';
+  }
+
+  return 'calm';
+}
+
+function resolveVoiceErrorMessage(error?: string) {
+  switch (error) {
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return 'Microphone permission is blocked.';
+    case 'no-speech':
+      return 'No speech was heard.';
+    case 'audio-capture':
+      return 'No microphone is available.';
+    default:
+      return 'Voice input is unavailable right now.';
+  }
+}
+
+function useVoiceFusion({
+  send,
+  onEmotionChange,
+}: {
+  send: (event: CharacterEvent) => void;
+  onEmotionChange?: (emotion: EmotionKey) => void;
+}) {
+  const recognitionRef = useRef<BrowserSpeechRecognitionLike | null>(null);
+  const requestAbortRef = useRef<AbortController | null>(null);
+  const speakDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emotionDecayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceStateRef = useRef({
+    overlayEmotion: 'calm' as EmotionKey,
+    overlayBlend: 0,
+    targetOverlayBlend: 0,
+    mood: 0.08,
+    targetMood: 0.08,
+    speechOpen: 0,
+    speechImpulse: 0,
+    isSpeaking: false,
+  });
+  const [phase, setPhase] = useState<VoicePhase>('idle');
+  const [caption, setCaption] = useState('Tap the mic and talk to Ayrin.');
+  const [transcript, setTranscript] = useState('');
+  const [reply, setReply] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const recognitionSupported = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const win = window as Window & {
+      SpeechRecognition?: BrowserSpeechRecognitionCtor;
+      webkitSpeechRecognition?: BrowserSpeechRecognitionCtor;
+    };
+
+    return Boolean(win.SpeechRecognition ?? win.webkitSpeechRecognition);
+  }, []);
+
+  const speechOutputSupported = useMemo(
+    () => typeof window !== 'undefined' && 'speechSynthesis' in window,
+    []
+  );
+
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    voiceStateRef.current.isSpeaking = false;
+    voiceStateRef.current.speechOpen = 0;
+    voiceStateRef.current.speechImpulse = 0;
+    setPhase('idle');
+  }, []);
+
+  const speakReply = useCallback((text: string, emotion: EmotionKey) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setPhase('idle');
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = emotion === 'quietSadness' ? 0.88 : emotion === 'serious' ? 0.9 : 0.94;
+    utterance.pitch = emotion === 'affectionate' || emotion === 'softSmile' ? 1.05 : 0.98;
+    utterance.volume = 1;
+
+    utterance.onstart = () => {
+      voiceStateRef.current.isSpeaking = true;
+      voiceStateRef.current.speechOpen = 0.36;
+      voiceStateRef.current.speechImpulse = 1;
+      setPhase('speaking');
+      setCaption(text);
+      send('FOCUS');
+    };
+
+    utterance.onboundary = () => {
+      voiceStateRef.current.speechOpen = 0.9;
+      voiceStateRef.current.speechImpulse = 1;
+    };
+
+    utterance.onend = () => {
+      voiceStateRef.current.isSpeaking = false;
+      voiceStateRef.current.speechOpen = 0;
+      voiceStateRef.current.speechImpulse = 0;
+      setPhase('idle');
+      setCaption(text);
+    };
+
+    utterance.onerror = () => {
+      voiceStateRef.current.isSpeaking = false;
+      voiceStateRef.current.speechOpen = 0;
+      voiceStateRef.current.speechImpulse = 0;
+      setPhase('error');
+      setErrorMessage('Voice output failed.');
+      setCaption('Voice output failed.');
+    };
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, [send]);
+
+  const handleUserSpeech = useCallback(async (spokenText: string) => {
+    const text = spokenText.trim();
+    if (!text) {
+      return;
+    }
+
+    requestAbortRef.current?.abort();
+    if (speakDelayRef.current) {
+      clearTimeout(speakDelayRef.current);
+    }
+
+    stopSpeaking();
+    setTranscript(text);
+    setReply('');
+    setErrorMessage('');
+    setPhase('thinking');
+    setCaption(`You said: ${text}`);
+    send('FOCUS');
+
+    const controller = new AbortController();
+    requestAbortRef.current = controller;
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+          memory: {
+            mood: voiceStateRef.current.mood,
+          },
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Chat route failed with ${response.status}`);
+      }
+
+      const payload = await response.json() as {
+        reply?: string;
+        emotion?: string;
+      };
+      const nextReply = typeof payload.reply === 'string' && payload.reply.trim()
+        ? payload.reply.trim()
+        : "I'm here with you.";
+      const nextEmotion = normalizeConversationEmotion(payload.emotion);
+
+      setReply(nextReply);
+      setCaption(nextReply);
+
+      voiceStateRef.current.overlayEmotion = nextEmotion;
+      voiceStateRef.current.targetOverlayBlend = 0.72;
+      voiceStateRef.current.targetMood = emotionToMoodTarget(nextEmotion);
+
+      if (emotionDecayRef.current) {
+        clearTimeout(emotionDecayRef.current);
+      }
+      emotionDecayRef.current = setTimeout(() => {
+        voiceStateRef.current.targetOverlayBlend = 0.18;
+      }, 5600);
+
+      onEmotionChange?.(nextEmotion);
+
+      speakDelayRef.current = setTimeout(() => {
+        if (speechOutputSupported) {
+          speakReply(nextReply, nextEmotion);
+        } else {
+          setPhase('idle');
+        }
+      }, 300);
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        return;
+      }
+
+      setPhase('error');
+      setErrorMessage('Ayrin could not think of a reply.');
+      setCaption('Ayrin could not think of a reply.');
+    }
+  }, [onEmotionChange, send, speakReply, speechOutputSupported, stopSpeaking]);
+
+  const toggleListening = useCallback(() => {
+    if (phase === 'thinking') {
+      return;
+    }
+
+    if (phase === 'speaking') {
+      stopSpeaking();
+      return;
+    }
+
+    if (phase === 'listening') {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    if (!recognitionSupported) {
+      setPhase('error');
+      setErrorMessage('Speech recognition is not supported in this browser.');
+      setCaption('Speech recognition is not supported here.');
+      return;
+    }
+
+    setErrorMessage('');
+    recognitionRef.current?.start();
+  }, [phase, recognitionSupported, stopSpeaking]);
+
+  const sampleVoiceFusion = useCallback((): VoiceFusionSample => {
+    const state = voiceStateRef.current;
+
+    state.overlayBlend += (state.targetOverlayBlend - state.overlayBlend) * 0.08;
+    state.mood += (state.targetMood - state.mood) * 0.04;
+    state.speechOpen = state.isSpeaking
+      ? Math.max(state.speechOpen * 0.78, 0.18 + state.speechImpulse * 0.2)
+      : state.speechOpen * 0.62;
+    state.speechImpulse *= state.isSpeaking ? 0.88 : 0.5;
+
+    return {
+      overlayEmotion: state.overlayEmotion,
+      overlayBlend: clamp(state.overlayBlend, 0, 1),
+      moodEmotion: resolveMoodEmotion(state.mood),
+      moodBlend: clamp(Math.abs(state.mood) * 0.24 + 0.08, 0.08, 0.34),
+      speechOpen: clamp(state.speechOpen, 0, 1),
+      isSpeaking: state.isSpeaking,
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!recognitionSupported || typeof window === 'undefined') {
+      return;
+    }
+
+    const win = window as Window & {
+      SpeechRecognition?: BrowserSpeechRecognitionCtor;
+      webkitSpeechRecognition?: BrowserSpeechRecognitionCtor;
+    };
+    const RecognitionCtor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
+    if (!RecognitionCtor) {
+      return;
+    }
+
+    const recognition = new RecognitionCtor();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognition.onstart = () => {
+      setPhase('listening');
+      setCaption('Listening… speak to Ayrin.');
+      send('MOUSE_ENTER');
+    };
+    recognition.onresult = (event) => {
+      const lastResult = event.results[event.results.length - 1];
+      const heardText = lastResult?.[0]?.transcript?.trim() ?? '';
+      if (!heardText) {
+        return;
+      }
+
+      void handleUserSpeech(heardText);
+    };
+    recognition.onerror = (event) => {
+      setPhase('error');
+      const nextError = resolveVoiceErrorMessage(event.error);
+      setErrorMessage(nextError);
+      setCaption(nextError);
+    };
+    recognition.onend = () => {
+      setPhase((current) => current === 'listening' ? 'idle' : current);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.onstart = null;
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      recognition.abort();
+      recognitionRef.current = null;
+    };
+  }, [handleUserSpeech, recognitionSupported, send]);
+
+  useEffect(() => () => {
+    requestAbortRef.current?.abort();
+    if (speakDelayRef.current) {
+      clearTimeout(speakDelayRef.current);
+    }
+    if (emotionDecayRef.current) {
+      clearTimeout(emotionDecayRef.current);
+    }
+    stopSpeaking();
+  }, [stopSpeaking]);
+
+  return {
+    phase,
+    caption,
+    transcript,
+    reply,
+    errorMessage,
+    recognitionSupported,
+    speechOutputSupported,
+    toggleListening,
+    stopSpeaking,
+    sampleVoiceFusion,
+  };
+}
+
 function useStateMachine(initialState: CharacterState) {
   const [state, setState] = useState<CharacterState>(initialState);
 
@@ -1636,6 +2087,18 @@ export function AyrinCharacter({
     handlePointerClick,
     samplePerception,
   } = usePerceptionLayer(containerRef);
+  const {
+    phase: voicePhase,
+    caption: voiceCaption,
+    transcript: voiceTranscript,
+    reply: voiceReply,
+    errorMessage: voiceErrorMessage,
+    recognitionSupported,
+    speechOutputSupported,
+    toggleListening,
+    sampleVoiceFusion,
+    stopSpeaking,
+  } = useVoiceFusion({ send, onEmotionChange });
   const animationTarget = useAnimationGraph(characterState, emotionProp);
   const springEmotionRef = useSpringEmotionTarget(animationTarget);
   const microRef=useMicroRealism(animationTarget.blinkFreq);
@@ -1660,7 +2123,23 @@ export function AyrinCharacter({
       const { now, perception, memory } = samplePerception();
       const interpretation = interpretPerception(perception, memory, now);
       const intent = generateIntent(interpretation, now);
-      const awareEmotion = applyIntentToEmotion(springEmotionRef.current, interpretation, intent);
+      const voiceSample = sampleVoiceFusion();
+      let awareEmotion = applyIntentToEmotion(springEmotionRef.current, interpretation, intent);
+
+      if (voiceSample.moodBlend > 0) {
+        awareEmotion = blendEmotionTargets(awareEmotion, EMOTIONS[voiceSample.moodEmotion], voiceSample.moodBlend);
+      }
+      if (voiceSample.overlayBlend > 0) {
+        awareEmotion = blendEmotionTargets(awareEmotion, EMOTIONS[voiceSample.overlayEmotion], voiceSample.overlayBlend);
+      }
+
+      awareEmotion = {
+        ...awareEmotion,
+        lowerLipDrop: clamp(awareEmotion.lowerLipDrop + voiceSample.speechOpen * 0.82, 0, 1.18),
+        breathScale: clamp(awareEmotion.breathScale + (voiceSample.isSpeaking ? 0.012 : 0), 0.95, 1.08),
+        blinkFreq: clamp(awareEmotion.blinkFreq * (voiceSample.isSpeaking ? 0.94 : 1), 2200, 6200),
+      };
+
       const nextFace=composeFaceState(awareEmotion, microRef.current);
 
       if (
@@ -1677,7 +2156,7 @@ export function AyrinCharacter({
       raf=requestAnimationFrame(merge);
     };
     raf=requestAnimationFrame(merge); return ()=>cancelAnimationFrame(raf);
-  },[microRef,samplePerception,send,springEmotionRef]);
+  },[microRef,samplePerception,sampleVoiceFusion,send,springEmotionRef]);
 
   useEffect(() => () => {
     if (hoverIntentTimer.current) {
@@ -1686,7 +2165,8 @@ export function AyrinCharacter({
     if (clickIntentTimer.current) {
       clearTimeout(clickIntentTimer.current);
     }
-  }, []);
+    stopSpeaking();
+  }, [stopSpeaking]);
 
   useWebGLOverlay(canvasRef,lodCfg,face,cSize);
 
@@ -1846,10 +2326,34 @@ export function AyrinCharacter({
     }, 95);
   }, [handlePointerClick, onEmotionChange, send]);
 
+  const handleVoiceButtonClick=useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    toggleListening();
+  }, [toggleListening]);
+
+  const voiceButtonLabel=
+    voicePhase==='listening'
+      ? 'Stop'
+      : voicePhase==='thinking'
+        ? 'Thinking'
+        : voicePhase==='speaking'
+          ? 'Mute'
+          : 'Talk';
+
+  const voiceButtonDisabled=voicePhase==='thinking';
+  const voiceCardTone=
+    voicePhase==='error'
+      ? 'rgba(124, 26, 26, 0.92)'
+      : voicePhase==='speaking'
+        ? 'rgba(54, 28, 64, 0.92)'
+        : voicePhase==='listening'
+          ? 'rgba(18, 52, 76, 0.92)'
+          : 'rgba(24, 18, 36, 0.88)';
+
   return(
     <div
       ref={containerRef}
-      style={{position:'relative',width:'100%',height:'100%',display:'inline-block'}}
+      style={{position:'relative',width:'100%',height:'100%',display:'inline-block',pointerEvents:'auto',touchAction:'manipulation'}}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
@@ -2339,6 +2843,78 @@ export function AyrinCharacter({
         </g>{/* .ayrin-breath */}
         </g>
       </svg>
+      <div
+        style={{
+          position:'absolute',
+          right:'12px',
+          bottom:'14px',
+          zIndex:3,
+          display:'flex',
+          flexDirection:'column',
+          alignItems:'flex-end',
+          gap:'8px',
+          maxWidth:'min(240px, 82%)',
+          pointerEvents:'auto',
+        }}
+      >
+        <div
+          aria-live="polite"
+          style={{
+            padding:'10px 12px',
+            borderRadius:'16px',
+            background:voiceCardTone,
+            color:'#F4EDE7',
+            border:'1px solid rgba(255,255,255,0.12)',
+            boxShadow:'0 12px 28px rgba(0,0,0,0.22)',
+            backdropFilter:'blur(12px)',
+            fontSize:'11px',
+            lineHeight:1.45,
+            textAlign:'right',
+          }}
+        >
+          <div style={{ fontSize:'10px', letterSpacing:'0.16em', textTransform:'uppercase', opacity:0.72 }}>
+            {voicePhase==='idle' ? 'Voice Fusion' : voicePhase}
+          </div>
+          <div style={{ marginTop:'4px' }}>
+            {voiceErrorMessage || voiceCaption}
+          </div>
+          {(voiceTranscript || voiceReply) && !voiceErrorMessage ? (
+            <div style={{ marginTop:'5px', opacity:0.72 }}>
+              {voicePhase==='speaking' && voiceReply ? `Reply: ${voiceReply}` : voiceTranscript ? `Heard: ${voiceTranscript}` : null}
+            </div>
+          ) : null}
+          {!recognitionSupported || !speechOutputSupported ? (
+            <div style={{ marginTop:'5px', opacity:0.66 }}>
+              {!recognitionSupported ? 'Mic input unavailable.' : 'Voice output unavailable.'}
+            </div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={handleVoiceButtonClick}
+          disabled={voiceButtonDisabled}
+          aria-pressed={voicePhase==='listening' || voicePhase==='speaking'}
+          style={{
+            border:'1px solid rgba(255,255,255,0.16)',
+            background:voicePhase==='listening'
+              ? 'linear-gradient(135deg, #2563eb, #38bdf8)'
+              : voicePhase==='speaking'
+                ? 'linear-gradient(135deg, #7c3aed, #ec4899)'
+                : 'linear-gradient(135deg, #1f1630, #4b2f60)',
+            color:'#FFF8F2',
+            padding:'10px 16px',
+            borderRadius:'999px',
+            cursor:voiceButtonDisabled ? 'wait' : 'pointer',
+            fontSize:'11px',
+            letterSpacing:'0.18em',
+            textTransform:'uppercase',
+            boxShadow:'0 10px 24px rgba(0,0,0,0.24)',
+            opacity:voiceButtonDisabled ? 0.8 : 1,
+          }}
+        >
+          {voiceButtonLabel}
+        </button>
+      </div>
     </div>
   );
 }
