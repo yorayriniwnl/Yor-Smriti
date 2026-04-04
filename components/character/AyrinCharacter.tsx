@@ -39,6 +39,8 @@ interface EmotionTarget {
   breathScale: number; blinkFreq: number;
 }
 
+type StubblePoint = [number, number, number, number];
+
 interface FaceState extends EmotionTarget {
   microBrowL: number; microBrowR: number;
   microGazeX: number; microGazeY: number;
@@ -46,6 +48,34 @@ interface FaceState extends EmotionTarget {
   microLipTension: number; microLipAsym: number;
   lightPulse: number; rimPulse: number;
   postBlinkDroopL: number; postBlinkDroopR: number;
+}
+
+interface EyeState {
+  gazeX: number;
+  gazeY: number;
+  pupilScale: number;
+  lidDrop: number;
+  blinkAmt: number;
+  postDroop: number;
+}
+
+interface BrowState {
+  leftTransform: string;
+  rightTransform: string;
+  showPores: boolean;
+}
+
+interface LipState {
+  mouthCornerL: number;
+  mouthCornerR: number;
+  microLipTension: number;
+  microLipAsym: number;
+  lowerLipDrop: number;
+}
+
+interface HairState {
+  strandCount: number;
+  microOffset: number;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -367,7 +397,7 @@ const ALL_RAYS=Array.from({length:28},(_,i)=>(i*360)/28);
 
 /* Stubble — irregular clusters matching natural beard growth pattern */
 /* More density under chin/jawline, sparser on cheeks */
-const STUBBLE_L:[number,number,number,number][]=[
+const STUBBLE_L:StubblePoint[]=[
   /* cheek upper — sparse */
   [97,162,1.1,0.75],[101,161,1.0,0.7],[105,161,1.0,0.65],[109,162,0.9,0.65],[113,163,0.8,0.6],
   /* cheek mid */
@@ -379,7 +409,7 @@ const STUBBLE_L:[number,number,number,number][]=[
   /* chin approach */
   [92,193,1.0,0.78],[96,192,1.0,0.76],[100,191,0.9,0.74],[104,191,0.85,0.72],[108,192,0.8,0.7],
 ];
-const STUBBLE_R:[number,number,number,number][]=[
+const STUBBLE_R:StubblePoint[]=[
   [163,162,-1.1,0.7],[159,161,-1.0,0.65],[155,161,-1.0,0.6],[151,162,-0.9,0.6],[147,163,-0.8,0.55],
   [169,170,-1.2,0.8],[165,169,-1.2,0.78],[161,168,-1.1,0.76],[157,168,-1.0,0.74],[153,168,-1.0,0.72],[149,169,-0.9,0.68],
   [172,178,-1.2,0.88],[168,177,-1.2,0.86],[164,176,-1.1,0.84],[160,176,-1.0,0.82],[156,176,-1.0,0.8],[152,177,-0.9,0.78],[148,177,-0.85,0.72],
@@ -395,16 +425,26 @@ const STUBBLE_R:[number,number,number,number][]=[
 ═══════════════════════════════════════════════════════════════ */
 interface EyeProps {
   cx:number;cy:number;clipId:string;
-  gazeX:number;gazeY:number;pupilScale:number;
-  lidDrop:number;blinkAmt:number;postDroop:number;
+  eyeState: EyeState;
   showLashes:boolean;showVeins:boolean;rays:number[];
   side:'left'|'right';asymX:number;asymY:number;
 }
 
+function areEyeStatesEqual(prev: EyeState, next: EyeState) {
+  return (
+    prev.gazeX === next.gazeX &&
+    prev.gazeY === next.gazeY &&
+    prev.pupilScale === next.pupilScale &&
+    prev.lidDrop === next.lidDrop &&
+    prev.blinkAmt === next.blinkAmt &&
+    prev.postDroop === next.postDroop
+  );
+}
+
 const EyeComponent=memo(({
-  cx,cy,clipId,gazeX,gazeY,pupilScale,
-  lidDrop,blinkAmt,postDroop,showLashes,showVeins,rays,side,asymX,asymY
+  cx,cy,clipId,eyeState,showLashes,showVeins,rays,side,asymX,asymY
 }:EyeProps)=>{
+  const { gazeX, gazeY, pupilScale, lidDrop, blinkAmt, postDroop } = eyeState;
   /* Identity-matched eye dimensions:
      - Narrower horizontal (17px vs 20) → more natural almond
      - Less tall vertically (11px vs 15) → relaxed, heavy-lidded look */
@@ -486,15 +526,32 @@ const EyeComponent=memo(({
       }
     </g>
   );
-});
+},(prev,next)=>(
+  prev.cx===next.cx &&
+  prev.cy===next.cy &&
+  prev.clipId===next.clipId &&
+  prev.showLashes===next.showLashes &&
+  prev.showVeins===next.showVeins &&
+  prev.rays===next.rays &&
+  prev.side===next.side &&
+  prev.asymX===next.asymX &&
+  prev.asymY===next.asymY &&
+  areEyeStatesEqual(prev.eyeState,next.eyeState)
+));
 EyeComponent.displayName='EyeComponent';
 
 /* ═══════════════════════════════════════════════════════════════
    HAIR COMPONENT — identity: natural messy, slightly asymmetric
    Volume on top-right side (as seen in reference), falls naturally
 ═══════════════════════════════════════════════════════════════ */
-interface HairProps{strandCount:number;microOffset:number}
-const HairComponent=memo(({strandCount,microOffset}:HairProps)=>(
+interface HairProps {
+  hairState: HairState;
+}
+
+const HairComponent=memo(({hairState}:HairProps)=>{
+  const { strandCount, microOffset } = hairState;
+
+  return (
   <g>
     {/* scalp base */}
     <path fill="url(#g-hair)" d="M 88,100 C 87,64 107,42 130,40 C 153,42 173,64 172,100 C 164,89 155,83 145,83 C 139,83 134,88 130,93 C 126,88 121,83 115,83 C 105,83 96,89 88,100 Z"/>
@@ -550,8 +607,194 @@ const HairComponent=memo(({strandCount,microOffset}:HairProps)=>(
       <path d="M 173,110 C 167,119 165,131 167,143" fill="none" stroke="#3A2C22" strokeWidth="0.58" strokeLinecap="round" opacity="0.12"/>
     </>}
   </g>
+  );
+},(prev,next)=>(
+  prev.hairState.strandCount===next.hairState.strandCount &&
+  prev.hairState.microOffset===next.hairState.microOffset
 ));
 HairComponent.displayName='HairComponent';
+
+const FringeComponent = memo(({ strandCount }: { strandCount: number }) => (
+  <>
+    <g className="ayrin-fringe">
+      <path fill="url(#g-hair)" d="M 100,96 C 107,105 110,116 108,128 C 103,122 97,118 91,116 Z"/>
+      <path fill="url(#g-hair)" opacity="0.96" d="M 118,90 C 126,100 128,112 126,126 C 122,119 117,114 112,110 Z"/>
+      <path fill="url(#g-hair)" d="M 137,92 C 145,102 147,114 145,127 C 141,120 136,115 130,111 Z"/>
+      {strandCount>4&&<>
+        <path fill="url(#g-hair)" opacity="0.72" d="M 105,94 C 101,84 101,74 106,67 C 110,74 112,84 110,96 Z"/>
+        <path fill="url(#g-hair)" opacity="0.62" d="M 113,90 C 109,80 109,70 113,62 C 117,69 118,79 116,90 Z"/>
+        <path fill="url(#g-hair)" opacity="0.54" d="M 148,92 C 152,82 152,72 148,65 C 144,72 143,82 145,92 Z"/>
+      </>}
+      <path fill="url(#g-hair-hl1)" opacity="0.32" d="M 106,96 C 112,105 114,116 112,128 C 108,121 104,116 99,113 Z"/>
+    </g>
+    <g className="ayrin-fringe-b">
+      {strandCount>5&&<>
+        <path d="M 107,96 C 111,105 112,115 111,126" fill="none" stroke="#48382A" strokeWidth="0.64" strokeLinecap="round" opacity="0.16"/>
+        <path d="M 124,91 C 128,100 129,110 128,121" fill="none" stroke="#48382A" strokeWidth="0.64" strokeLinecap="round" opacity="0.14"/>
+      </>}
+    </g>
+    <g className="ayrin-fringe-c">
+      {strandCount>5&&(
+        <path d="M 140,93 C 144,103 145,113 143,124" fill="none" stroke="#48382A" strokeWidth="0.64" strokeLinecap="round" opacity="0.13"/>
+      )}
+    </g>
+  </>
+), (prev, next) => prev.strandCount === next.strandCount);
+FringeComponent.displayName='FringeComponent';
+
+const LeftEarComponent = memo(() => (
+  <>
+    <ellipse cx="83" cy="132" rx="10.5" ry="19" fill="url(#g-ear)"/>
+    <ellipse cx="83" cy="132" rx="10.5" ry="19" fill="url(#g-ear-sss)" opacity="0.68"/>
+    <path d="M 80,120 C 75,126 74,134 75,143 C 77,151 81,157 85,159" fill="none" stroke="rgba(0,0,0,0.17)" strokeWidth="1.5" strokeLinecap="round" opacity="0.52"/>
+    <path d="M 80,129 C 78,133 78,138 80,143" fill="none" stroke="rgba(68,26,10,0.17)" strokeWidth="0.9" strokeLinecap="round" opacity="0.54"/>
+    <ellipse cx="83" cy="135" rx="3.4" ry="4.0" fill="rgba(42,14,4,0.26)" opacity="0.7"/>
+    <ellipse cx="83" cy="135" rx="1.9" ry="2.4" fill="rgba(20,4,0,0.34)" opacity="0.7"/>
+    <path fill="url(#g-hair-side)" opacity="0.9" d="M 79,120 C 75,126 74,134 75,143 C 77,151 81,158 85,161 C 85,151 84,141 84,132 C 84,127 82,123 79,120 Z"/>
+  </>
+));
+LeftEarComponent.displayName='LeftEarComponent';
+
+const FaceBaseComponent = memo(({ showPores }: { showPores: boolean }) => (
+  <>
+    <path fill="url(#g-face)" d="
+      M 87,115
+      C 87,76 107,56 130,54
+      C 153,56 173,76 173,115
+      C 173,148 165,176 148,197
+      C 142,205 137,209 130,209
+      C 123,209 118,205 112,197
+      C 95,176 87,148 87,115 Z
+    "/>
+    {showPores&&(
+      <path fill="url(#p-pore)" clipPath="url(#cp-face)" d="
+        M 87,115 C 87,76 107,56 130,54 C 153,56 173,76 173,115
+        C 173,148 165,176 148,197 C 142,205 137,209 130,209
+        C 123,209 118,205 112,197 C 95,176 87,148 87,115 Z
+      "/>
+    )}
+    <ellipse cx="112" cy="100" rx="34" ry="46" fill="url(#g-key)" className="ayrin-key-light" opacity="0.8"/>
+    <ellipse cx="91" cy="148" rx="30" ry="50" fill="url(#g-sss)" opacity="0.52"/>
+    <ellipse cx="91" cy="114" rx="14" ry="24" fill="url(#g-temple)" opacity="0.68"/>
+    <ellipse cx="169" cy="114" rx="14" ry="24" fill="url(#g-temple)" opacity="0.68"/>
+    <ellipse cx="100" cy="134" rx="13" ry="7" fill="url(#g-malar)" opacity="0.68" transform="rotate(-12,100,134)"/>
+    <ellipse cx="160" cy="134" rx="13" ry="7" fill="url(#g-malar)" opacity="0.6" transform="rotate(12,160,134)"/>
+    <ellipse cx="94" cy="147" rx="21" ry="14" fill="url(#g-blush)" opacity="0.72"/>
+    <ellipse cx="166" cy="147" rx="21" ry="14" fill="url(#g-blush)" opacity="0.66"/>
+    <ellipse cx="124" cy="78" rx="27" ry="17" fill="url(#g-fhl)" opacity="1"/>
+    <ellipse cx="130" cy="100" rx="8.5" ry="5.5" fill="rgba(0,0,0,0.048)" opacity="0.68"/>
+    <ellipse cx="130" cy="211" rx="30" ry="11" fill="url(#g-jaw-d)" opacity="0.78"/>
+    <rect x="127.5" y="140" width="5" height="25" rx="2.5" fill="url(#g-nb)" opacity="0.5"/>
+    <ellipse cx="130" cy="173" rx="8" ry="5" fill="url(#g-ntip)" opacity="0.72"/>
+    {showPores&&<>
+      <path d="M 109,160 C 108,168 108,176 111,182 C 113,186 116,188 117,189" fill="none" stroke="rgba(78,32,12,0.19)" strokeWidth="1.4" strokeLinecap="round" opacity="0.7"/>
+      <path d="M 151,161 C 152,169 152,177 149,183 C 147,187 144,189 143,190" fill="none" stroke="rgba(78,32,12,0.17)" strokeWidth="1.4" strokeLinecap="round" opacity="0.68"/>
+    </>}
+  </>
+), (prev, next) => prev.showPores === next.showPores);
+FaceBaseComponent.displayName='FaceBaseComponent';
+
+const BrowsComponent = memo(({ browState }: { browState: BrowState }) => (
+  <>
+    <g className="brow-l" style={{transform:browState.leftTransform,transformOrigin:'104px 102px'}}>
+      <path d="M 88,104 C 96,98 104,95 119,98" fill="none" stroke="#050302" strokeWidth="6.0" strokeLinecap="round" opacity="0.80"/>
+      <path d="M 88,104 C 96,98 104,95 119,98" fill="none" stroke="#0C0808" strokeWidth="3.5" strokeLinecap="round" opacity="0.52"/>
+      <path d="M 89,104 C 96,99 104,96 118,98"  fill="none" stroke="#1A1410" strokeWidth="1.9" strokeLinecap="round" opacity="0.32"/>
+      {browState.showPores&&[
+        [89,104,91,101,93,100],[93,101,96,99,99,99],[98,98,101,97,104,97],
+        [103,97,107,96.5,110,97],[109,97,113,97.5,117,98]
+      ].map((p,i)=>(
+        <path key={i} d={`M ${p[0]},${p[1]} C ${p[2]},${p[3]} ${p[4]},${p[5]}`}
+          fill="none" stroke="#030200" strokeWidth="0.72" strokeLinecap="round" opacity={0.24-i*0.03}/>
+      ))}
+    </g>
+    <g className="brow-r" style={{transform:browState.rightTransform,transformOrigin:'156px 102px'}}>
+      <path d="M 141,98 C 156,94 164,97 172,104" fill="none" stroke="#050302" strokeWidth="6.0" strokeLinecap="round" opacity="0.78"/>
+      <path d="M 141,98 C 156,94 164,97 172,104" fill="none" stroke="#0C0808" strokeWidth="3.5" strokeLinecap="round" opacity="0.5"/>
+      <path d="M 142,98 C 156,95 164,97 171,104" fill="none" stroke="#1A1410" strokeWidth="1.9" strokeLinecap="round" opacity="0.30"/>
+      {browState.showPores&&[
+        [142,97.5,145,96.5,149,96],[149,96,152,95.5,155,96],
+        [155,96,159,97,161,98],[160,98,164,100,167,102],[165,101,168,103,171,104]
+      ].map((p,i)=>(
+        <path key={i} d={`M ${p[0]},${p[1]} C ${p[2]},${p[3]} ${p[4]},${p[5]}`}
+          fill="none" stroke="#030200" strokeWidth="0.70" strokeLinecap="round" opacity={0.23-i*0.03}/>
+      ))}
+    </g>
+  </>
+), (prev, next) => (
+  prev.browState.leftTransform === next.browState.leftTransform &&
+  prev.browState.rightTransform === next.browState.rightTransform &&
+  prev.browState.showPores === next.browState.showPores
+));
+BrowsComponent.displayName='BrowsComponent';
+
+const NoseComponent = memo(() => (
+  <>
+    <path d="M 126,140 C 124,151 123,162 125,170 C 127,174 130,175.5 133,174.5 C 135.5,170 136,162 135,151 C 134,142 132.5,140 131,139"
+      fill="none" stroke="rgba(82,36,12,0.2)" strokeWidth="1.0" strokeLinecap="round" opacity="0.7"/>
+    <path d="M 130,142 C 131,152 131,161 130.5,169" fill="none" stroke="#B88050" strokeWidth="0.62" strokeLinecap="round" opacity="0.2"/>
+    <path d="M 128,142 C 127,153 126.5,162 127.5,170" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="1.3" strokeLinecap="round" opacity="0.48"/>
+    <path d="M 132.5,142 C 133.5,153 133.5,162 132.5,170" fill="none" stroke="rgba(0,0,0,0.044)" strokeWidth="1.1" strokeLinecap="round" opacity="0.44"/>
+    <ellipse cx="130" cy="172" rx="8" ry="5" fill="url(#g-ntip)" opacity="0.72"/>
+    <ellipse cx="129" cy="170" rx="3.0" ry="2.0" fill="rgba(205,160,100,0.18)" opacity="0.68"/>
+    <ellipse cx="122" cy="169" rx="4" ry="2.4" fill="#5C2E10" opacity="0.1"/>
+    <ellipse cx="138" cy="169" rx="4" ry="2.4" fill="#5C2E10" opacity="0.1"/>
+    <path d="M 118,170 C 121,165 125,163.5 127.5,164.5 C 129,166 129.8,169 128.8,172 C 127,176 122,177 119,173 Z" fill="rgba(0,0,0,0.042)" opacity="0.7"/>
+    <path d="M 142,170 C 139,165 135,163.5 132.5,164.5 C 131,166 130.2,169 131.2,172 C 133,176 138,177 141,173 Z" fill="rgba(0,0,0,0.042)" opacity="0.7"/>
+    <path d="M 119,171 C 122,176 126,177 130,176" fill="none" stroke="#3A1A08" strokeWidth="1.45" strokeLinecap="round" opacity="0.25"/>
+    <path d="M 141,171 C 138,176 134,177 130,176" fill="none" stroke="#3A1A08" strokeWidth="1.45" strokeLinecap="round" opacity="0.25"/>
+    <ellipse cx="122" cy="172" rx="3.0" ry="2.1" fill="rgba(18,4,0,0.27)" opacity="0.64"/>
+    <ellipse cx="138" cy="172" rx="3.0" ry="2.1" fill="rgba(18,4,0,0.27)" opacity="0.64"/>
+    <ellipse cx="130" cy="175" rx="9" ry="3.6" fill="rgba(0,0,0,0.055)" opacity="0.7"/>
+    <path d="M 128,175 C 127.8,179 128.2,183 129.5,185" fill="none" stroke="rgba(0,0,0,0.065)" strokeWidth="2.7" strokeLinecap="round" opacity="0.52"/>
+    <path d="M 132,175 C 132.2,179 131.8,183 130.5,185" fill="none" stroke="rgba(0,0,0,0.065)" strokeWidth="2.7" strokeLinecap="round" opacity="0.52"/>
+  </>
+));
+NoseComponent.displayName='NoseComponent';
+
+const LipsComponent = memo(({ lipState }: { lipState: LipState }) => (
+  <g className="ayrin-mouth">
+    <path d="M 114,186 C 118,177 122,174 127,176.5 C 128.8,174 131.2,174 133,176.5 C 138,174 142,177 146,186"
+      fill="none" stroke="rgba(160,70,64,0.18)" strokeWidth="1.9" strokeLinecap="round"/>
+    <path d={`
+      M 116,${186+lipState.microLipTension*.25}
+      C 120,${178+lipState.microLipTension*.15} 123,${175+lipState.microLipTension*.1} 127.5,${177.5+lipState.microLipTension*.1}
+      C 129.2,${175+lipState.microLipTension*.1} 130.8,${175+lipState.microLipTension*.1} 132.5,${177.5+lipState.microLipTension*.1}
+      C 137,${175+lipState.microLipTension*.1} 140.5,${178+lipState.microLipTension*.15} 144,${186+lipState.microLipTension*.25}
+      C 140.5,${183+lipState.microLipTension*.12} 136.5,${182+lipState.microLipTension*.1} 132.5,${183+lipState.microLipTension*.1}
+      C 130.2,${181.5} 129.8,${181.5} 127.5,${183+lipState.microLipTension*.1}
+      C 123.5,${182+lipState.microLipTension*.1} 119.5,${183+lipState.microLipTension*.12} 116,${186+lipState.microLipTension*.25} Z
+    `} fill="url(#g-lip-up)" opacity="0.89"/>
+    <path d="M 117,186 C 122,185.3 127,184.9 130,185.1 C 133,184.9 138,185.3 143,186"
+      fill="none" stroke="rgba(22,5,4,0.28)" strokeWidth="0.85" strokeLinecap="round" opacity="0.7"/>
+    <path d={`
+      M 117,${186+lipState.microLipTension*.18}
+      C 120,${195+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.4}
+        124.5,${200+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.25}
+        129.5,${201.5+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.18}
+      C 132,${202+lipState.lowerLipDrop*2.8}
+        134.5,${201+lipState.lowerLipDrop*2.5-lipState.microLipAsym*.1}
+        137.5,${199+lipState.lowerLipDrop*2-lipState.microLipAsym*.2}
+      C 142,${195+lipState.lowerLipDrop*1.8-lipState.microLipAsym*.25}
+        144,${190+lipState.lowerLipDrop*.8} 144,${186+lipState.microLipTension*.18}
+      C 140,${191+lipState.lowerLipDrop*1.5} 136.5,${194+lipState.lowerLipDrop} 130,${194.5+lipState.lowerLipDrop+lipState.microLipAsym*.12}
+      C 123.5,${194+lipState.lowerLipDrop} 120,${191+lipState.lowerLipDrop*1.5} 117,${186+lipState.microLipTension*.18} Z
+    `} fill="url(#g-lip-lo)" opacity="0.89"/>
+    <ellipse cx="130" cy={195+lipState.lowerLipDrop} rx="8.8" ry="3.8" fill="url(#g-lip-gls)" opacity="0.2"/>
+    <ellipse cx="130" cy="186.5" rx="14" ry="2.5" fill="url(#g-lip-drk)" opacity="0.3"/>
+    <path d={`M 117,${186+lipState.microLipTension*.18} C 116.3,${187.5+lipState.mouthCornerL*.7} 116.4,${189+lipState.mouthCornerL*.55} 117,${190+lipState.mouthCornerL*.45}`}
+      fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.19"/>
+    <path d={`M 144,${186+lipState.microLipTension*.18} C 144.7,${187.8+lipState.mouthCornerR*.7-lipState.microLipAsym*.08} 144.6,${189.5+lipState.mouthCornerR*.55} 144,${190.5+lipState.mouthCornerR*.45-lipState.microLipAsym*.12}`}
+      fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.15"/>
+  </g>
+), (prev, next) => (
+  prev.lipState.mouthCornerL === next.lipState.mouthCornerL &&
+  prev.lipState.mouthCornerR === next.lipState.mouthCornerR &&
+  prev.lipState.microLipTension === next.lipState.microLipTension &&
+  prev.lipState.microLipAsym === next.lipState.microLipAsym &&
+  prev.lipState.lowerLipDrop === next.lipState.lowerLipDrop
+));
+LipsComponent.displayName='LipsComponent';
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -612,22 +855,93 @@ export function AyrinCharacter({
     ALL_RAYS.filter((_,i)=>i%Math.max(1,Math.round(28/Math.max(1,lodCfg.irisRayCount)))===0),
     [lodCfg.irisRayCount]
   );
-  const stbL=useMemo(()=>STUBBLE_L.filter((_,i)=>i/STUBBLE_L.length<lodCfg.stubbleDensity),[lodCfg.stubbleDensity]);
-  const stbR=useMemo(()=>STUBBLE_R.filter((_,i)=>i/STUBBLE_R.length<lodCfg.stubbleDensity),[lodCfg.stubbleDensity]);
+  const leftJawStubble=useMemo(
+    ()=>STUBBLE_L.filter((_,i)=>i/STUBBLE_L.length<lodCfg.stubbleDensity),
+    [lodCfg.stubbleDensity]
+  );
+  const rightJawStubble=useMemo(
+    ()=>STUBBLE_R.filter((_,i)=>i/STUBBLE_R.length<lodCfg.stubbleDensity),
+    [lodCfg.stubbleDensity]
+  );
 
-  const browTransL=`translateY(${face.browLiftL+face.microBrowL}px) rotate(${face.browAngleL}deg)`;
-  const browTransR=`translateY(${face.browLiftR+face.microBrowR}px) rotate(${face.browAngleR}deg)`;
   const M=microRef.current;
   const blinkAmt=reducedMotion?0:M.blinkAmt;
   const headRot=face.headTiltX;
 
-  const folds=[
+  const folds=useMemo(() => ([
     'M 91,262 C 86,320 86,386 91,448',
     'M 169,262 C 174,320 174,386 169,448',
     'M 111,274 C 107,330 107,396 111,452',
     'M 149,274 C 153,330 153,396 149,452',
     'M 121,270 C 118,326 118,392 121,448',
-  ].slice(0,lodCfg.foldCount);
+  ].slice(0,lodCfg.foldCount)), [lodCfg.foldCount]);
+
+  const leftEyeState=useMemo<EyeState>(() => ({
+    gazeX: face.microGazeX,
+    gazeY: face.microGazeY,
+    pupilScale: face.pupilScale,
+    lidDrop: face.lidDropL + face.microLidL,
+    blinkAmt,
+    postDroop: face.postBlinkDroopL,
+  }), [
+    face.microGazeX,
+    face.microGazeY,
+    face.pupilScale,
+    face.lidDropL,
+    face.microLidL,
+    blinkAmt,
+    face.postBlinkDroopL,
+  ]);
+
+  const rightEyeState=useMemo<EyeState>(() => ({
+    gazeX: face.microGazeX,
+    gazeY: face.microGazeY,
+    pupilScale: face.pupilScale,
+    lidDrop: face.lidDropR + face.microLidR,
+    blinkAmt,
+    postDroop: face.postBlinkDroopR,
+  }), [
+    face.microGazeX,
+    face.microGazeY,
+    face.pupilScale,
+    face.lidDropR,
+    face.microLidR,
+    blinkAmt,
+    face.postBlinkDroopR,
+  ]);
+
+  const browState=useMemo<BrowState>(() => ({
+    leftTransform: `translateY(${face.browLiftL+face.microBrowL}px) rotate(${face.browAngleL}deg)`,
+    rightTransform: `translateY(${face.browLiftR+face.microBrowR}px) rotate(${face.browAngleR}deg)`,
+    showPores: lodCfg.showPores,
+  }), [
+    face.browLiftL,
+    face.microBrowL,
+    face.browAngleL,
+    face.browLiftR,
+    face.microBrowR,
+    face.browAngleR,
+    lodCfg.showPores,
+  ]);
+
+  const lipState=useMemo<LipState>(() => ({
+    mouthCornerL: face.mouthCornerL,
+    mouthCornerR: face.mouthCornerR,
+    microLipTension: face.microLipTension,
+    microLipAsym: face.microLipAsym,
+    lowerLipDrop: face.lowerLipDrop,
+  }), [
+    face.mouthCornerL,
+    face.mouthCornerR,
+    face.microLipTension,
+    face.microLipAsym,
+    face.lowerLipDrop,
+  ]);
+
+  const hairState=useMemo<HairState>(() => ({
+    strandCount: lodCfg.hairStrandCount,
+    microOffset: face.microBrowL*0.45,
+  }), [lodCfg.hairStrandCount, face.microBrowL]);
 
   return(
     <div
@@ -1015,157 +1329,29 @@ export function AyrinCharacter({
           <g className="ayrin-head">
 
             {/* HAIR */}
-            <HairComponent strandCount={lodCfg.hairStrandCount} microOffset={face.microBrowL*0.45}/>
-
-            {/* FRINGE — 3 desync layers */}
-            <g className="ayrin-fringe">
-              {/* Identity: natural messy fringe, not swept dramatically */}
-              <path fill="url(#g-hair)" d="M 100,96 C 107,105 110,116 108,128 C 103,122 97,118 91,116 Z"/>
-              <path fill="url(#g-hair)" opacity="0.96" d="M 118,90 C 126,100 128,112 126,126 C 122,119 117,114 112,110 Z"/>
-              <path fill="url(#g-hair)" d="M 137,92 C 145,102 147,114 145,127 C 141,120 136,115 130,111 Z"/>
-              {lodCfg.hairStrandCount>4&&<>
-                <path fill="url(#g-hair)" opacity="0.72" d="M 105,94 C 101,84 101,74 106,67 C 110,74 112,84 110,96 Z"/>
-                <path fill="url(#g-hair)" opacity="0.62" d="M 113,90 C 109,80 109,70 113,62 C 117,69 118,79 116,90 Z"/>
-                <path fill="url(#g-hair)" opacity="0.54" d="M 148,92 C 152,82 152,72 148,65 C 144,72 143,82 145,92 Z"/>
-              </>}
-              <path fill="url(#g-hair-hl1)" opacity="0.32" d="M 106,96 C 112,105 114,116 112,128 C 108,121 104,116 99,113 Z"/>
-            </g>
-            <g className="ayrin-fringe-b">
-              {lodCfg.hairStrandCount>5&&<>
-                <path d="M 107,96 C 111,105 112,115 111,126" fill="none" stroke="#48382A" strokeWidth="0.64" strokeLinecap="round" opacity="0.16"/>
-                <path d="M 124,91 C 128,100 129,110 128,121"  fill="none" stroke="#48382A" strokeWidth="0.64" strokeLinecap="round" opacity="0.14"/>
-              </>}
-            </g>
-            <g className="ayrin-fringe-c">
-              {lodCfg.hairStrandCount>5&&(
-                <path d="M 140,93 C 144,103 145,113 143,124" fill="none" stroke="#48382A" strokeWidth="0.64" strokeLinecap="round" opacity="0.13"/>
-              )}
-            </g>
-
-            {/* LEFT EAR */}
-            <ellipse cx="83" cy="132" rx="10.5" ry="19" fill="url(#g-ear)"/>
-            <ellipse cx="83" cy="132" rx="10.5" ry="19" fill="url(#g-ear-sss)" opacity="0.68"/>
-            <path d="M 80,120 C 75,126 74,134 75,143 C 77,151 81,157 85,159" fill="none" stroke="rgba(0,0,0,0.17)" strokeWidth="1.5" strokeLinecap="round" opacity="0.52"/>
-            <path d="M 80,129 C 78,133 78,138 80,143" fill="none" stroke="rgba(68,26,10,0.17)" strokeWidth="0.9" strokeLinecap="round" opacity="0.54"/>
-            <ellipse cx="83" cy="135" rx="3.4" ry="4.0" fill="rgba(42,14,4,0.26)" opacity="0.7"/>
-            <ellipse cx="83" cy="135" rx="1.9" ry="2.4" fill="rgba(20,4,0,0.34)" opacity="0.7"/>
-            <path fill="url(#g-hair-side)" opacity="0.9" d="M 79,120 C 75,126 74,134 75,143 C 77,151 81,158 85,161 C 85,151 84,141 84,132 C 84,127 82,123 79,120 Z"/>
-
-            {/* ═══════════════════════
-                FACE SHAPE — identity
-                - Slightly oval, narrower lower face
-                - Soft jaw, rounded chin
-                - Moderate cheek width
-            ═══════════════════════ */}
-            <path fill="url(#g-face)" d="
-              M 87,115
-              C 87,76 107,56 130,54
-              C 153,56 173,76 173,115
-              C 173,148 165,176 148,197
-              C 142,205 137,209 130,209
-              C 123,209 118,205 112,197
-              C 95,176 87,148 87,115 Z
-            "/>
-            {lodCfg.showPores&&(
-              <path fill="url(#p-pore)" clipPath="url(#cp-face)" d="
-                M 87,115 C 87,76 107,56 130,54 C 153,56 173,76 173,115
-                C 173,148 165,176 148,197 C 142,205 137,209 130,209
-                C 123,209 118,205 112,197 C 95,176 87,148 87,115 Z
-              "/>
-            )}
-            {/* face lighting — softer, less dramatic */}
-            <ellipse cx="112" cy="100" rx="34" ry="46" fill="url(#g-key)"    className="ayrin-key-light" opacity="0.8"/>
-            <ellipse cx="91"  cy="148" rx="30" ry="50" fill="url(#g-sss)"   opacity="0.52"/>
-            <ellipse cx="91"  cy="114" rx="14" ry="24" fill="url(#g-temple)" opacity="0.68"/>
-            <ellipse cx="169" cy="114" rx="14" ry="24" fill="url(#g-temple)" opacity="0.68"/>
-            <ellipse cx="100" cy="134" rx="13" ry="7"  fill="url(#g-malar)"  opacity="0.68" transform="rotate(-12,100,134)"/>
-            <ellipse cx="160" cy="134" rx="13" ry="7"  fill="url(#g-malar)"  opacity="0.6"  transform="rotate(12,160,134)"/>
-            {/* blush — subtle */}
-            <ellipse cx="94"  cy="147" rx="21" ry="14" fill="url(#g-blush)"  opacity="0.72"/>
-            <ellipse cx="166" cy="147" rx="21" ry="14" fill="url(#g-blush)"  opacity="0.66"/>
-            <ellipse cx="124" cy="78"  rx="27" ry="17" fill="url(#g-fhl)"    opacity="1"/>
-            <ellipse cx="130" cy="100" rx="8.5" ry="5.5" fill="rgba(0,0,0,0.048)" opacity="0.68"/>
-            <ellipse cx="130" cy="211" rx="30" ry="11" fill="url(#g-jaw-d)"  opacity="0.78"/>
-            <rect x="127.5" y="140" width="5"   height="25" rx="2.5" fill="url(#g-nb)"   opacity="0.5"/>
-            <ellipse cx="130" cy="173" rx="8"   ry="5"   fill="url(#g-ntip)"  opacity="0.72"/>
-            {lodCfg.showPores&&<>
-              <path d="M 109,160 C 108,168 108,176 111,182 C 113,186 116,188 117,189" fill="none" stroke="rgba(78,32,12,0.19)" strokeWidth="1.4" strokeLinecap="round" opacity="0.7"/>
-              <path d="M 151,161 C 152,169 152,177 149,183 C 147,187 144,189 143,190" fill="none" stroke="rgba(78,32,12,0.17)" strokeWidth="1.4" strokeLinecap="round" opacity="0.68"/>
-            </>}
-
-            {/* EYEBROWS — identity: medium thickness, slightly straight, mild curve */}
-            {/* Positioned naturally — not too high, not too low */}
-            <g className="brow-l" style={{transform:browTransL,transformOrigin:'104px 102px'}}>
-              {/* Left brow: slightly flatter arch, mild downward angle at outer */}
-              <path d="M 88,104 C 96,98 104,95 119,98" fill="none" stroke="#050302" strokeWidth="6.0" strokeLinecap="round" opacity="0.80"/>
-              <path d="M 88,104 C 96,98 104,95 119,98" fill="none" stroke="#0C0808" strokeWidth="3.5" strokeLinecap="round" opacity="0.52"/>
-              <path d="M 89,104 C 96,99 104,96 118,98"  fill="none" stroke="#1A1410" strokeWidth="1.9" strokeLinecap="round" opacity="0.32"/>
-              {lodCfg.showPores&&[
-                [89,104,91,101,93,100],[93,101,96,99,99,99],[98,98,101,97,104,97],
-                [103,97,107,96.5,110,97],[109,97,113,97.5,117,98]
-              ].map((p,i)=>(
-                <path key={i} d={`M ${p[0]},${p[1]} C ${p[2]},${p[3]} ${p[4]},${p[5]}`}
-                  fill="none" stroke="#030200" strokeWidth="0.72" strokeLinecap="round" opacity={0.24-i*0.03}/>
-              ))}
-            </g>
-            <g className="brow-r" style={{transform:browTransR,transformOrigin:'156px 102px'}}>
-              {/* Right brow: micro-asymmetric, 0.5px different angle */}
-              <path d="M 141,98 C 156,94 164,97 172,104" fill="none" stroke="#050302" strokeWidth="6.0" strokeLinecap="round" opacity="0.78"/>
-              <path d="M 141,98 C 156,94 164,97 172,104" fill="none" stroke="#0C0808" strokeWidth="3.5" strokeLinecap="round" opacity="0.5"/>
-              <path d="M 142,98 C 156,95 164,97 171,104"  fill="none" stroke="#1A1410" strokeWidth="1.9" strokeLinecap="round" opacity="0.30"/>
-              {lodCfg.showPores&&[
-                [142,97.5,145,96.5,149,96],[149,96,152,95.5,155,96],
-                [155,96,159,97,161,98],[160,98,164,100,167,102],[165,101,168,103,171,104]
-              ].map((p,i)=>(
-                <path key={i} d={`M ${p[0]},${p[1]} C ${p[2]},${p[3]} ${p[4]},${p[5]}`}
-                  fill="none" stroke="#030200" strokeWidth="0.70" strokeLinecap="round" opacity={0.23-i*0.03}/>
-              ))}
-            </g>
+            <HairComponent hairState={hairState}/>
+            <FringeComponent strandCount={hairState.strandCount}/>
+            <LeftEarComponent />
+            <FaceBaseComponent showPores={lodCfg.showPores} />
+            <BrowsComponent browState={browState} />
 
             {/* LEFT EYE */}
             <EyeComponent
               cx={107} cy={114} clipId="cp-le"
-              gazeX={face.microGazeX} gazeY={face.microGazeY}
-              pupilScale={face.pupilScale}
-              lidDrop={face.lidDropL+face.microLidL} blinkAmt={blinkAmt}
-              postDroop={face.postBlinkDroopL}
+              eyeState={leftEyeState}
               showLashes={lodCfg.showLashes} showVeins={lodCfg.showVeins}
               rays={irisAngles} side="left" asymX={0} asymY={0}
             />
             {/* RIGHT EYE — micro-asymmetric */}
             <EyeComponent
               cx={153} cy={114} clipId="cp-re"
-              gazeX={face.microGazeX} gazeY={face.microGazeY}
-              pupilScale={face.pupilScale}
-              lidDrop={face.lidDropR+face.microLidR} blinkAmt={blinkAmt}
-              postDroop={face.postBlinkDroopR}
+              eyeState={rightEyeState}
               showLashes={lodCfg.showLashes} showVeins={lodCfg.showVeins}
               rays={irisAngles} side="right" asymX={0.5} asymY={0.25}
             />
 
             {/* NOSE — identity: straight bridge, medium width, soft tip */}
-            {/* Bridge: straight, not angular */}
-            <path d="M 126,140 C 124,151 123,162 125,170 C 127,174 130,175.5 133,174.5 C 135.5,170 136,162 135,151 C 134,142 132.5,140 131,139"
-              fill="none" stroke="rgba(82,36,12,0.2)" strokeWidth="1.0" strokeLinecap="round" opacity="0.7"/>
-            <path d="M 130,142 C 131,152 131,161 130.5,169" fill="none" stroke="#B88050" strokeWidth="0.62" strokeLinecap="round" opacity="0.2"/>
-            <path d="M 128,142 C 127,153 126.5,162 127.5,170" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="1.3" strokeLinecap="round" opacity="0.48"/>
-            <path d="M 132.5,142 C 133.5,153 133.5,162 132.5,170" fill="none" stroke="rgba(0,0,0,0.044)" strokeWidth="1.1" strokeLinecap="round" opacity="0.44"/>
-            <ellipse cx="130" cy="172" rx="8"   ry="5"   fill="url(#g-ntip)" opacity="0.72"/>
-            <ellipse cx="129" cy="170" rx="3.0" ry="2.0" fill="rgba(205,160,100,0.18)" opacity="0.68"/>
-            {/* Alar bases — medium width, soft */}
-            <ellipse cx="122" cy="169" rx="4"   ry="2.4" fill="#5C2E10" opacity="0.1"/>
-            <ellipse cx="138" cy="169" rx="4"   ry="2.4" fill="#5C2E10" opacity="0.1"/>
-            {/* Nostrils — medium flare (matches reference) */}
-            <path d="M 118,170 C 121,165 125,163.5 127.5,164.5 C 129,166 129.8,169 128.8,172 C 127,176 122,177 119,173 Z" fill="rgba(0,0,0,0.042)" opacity="0.7"/>
-            <path d="M 142,170 C 139,165 135,163.5 132.5,164.5 C 131,166 130.2,169 131.2,172 C 133,176 138,177 141,173 Z" fill="rgba(0,0,0,0.042)" opacity="0.7"/>
-            <path d="M 119,171 C 122,176 126,177 130,176" fill="none" stroke="#3A1A08" strokeWidth="1.45" strokeLinecap="round" opacity="0.25"/>
-            <path d="M 141,171 C 138,176 134,177 130,176" fill="none" stroke="#3A1A08" strokeWidth="1.45" strokeLinecap="round" opacity="0.25"/>
-            <ellipse cx="122" cy="172" rx="3.0" ry="2.1" fill="rgba(18,4,0,0.27)" opacity="0.64"/>
-            <ellipse cx="138" cy="172" rx="3.0" ry="2.1" fill="rgba(18,4,0,0.27)" opacity="0.64"/>
-            <ellipse cx="130" cy="175" rx="9"   ry="3.6" fill="rgba(0,0,0,0.055)" opacity="0.7"/>
-            {/* Philtrum */}
-            <path d="M 128,175 C 127.8,179 128.2,183 129.5,185" fill="none" stroke="rgba(0,0,0,0.065)" strokeWidth="2.7" strokeLinecap="round" opacity="0.52"/>
-            <path d="M 132,175 C 132.2,179 131.8,183 130.5,185" fill="none" stroke="rgba(0,0,0,0.065)" strokeWidth="2.7" strokeLinecap="round" opacity="0.52"/>
+            <NoseComponent />
 
             {/* ═══════ FACIAL HAIR — natural, light, irregular ═══════ */}
             {/* Connection bands */}
@@ -1220,13 +1406,13 @@ export function AyrinCharacter({
               <ellipse cx="162" cy="172" rx="13" ry="10" fill="url(#g-stb)" opacity="0.52"/>
             </>}
             {/* Irregular stroke clusters — varied opacity for uneven growth */}
-            {stbL.map(([sx,sy,dx,opMult],i)=>(
+            {leftJawStubble.map(([sx,sy,dx,opMult],i)=>(
               <path key={`jsl${i}`}
                 d={`M ${sx},${sy} C ${sx+dx*0.85},${sy+3} ${sx+dx*0.85},${sy+6} ${sx+dx*0.1},${sy+8}`}
                 fill="none" stroke="#080604" strokeWidth="0.56" strokeLinecap="round"
                 opacity={0.10*lodCfg.stubbleDensity*opMult}/>
             ))}
-            {stbR.map(([sx,sy,dx,opMult],i)=>(
+            {rightJawStubble.map(([sx,sy,dx,opMult],i)=>(
               <path key={`jsr${i}`}
                 d={`M ${sx},${sy} C ${sx+dx*0.85},${sy+3} ${sx+dx*0.85},${sy+6} ${sx+dx*0.1},${sy+8}`}
                 fill="none" stroke="#080604" strokeWidth="0.56" strokeLinecap="round"
@@ -1234,45 +1420,7 @@ export function AyrinCharacter({
             ))}
 
             {/* ══ MOUTH — identity: medium fullness, natural ══ */}
-            <g className="ayrin-mouth">
-              {/* Vermillion border */}
-              <path d="M 114,186 C 118,177 122,174 127,176.5 C 128.8,174 131.2,174 133,176.5 C 138,174 142,177 146,186"
-                fill="none" stroke="rgba(160,70,64,0.18)" strokeWidth="1.9" strokeLinecap="round"/>
-              {/* Upper lip — identity: medium, slightly thinner */}
-              <path d={`
-                M 116,${186+face.microLipTension*.25}
-                C 120,${178+face.microLipTension*.15} 123,${175+face.microLipTension*.1} 127.5,${177.5+face.microLipTension*.1}
-                C 129.2,${175+face.microLipTension*.1} 130.8,${175+face.microLipTension*.1} 132.5,${177.5+face.microLipTension*.1}
-                C 137,${175+face.microLipTension*.1} 140.5,${178+face.microLipTension*.15} 144,${186+face.microLipTension*.25}
-                C 140.5,${183+face.microLipTension*.12} 136.5,${182+face.microLipTension*.1} 132.5,${183+face.microLipTension*.1}
-                C 130.2,${181.5} 129.8,${181.5} 127.5,${183+face.microLipTension*.1}
-                C 123.5,${182+face.microLipTension*.1} 119.5,${183+face.microLipTension*.12} 116,${186+face.microLipTension*.25} Z
-              `} fill="url(#g-lip-up)" opacity="0.89"/>
-              {/* Mouth seam */}
-              <path d="M 117,186 C 122,185.3 127,184.9 130,185.1 C 133,184.9 138,185.3 143,186"
-                fill="none" stroke="rgba(22,5,4,0.28)" strokeWidth="0.85" strokeLinecap="round" opacity="0.7"/>
-              {/* Lower lip — identity: slightly fuller than upper */}
-              <path d={`
-                M 117,${186+face.microLipTension*.18}
-                C 120,${195+face.lowerLipDrop*2.8+face.microLipAsym*.4}
-                  124.5,${200+face.lowerLipDrop*2.8+face.microLipAsym*.25}
-                  129.5,${201.5+face.lowerLipDrop*2.8+face.microLipAsym*.18}
-                C 132,${202+face.lowerLipDrop*2.8}
-                  134.5,${201+face.lowerLipDrop*2.5-face.microLipAsym*.1}
-                  137.5,${199+face.lowerLipDrop*2-face.microLipAsym*.2}
-                C 142,${195+face.lowerLipDrop*1.8-face.microLipAsym*.25}
-                  144,${190+face.lowerLipDrop*.8} 144,${186+face.microLipTension*.18}
-                C 140,${191+face.lowerLipDrop*1.5} 136.5,${194+face.lowerLipDrop} 130,${194.5+face.lowerLipDrop+face.microLipAsym*.12}
-                C 123.5,${194+face.lowerLipDrop} 120,${191+face.lowerLipDrop*1.5} 117,${186+face.microLipTension*.18} Z
-              `} fill="url(#g-lip-lo)" opacity="0.89"/>
-              <ellipse cx="130" cy={195+face.lowerLipDrop} rx="8.8" ry="3.8" fill="url(#g-lip-gls)" opacity="0.2"/>
-              <ellipse cx="130" cy="186.5" rx="14" ry="2.5" fill="url(#g-lip-drk)" opacity="0.3"/>
-              {/* corners — natural */}
-              <path d={`M 117,${186+face.microLipTension*.18} C 116.3,${187.5+face.mouthCornerL*.7} 116.4,${189+face.mouthCornerL*.55} 117,${190+face.mouthCornerL*.45}`}
-                fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.19"/>
-              <path d={`M 144,${186+face.microLipTension*.18} C 144.7,${187.8+face.mouthCornerR*.7-face.microLipAsym*.08} 144.6,${189.5+face.mouthCornerR*.55} 144,${190.5+face.mouthCornerR*.45-face.microLipAsym*.12}`}
-                fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.15"/>
-            </g>
+            <LipsComponent lipState={lipState} />
 
             {/* RIM LIGHT — soft, warm */}
             <path d="M 87,115 C 87,76 107,56 130,54 C 153,56 173,76 173,115
