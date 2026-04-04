@@ -66,8 +66,12 @@ interface BrowState {
 }
 
 interface LipState {
-  mouthCornerL: number;
-  mouthCornerR: number;
+  jawRotation: number;
+  jawTranslateY: number;
+  leftCornerX: number;
+  leftCornerY: number;
+  rightCornerX: number;
+  rightCornerY: number;
   microLipTension: number;
   microLipAsym: number;
   lowerLipDrop: number;
@@ -103,6 +107,24 @@ interface SpringConfig {
   stiffness: number;
   damping: number;
   precision: number;
+}
+
+interface Bone {
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+}
+
+interface CharacterRig {
+  head: Bone;
+  jaw: Bone;
+  eyeL: Bone;
+  eyeR: Bone;
+  browL: Bone;
+  browR: Bone;
+  lipCornerL: Bone;
+  lipCornerR: Bone;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -265,6 +287,141 @@ function createZeroEmotionTarget(): EmotionTarget {
     breathScale: 0,
     blinkFreq: 0,
   };
+}
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
+function createBone(x: number, y: number, rotation = 0, scale = 1): Bone {
+  return { x, y, rotation, scale };
+}
+
+const BASE_RIG: CharacterRig = {
+  head: createBone(130, 160),
+  jaw: createBone(130, 186),
+  eyeL: createBone(107, 114),
+  eyeR: createBone(153, 114),
+  browL: createBone(104, 102),
+  browR: createBone(156, 102),
+  lipCornerL: createBone(117, 186),
+  lipCornerR: createBone(144, 186),
+};
+
+function cloneRig(rig: CharacterRig): CharacterRig {
+  return {
+    head: { ...rig.head },
+    jaw: { ...rig.jaw },
+    eyeL: { ...rig.eyeL },
+    eyeR: { ...rig.eyeR },
+    browL: { ...rig.browL },
+    browR: { ...rig.browR },
+    lipCornerL: { ...rig.lipCornerL },
+    lipCornerR: { ...rig.lipCornerR },
+  };
+}
+
+function resolveRigTarget(face: FaceState): CharacterRig {
+  const leftCornerYOffset = clamp(face.mouthCornerL * 1.35 + face.microLipAsym * 0.65, -4, 4);
+  const rightCornerYOffset = clamp(face.mouthCornerR * 1.35 - face.microLipAsym * 0.65, -4, 4);
+
+  return {
+    head: {
+      ...BASE_RIG.head,
+      x: BASE_RIG.head.x + clamp(face.eyeOffsetX * 0.15, -1.2, 1.2),
+      y: BASE_RIG.head.y + clamp(face.headTiltY * 1.2, -6, 6),
+      rotation: clamp(face.headTiltX, -8, 4),
+    },
+    jaw: {
+      ...BASE_RIG.jaw,
+      y: BASE_RIG.jaw.y + clamp(face.lowerLipDrop * 2.1 + Math.max(0, face.microLipTension) * 1.2, 0, 4.5),
+      rotation: clamp(face.lowerLipDrop * 12 + Math.abs(face.microLipTension) * 4.5, 0, 14),
+    },
+    eyeL: {
+      ...BASE_RIG.eyeL,
+      x: BASE_RIG.eyeL.x + clamp(face.microGazeX, -2, 2),
+      y: BASE_RIG.eyeL.y + clamp(face.microGazeY, -1.5, 1.5),
+    },
+    eyeR: {
+      ...BASE_RIG.eyeR,
+      x: BASE_RIG.eyeR.x + clamp(face.microGazeX, -2, 2),
+      y: BASE_RIG.eyeR.y + clamp(face.microGazeY, -1.5, 1.5),
+    },
+    browL: {
+      ...BASE_RIG.browL,
+      x: BASE_RIG.browL.x + clamp(face.browAngleL * 0.18, -1.2, 1.2),
+      y: BASE_RIG.browL.y + clamp(face.browLiftL + face.microBrowL, -3, 3),
+      rotation: clamp(face.browAngleL, -8, 8),
+    },
+    browR: {
+      ...BASE_RIG.browR,
+      x: BASE_RIG.browR.x + clamp(face.browAngleR * 0.18, -1.2, 1.2),
+      y: BASE_RIG.browR.y + clamp(face.browLiftR + face.microBrowR, -3, 3),
+      rotation: clamp(face.browAngleR, -8, 8),
+    },
+    lipCornerL: {
+      ...BASE_RIG.lipCornerL,
+      x: BASE_RIG.lipCornerL.x + clamp(face.mouthCornerL * 0.7, -2.4, 2.4),
+      y: BASE_RIG.lipCornerL.y + leftCornerYOffset + clamp(face.lowerLipDrop * 0.35, -0.5, 1.2),
+    },
+    lipCornerR: {
+      ...BASE_RIG.lipCornerR,
+      x: BASE_RIG.lipCornerR.x - clamp(face.mouthCornerR * 0.7, -2.4, 2.4),
+      y: BASE_RIG.lipCornerR.y + rightCornerYOffset + clamp(face.lowerLipDrop * 0.35, -0.5, 1.2),
+    },
+  };
+}
+
+function constrainRig(rig: CharacterRig): CharacterRig {
+  const next = cloneRig(rig);
+
+  next.head.x = clamp(next.head.x, BASE_RIG.head.x - 1.2, BASE_RIG.head.x + 1.2);
+  next.head.y = clamp(next.head.y, BASE_RIG.head.y - 6, BASE_RIG.head.y + 6);
+  next.head.rotation = clamp(next.head.rotation, -8, 4);
+
+  next.jaw.y = clamp(next.jaw.y, BASE_RIG.jaw.y, BASE_RIG.jaw.y + 4.5);
+  next.jaw.rotation = clamp(next.jaw.rotation, 0, 14);
+
+  next.eyeL.x = clamp(next.eyeL.x, BASE_RIG.eyeL.x - 2, BASE_RIG.eyeL.x + 2);
+  next.eyeL.y = clamp(next.eyeL.y, BASE_RIG.eyeL.y - 1.5, BASE_RIG.eyeL.y + 1.5);
+  next.eyeR.x = clamp(next.eyeR.x, BASE_RIG.eyeR.x - 2, BASE_RIG.eyeR.x + 2);
+  next.eyeR.y = clamp(next.eyeR.y, BASE_RIG.eyeR.y - 1.5, BASE_RIG.eyeR.y + 1.5);
+
+  next.browL.x = clamp(next.browL.x, BASE_RIG.browL.x - 1.2, BASE_RIG.browL.x + 1.2);
+  next.browL.y = clamp(next.browL.y, BASE_RIG.browL.y - 3, BASE_RIG.browL.y + 3);
+  next.browL.rotation = clamp(next.browL.rotation, -8, 8);
+  next.browR.x = clamp(next.browR.x, BASE_RIG.browR.x - 1.2, BASE_RIG.browR.x + 1.2);
+  next.browR.y = clamp(next.browR.y, BASE_RIG.browR.y - 3, BASE_RIG.browR.y + 3);
+  next.browR.rotation = clamp(next.browR.rotation, -8, 8);
+
+  next.lipCornerL.x = clamp(next.lipCornerL.x, BASE_RIG.lipCornerL.x - 2.8, BASE_RIG.lipCornerL.x + 2.8);
+  next.lipCornerL.y = clamp(next.lipCornerL.y, BASE_RIG.lipCornerL.y - 4, BASE_RIG.lipCornerL.y + 4);
+  next.lipCornerR.x = clamp(next.lipCornerR.x, BASE_RIG.lipCornerR.x - 2.8, BASE_RIG.lipCornerR.x + 2.8);
+  next.lipCornerR.y = clamp(next.lipCornerR.y, BASE_RIG.lipCornerR.y - 4, BASE_RIG.lipCornerR.y + 4);
+
+  return next;
+}
+
+function stepBone(current: Bone, target: Bone, positionLag: number, rotationLag: number, scaleLag = positionLag): Bone {
+  return {
+    x: current.x + (target.x - current.x) * positionLag,
+    y: current.y + (target.y - current.y) * positionLag,
+    rotation: current.rotation + (target.rotation - current.rotation) * rotationLag,
+    scale: current.scale + (target.scale - current.scale) * scaleLag,
+  };
+}
+
+function stepRig(current: CharacterRig, face: FaceState): CharacterRig {
+  const target = constrainRig(resolveRigTarget(face));
+
+  return constrainRig({
+    head: stepBone(current.head, target.head, 0.08, 0.08),
+    jaw: stepBone(current.jaw, target.jaw, 0.12, 0.12),
+    eyeL: stepBone(current.eyeL, target.eyeL, 0.18, 0.16),
+    eyeR: stepBone(current.eyeR, target.eyeR, 0.18, 0.16),
+    browL: stepBone(current.browL, target.browL, 0.14, 0.16),
+    browR: stepBone(current.browR, target.browR, 0.14, 0.16),
+    lipCornerL: stepBone(current.lipCornerL, target.lipCornerL, 0.12, 0.12),
+    lipCornerR: stepBone(current.lipCornerR, target.lipCornerR, 0.12, 0.12),
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -971,44 +1128,61 @@ const NoseComponent = memo(() => (
 ));
 NoseComponent.displayName='NoseComponent';
 
-const LipsComponent = memo(({ lipState }: { lipState: LipState }) => (
-  <g className="ayrin-mouth">
-    <path d="M 114,186 C 118,177 122,174 127,176.5 C 128.8,174 131.2,174 133,176.5 C 138,174 142,177 146,186"
-      fill="none" stroke="rgba(160,70,64,0.18)" strokeWidth="1.9" strokeLinecap="round"/>
-    <path d={`
-      M 116,${186+lipState.microLipTension*.25}
-      C 120,${178+lipState.microLipTension*.15} 123,${175+lipState.microLipTension*.1} 127.5,${177.5+lipState.microLipTension*.1}
-      C 129.2,${175+lipState.microLipTension*.1} 130.8,${175+lipState.microLipTension*.1} 132.5,${177.5+lipState.microLipTension*.1}
-      C 137,${175+lipState.microLipTension*.1} 140.5,${178+lipState.microLipTension*.15} 144,${186+lipState.microLipTension*.25}
-      C 140.5,${183+lipState.microLipTension*.12} 136.5,${182+lipState.microLipTension*.1} 132.5,${183+lipState.microLipTension*.1}
-      C 130.2,${181.5} 129.8,${181.5} 127.5,${183+lipState.microLipTension*.1}
-      C 123.5,${182+lipState.microLipTension*.1} 119.5,${183+lipState.microLipTension*.12} 116,${186+lipState.microLipTension*.25} Z
-    `} fill="url(#g-lip-up)" opacity="0.89"/>
-    <path d="M 117,186 C 122,185.3 127,184.9 130,185.1 C 133,184.9 138,185.3 143,186"
-      fill="none" stroke="rgba(22,5,4,0.28)" strokeWidth="0.85" strokeLinecap="round" opacity="0.7"/>
-    <path d={`
-      M 117,${186+lipState.microLipTension*.18}
-      C 120,${195+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.4}
-        124.5,${200+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.25}
-        129.5,${201.5+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.18}
-      C 132,${202+lipState.lowerLipDrop*2.8}
-        134.5,${201+lipState.lowerLipDrop*2.5-lipState.microLipAsym*.1}
-        137.5,${199+lipState.lowerLipDrop*2-lipState.microLipAsym*.2}
-      C 142,${195+lipState.lowerLipDrop*1.8-lipState.microLipAsym*.25}
-        144,${190+lipState.lowerLipDrop*.8} 144,${186+lipState.microLipTension*.18}
-      C 140,${191+lipState.lowerLipDrop*1.5} 136.5,${194+lipState.lowerLipDrop} 130,${194.5+lipState.lowerLipDrop+lipState.microLipAsym*.12}
-      C 123.5,${194+lipState.lowerLipDrop} 120,${191+lipState.lowerLipDrop*1.5} 117,${186+lipState.microLipTension*.18} Z
-    `} fill="url(#g-lip-lo)" opacity="0.89"/>
-    <ellipse cx="130" cy={195+lipState.lowerLipDrop} rx="8.8" ry="3.8" fill="url(#g-lip-gls)" opacity="0.2"/>
-    <ellipse cx="130" cy="186.5" rx="14" ry="2.5" fill="url(#g-lip-drk)" opacity="0.3"/>
-    <path d={`M 117,${186+lipState.microLipTension*.18} C 116.3,${187.5+lipState.mouthCornerL*.7} 116.4,${189+lipState.mouthCornerL*.55} 117,${190+lipState.mouthCornerL*.45}`}
-      fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.19"/>
-    <path d={`M 144,${186+lipState.microLipTension*.18} C 144.7,${187.8+lipState.mouthCornerR*.7-lipState.microLipAsym*.08} 144.6,${189.5+lipState.mouthCornerR*.55} 144,${190.5+lipState.mouthCornerR*.45-lipState.microLipAsym*.12}`}
-      fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.15"/>
-  </g>
-), (prev, next) => (
-  prev.lipState.mouthCornerL === next.lipState.mouthCornerL &&
-  prev.lipState.mouthCornerR === next.lipState.mouthCornerR &&
+const LipsComponent = memo(({ lipState }: { lipState: LipState }) => {
+  const leftX = lipState.leftCornerX;
+  const rightX = lipState.rightCornerX;
+  const leftUpperY = lipState.leftCornerY + lipState.microLipTension * 0.25;
+  const rightUpperY = lipState.rightCornerY + lipState.microLipTension * 0.25;
+  const seamLeftY = lipState.leftCornerY + lipState.microLipTension * 0.18;
+  const seamRightY = lipState.rightCornerY + lipState.microLipTension * 0.18;
+  const lowerCenterY = 194.5 + lipState.lowerLipDrop + lipState.microLipAsym * 0.12;
+  const jawTransform = `translate(0 ${lipState.jawTranslateY.toFixed(2)}) rotate(${lipState.jawRotation.toFixed(2)} 130 186)`;
+
+  return (
+    <g transform={jawTransform}>
+      <g className="ayrin-mouth">
+        <path d={`M ${leftX-3},186 C ${leftX+1},177 ${123},174 ${127},176.5 C 128.8,174 131.2,174 133,176.5 C 137,174 141.5,177 149,186`}
+          fill="none" stroke="rgba(160,70,64,0.18)" strokeWidth="1.9" strokeLinecap="round"/>
+        <path d={`
+          M ${leftX},${leftUpperY}
+          C ${leftX+4},${178+lipState.microLipTension*.15} 123,${175+lipState.microLipTension*.1} 127.5,${177.5+lipState.microLipTension*.1}
+          C 129.2,${175+lipState.microLipTension*.1} 130.8,${175+lipState.microLipTension*.1} 132.5,${177.5+lipState.microLipTension*.1}
+          C 137,${175+lipState.microLipTension*.1} ${rightX-4},${178+lipState.microLipTension*.15} ${rightX},${rightUpperY}
+          C ${rightX-3.5},${183+lipState.microLipTension*.12} 136.5,${182+lipState.microLipTension*.1} 132.5,${183+lipState.microLipTension*.1}
+          C 130.2,181.5 129.8,181.5 127.5,${183+lipState.microLipTension*.1}
+          C 123.5,${182+lipState.microLipTension*.1} ${leftX+3.5},${183+lipState.microLipTension*.12} ${leftX},${leftUpperY} Z
+        `} fill="url(#g-lip-up)" opacity="0.89"/>
+        <path d={`M ${leftX+1},${seamLeftY} C 122,185.3 127,184.9 130,185.1 C 133,184.9 138,185.3 ${rightX-1},${seamRightY}`}
+          fill="none" stroke="rgba(22,5,4,0.28)" strokeWidth="0.85" strokeLinecap="round" opacity="0.7"/>
+        <path d={`
+          M ${leftX},${seamLeftY}
+          C ${leftX+3},${195+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.4}
+            124.5,${200+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.25}
+            129.5,${201.5+lipState.lowerLipDrop*2.8+lipState.microLipAsym*.18}
+          C 132,${202+lipState.lowerLipDrop*2.8}
+            134.5,${201+lipState.lowerLipDrop*2.5-lipState.microLipAsym*.1}
+            137.5,${199+lipState.lowerLipDrop*2-lipState.microLipAsym*.2}
+          C 142,${195+lipState.lowerLipDrop*1.8-lipState.microLipAsym*.25}
+            ${rightX},${190+lipState.lowerLipDrop*.8} ${rightX},${seamRightY}
+          C 140,${191+lipState.lowerLipDrop*1.5} 136.5,${194+lipState.lowerLipDrop} 130,${lowerCenterY}
+          C 123.5,${194+lipState.lowerLipDrop} 120,${191+lipState.lowerLipDrop*1.5} ${leftX},${seamLeftY} Z
+        `} fill="url(#g-lip-lo)" opacity="0.89"/>
+        <ellipse cx="130" cy={195+lipState.lowerLipDrop+lipState.jawTranslateY*0.2} rx="8.8" ry="3.8" fill="url(#g-lip-gls)" opacity="0.2"/>
+        <ellipse cx="130" cy="186.5" rx="14" ry="2.5" fill="url(#g-lip-drk)" opacity="0.3"/>
+        <path d={`M ${leftX},${seamLeftY} C ${leftX-0.7},${seamLeftY+1.5} ${leftX-0.6},${seamLeftY+3} ${leftX},${seamLeftY+4}`}
+          fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.19"/>
+        <path d={`M ${rightX},${seamRightY} C ${rightX+0.7},${seamRightY+1.8-lipState.microLipAsym*.08} ${rightX+0.6},${seamRightY+3.5} ${rightX},${seamRightY+4.5-lipState.microLipAsym*.12}`}
+          fill="none" stroke="#482020" strokeWidth="0.85" strokeLinecap="round" opacity="0.15"/>
+      </g>
+    </g>
+  );
+}, (prev, next) => (
+  prev.lipState.jawRotation === next.lipState.jawRotation &&
+  prev.lipState.jawTranslateY === next.lipState.jawTranslateY &&
+  prev.lipState.leftCornerX === next.lipState.leftCornerX &&
+  prev.lipState.leftCornerY === next.lipState.leftCornerY &&
+  prev.lipState.rightCornerX === next.lipState.rightCornerX &&
+  prev.lipState.rightCornerY === next.lipState.rightCornerY &&
   prev.lipState.microLipTension === next.lipState.microLipTension &&
   prev.lipState.microLipAsym === next.lipState.microLipAsym &&
   prev.lipState.lowerLipDrop === next.lipState.lowerLipDrop
@@ -1046,11 +1220,14 @@ export function AyrinCharacter({
   },[]);
 
   const [face,setFace]=useState<FaceState>(()=>composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
+  const rigRef=useRef<CharacterRig>(resolveRigTarget(composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE)));
 
   useEffect(()=>{
     let raf:number;
     const merge=()=>{
-      setFace(composeFaceState(springEmotionRef.current, microRef.current));
+      const nextFace=composeFaceState(springEmotionRef.current, microRef.current);
+      rigRef.current=stepRig(rigRef.current, nextFace);
+      setFace(nextFace);
       raf=requestAnimationFrame(merge);
     };
     raf=requestAnimationFrame(merge); return ()=>cancelAnimationFrame(raf);
@@ -1072,15 +1249,16 @@ export function AyrinCharacter({
   );
 
   const M=microRef.current;
+  const rig=rigRef.current;
   const blinkAmt=reducedMotion?0:M.blinkAmt;
-  const headRot=face.headTiltX;
   const breathStyle=useMemo(() => ({
     transformOrigin: '130px 490px',
     transform: `translateY(${((1-face.breathScale)*7).toFixed(2)}px) scaleY(${face.breathScale.toFixed(4)})`,
   }), [face.breathScale]);
-  const headOffsetStyle=useMemo(() => ({
-    transform: `translateY(${face.headTiltY.toFixed(2)}px)`,
-  }), [face.headTiltY]);
+  const headRigStyle=useMemo(() => ({
+    transformOrigin: '130px 160px',
+    transform: `translate(${(rig.head.x-BASE_RIG.head.x).toFixed(2)}px, ${(rig.head.y-BASE_RIG.head.y).toFixed(2)}px) rotate(${rig.head.rotation.toFixed(2)}deg)`,
+  }), [rig.head.rotation, rig.head.x, rig.head.y]);
 
   const folds=useMemo(() => ([
     'M 91,262 C 86,320 86,386 91,448',
@@ -1091,15 +1269,15 @@ export function AyrinCharacter({
   ].slice(0,lodCfg.foldCount)), [lodCfg.foldCount]);
 
   const leftEyeState=useMemo<EyeState>(() => ({
-    gazeX: face.microGazeX,
-    gazeY: face.microGazeY,
+    gazeX: rig.eyeL.x-BASE_RIG.eyeL.x,
+    gazeY: rig.eyeL.y-BASE_RIG.eyeL.y,
     pupilScale: face.pupilScale,
     lidDrop: face.lidDropL + face.microLidL,
     blinkAmt,
     postDroop: face.postBlinkDroopL,
   }), [
-    face.microGazeX,
-    face.microGazeY,
+    rig.eyeL.x,
+    rig.eyeL.y,
     face.pupilScale,
     face.lidDropL,
     face.microLidL,
@@ -1108,15 +1286,15 @@ export function AyrinCharacter({
   ]);
 
   const rightEyeState=useMemo<EyeState>(() => ({
-    gazeX: face.microGazeX,
-    gazeY: face.microGazeY,
+    gazeX: rig.eyeR.x-BASE_RIG.eyeR.x,
+    gazeY: rig.eyeR.y-BASE_RIG.eyeR.y,
     pupilScale: face.pupilScale,
     lidDrop: face.lidDropR + face.microLidR,
     blinkAmt,
     postDroop: face.postBlinkDroopR,
   }), [
-    face.microGazeX,
-    face.microGazeY,
+    rig.eyeR.x,
+    rig.eyeR.y,
     face.pupilScale,
     face.lidDropR,
     face.microLidR,
@@ -1125,28 +1303,36 @@ export function AyrinCharacter({
   ]);
 
   const browState=useMemo<BrowState>(() => ({
-    leftTransform: `translateY(${face.browLiftL+face.microBrowL}px) rotate(${face.browAngleL}deg)`,
-    rightTransform: `translateY(${face.browLiftR+face.microBrowR}px) rotate(${face.browAngleR}deg)`,
+    leftTransform: `translate(${(rig.browL.x-BASE_RIG.browL.x).toFixed(2)}px, ${(rig.browL.y-BASE_RIG.browL.y).toFixed(2)}px) rotate(${rig.browL.rotation.toFixed(2)}deg)`,
+    rightTransform: `translate(${(rig.browR.x-BASE_RIG.browR.x).toFixed(2)}px, ${(rig.browR.y-BASE_RIG.browR.y).toFixed(2)}px) rotate(${rig.browR.rotation.toFixed(2)}deg)`,
     showPores: lodCfg.showPores,
   }), [
-    face.browLiftL,
-    face.microBrowL,
-    face.browAngleL,
-    face.browLiftR,
-    face.microBrowR,
-    face.browAngleR,
+    rig.browL.rotation,
+    rig.browL.x,
+    rig.browL.y,
+    rig.browR.rotation,
+    rig.browR.x,
+    rig.browR.y,
     lodCfg.showPores,
   ]);
 
   const lipState=useMemo<LipState>(() => ({
-    mouthCornerL: face.mouthCornerL,
-    mouthCornerR: face.mouthCornerR,
+    jawRotation: rig.jaw.rotation,
+    jawTranslateY: rig.jaw.y-BASE_RIG.jaw.y,
+    leftCornerX: rig.lipCornerL.x,
+    leftCornerY: rig.lipCornerL.y,
+    rightCornerX: rig.lipCornerR.x,
+    rightCornerY: rig.lipCornerR.y,
     microLipTension: face.microLipTension,
     microLipAsym: face.microLipAsym,
     lowerLipDrop: face.lowerLipDrop,
   }), [
-    face.mouthCornerL,
-    face.mouthCornerR,
+    rig.jaw.rotation,
+    rig.jaw.y,
+    rig.lipCornerL.x,
+    rig.lipCornerL.y,
+    rig.lipCornerR.x,
+    rig.lipCornerR.y,
     face.microLipTension,
     face.microLipAsym,
     face.lowerLipDrop,
@@ -1154,8 +1340,8 @@ export function AyrinCharacter({
 
   const hairState=useMemo<HairState>(() => ({
     strandCount: lodCfg.hairStrandCount,
-    microOffset: face.microBrowL*0.45,
-  }), [lodCfg.hairStrandCount, face.microBrowL]);
+    microOffset: (rig.head.rotation + (rig.browL.y-BASE_RIG.browL.y))*0.32,
+  }), [lodCfg.hairStrandCount, rig.browL.y, rig.head.rotation]);
 
   const handleMouseEnter=useCallback(() => {
     send('MOUSE_ENTER');
@@ -1209,9 +1395,9 @@ export function AyrinCharacter({
             55%{transform:translateY(-1.6px) scaleY(1.010)}
           }
           @keyframes ayrin-head{
-            0%,100%{transform:rotate(${headRot}deg) translateY(0)}
-            46%{transform:rotate(${headRot-1.2}deg) translateY(-.8px) rotate(.25deg)}
-            70%{transform:rotate(${headRot-.5}deg) translateY(-.3px)}
+            0%,100%{transform:translateY(0)}
+            46%{transform:translateY(-.8px) rotate(.25deg)}
+            70%{transform:translateY(-.3px) rotate(.08deg)}
           }
           @keyframes ayrin-mouth{0%,100%{transform:translateY(0)}50%{transform:translateY(.4px)}}
           @keyframes ayrin-fringe{0%,100%{transform:rotate(0) translateY(0)}50%{transform:rotate(-.6deg) translateY(.5px)}}
@@ -1556,7 +1742,7 @@ export function AyrinCharacter({
           <path d="M 111,232 C 120,228 126,226 130,226 C 134,226 140,228 149,232" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.0" strokeLinecap="round"/>
 
           {/* ═══════ HEAD GROUP ═══════ */}
-          <g style={headOffsetStyle}>
+          <g style={headRigStyle}>
             <g className="ayrin-head">
 
             {/* HAIR */}
