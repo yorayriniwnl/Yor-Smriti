@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 'use client';
 
 import {
@@ -639,12 +640,12 @@ function useWebGLOverlay(
   ref: React.RefObject<HTMLCanvasElement | null>,
   lod: LODConfig,
   face: FaceState,
-  size: { w: number; h: number }
+  _size: { w: number; h: number }
 ) {
   const gl   = useRef<WebGLRenderingContext|null>(null);
   const prog = useRef<WebGLProgram|null>(null);
   const raf  = useRef(0);
-  const t0   = useRef(performance.now());
+  const t0   = useRef(0);
 
   useEffect(() => {
     if (lod.shaderQuality==='off') return;
@@ -664,11 +665,12 @@ function useWebGLOverlay(
     const al=ctx.getAttribLocation(p,'p');
     ctx.enableVertexAttribArray(al); ctx.vertexAttribPointer(al,2,ctx.FLOAT,false,0,0);
     return ()=>{ctx.deleteProgram(p);};
-  },[lod.shaderQuality]);
+  },[lod.shaderQuality, ref]);
 
   useEffect(()=>{
     const canvas=ref.current,ctx=gl.current,p=prog.current;
     if(!canvas||!ctx||!p||lod.shaderQuality==='off') return;
+    t0.current = performance.now();
     const tick=()=>{
       const t=(performance.now()-t0.current)*0.001;
       ctx.viewport(0,0,canvas.width,canvas.height); ctx.clear(ctx.COLOR_BUFFER_BIT);
@@ -685,7 +687,7 @@ function useWebGLOverlay(
     };
     raf.current=requestAnimationFrame(tick);
     return ()=>cancelAnimationFrame(raf.current);
-  },[lod.glowIntensity,lod.shaderQuality,face]);
+  },[lod.glowIntensity,lod.shaderQuality,face,ref]);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -701,7 +703,7 @@ function useLOD(ref: React.RefObject<HTMLDivElement | null>): LODLevel {
       setLod(next);
     });
     ro.observe(el); return ()=>ro.disconnect();
-  },[]);
+  },[ref]);
   return lod;
 }
 
@@ -710,11 +712,13 @@ function useLOD(ref: React.RefObject<HTMLDivElement | null>): LODLevel {
 ═══════════════════════════════════════════════════════════════ */
 function useGazeSettle() {
   const st=useRef<{phase:'drift'|'hold';start:number;fromX:number;fromY:number;toX:number;toY:number}>({
-    phase:'hold',start:performance.now(),fromX:0,fromY:0,toX:0,toY:0,
+    phase:'hold',start:0,fromX:0,fromY:0,toX:0,toY:0,
   });
   const rng=useRef(seededRng(42));
   return useCallback(()=>{
-    const now=performance.now(),elapsed=now-st.current.start;
+    const now=performance.now();
+    if (st.current.start === 0) st.current.start = now;
+    const elapsed=now-st.current.start;
     if(st.current.phase==='drift'){
       const t=Math.min(1,elapsed/T.gazeSettleDuration);
       if(t>=1) st.current={phase:'hold',start:now,...{fromX:st.current.toX,fromY:st.current.toY,toX:st.current.toX,toY:st.current.toY}};
@@ -733,13 +737,16 @@ function useGazeSettle() {
 /* ═══════════════════════════════════════════════════════════════
    useBlinkSystem — slow, with partial blinks
 ═══════════════════════════════════════════════════════════════ */
-function useBlinkSystem(baseFreq:number){
+function useBlinkSystem(_baseFreq:number){
   const droopL=useRef(0),droopR=useRef(0),blinkVal=useRef(0);
   const rng=useRef(seededRng(77));
-  const nextRef=useRef(performance.now()+baseFreq);
+  const nextRef=useRef(0);
   const stRef=useRef<'open'|'closing'|'opening'>('open');
   const blinkStart=useRef(0),partial=useRef(false),droopDecay=useRef(0);
   const tick=useCallback((now:number,freq:number)=>{
+    if (nextRef.current === 0) {
+      nextRef.current = now + freq * (0.5 + rng.current() * 0.95);
+    }
     const elapsed=now-blinkStart.current;
     if(droopDecay.current>0){
       droopDecay.current=Math.max(0,droopDecay.current-(16/T.postBlinkDroopDecay));
@@ -798,8 +805,9 @@ function useMicroRealism(baseBlinkFreq:number){
   });
   const gazeSettle=useGazeSettle();
   const blinkSys=useBlinkSystem(baseBlinkFreq);
-  const t0=useRef(performance.now()),rafR=useRef(0);
+  const t0=useRef(0),rafR=useRef(0);
   useEffect(()=>{
+    t0.current = performance.now();
     const tick=()=>{
       const now=performance.now(),tMs=now-t0.current;
       const m=mRef.current;
@@ -820,7 +828,7 @@ function useMicroRealism(baseBlinkFreq:number){
     };
     rafR.current=requestAnimationFrame(tick);
     return ()=>cancelAnimationFrame(rafR.current);
-  },[baseBlinkFreq,gazeSettle,blinkSys.tick]);
+  },[baseBlinkFreq,gazeSettle,blinkSys]);
   return mRef;
 }
 
@@ -1014,11 +1022,11 @@ function usePerceptionLayer(containerRef: React.RefObject<HTMLDivElement | null>
     isHovering: false,
     clickIntensity: 0,
     idleMs: 0,
-    lastInteractionAt: performance.now(),
+    lastInteractionAt: 0,
   });
   const memoryRef = useRef<InteractionMemory>({
     clicks: 0,
-    lastInteractionAt: performance.now(),
+    lastInteractionAt: 0,
     familiarity: 0.34,
     trust: 0.52,
     comfort: 0.58,
@@ -1027,9 +1035,17 @@ function usePerceptionLayer(containerRef: React.RefObject<HTMLDivElement | null>
   const pointerRef = useRef({
     x: 0,
     y: 0,
-    ts: performance.now(),
+    ts: 0,
   });
-  const sampleTimeRef = useRef(performance.now());
+  const sampleTimeRef = useRef(0);
+
+  useEffect(() => {
+    const now = performance.now();
+    perceptionRef.current.lastInteractionAt = now;
+    memoryRef.current.lastInteractionAt = now;
+    pointerRef.current.ts = now;
+    sampleTimeRef.current = now;
+  }, []);
 
   const markInteraction = useCallback(() => {
     const now = performance.now();
@@ -2115,7 +2131,9 @@ export function AyrinCharacter({
   },[]);
 
   const [face,setFace]=useState<FaceState>(()=>composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
-  const rigRef=useRef<CharacterRig>(resolveRigTarget(composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE)));
+  const initialRig = resolveRigTarget(composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
+  const rigRef=useRef<CharacterRig>(initialRig);
+  const [rig,setRig]=useState<CharacterRig>(initialRig);
 
   useEffect(()=>{
     let raf:number;
@@ -2151,7 +2169,9 @@ export function AyrinCharacter({
         send('FOCUS');
       }
 
-      rigRef.current=stepRig(rigRef.current, nextFace);
+      const nextRig = stepRig(rigRef.current, nextFace);
+      rigRef.current = nextRig;
+      setRig(nextRig);
       setFace(nextFace);
       raf=requestAnimationFrame(merge);
     };
@@ -2184,7 +2204,6 @@ export function AyrinCharacter({
   );
 
   const M=microRef.current;
-  const rig=rigRef.current;
   const blinkAmt=reducedMotion?0:M.blinkAmt;
   const breathStyle=useMemo(() => ({
     transformOrigin: '130px 490px',
