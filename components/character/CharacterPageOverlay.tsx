@@ -4,7 +4,15 @@ import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useAnimationControls } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { KeyrinCharacter } from '@/components/character/KeyrinCharacter';
-import { AyrinCharacter } from '@/components/character/AyrinCharacter';
+import dynamic from 'next/dynamic';
+
+// AyrinCharacter is a relatively heavy, animated character component (WebGL/complex
+// animation loops). Lazy-load it on the client to reduce initial JS bundle and improve
+// first-contentful-paint. SSR is disabled because the component is client-only.
+const AyrinCharacter = dynamic(
+	() => import('@/components/character/AyrinCharacter').then((m) => m.AyrinCharacter),
+	{ ssr: false, loading: () => null }
+);
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
