@@ -1,27 +1,10 @@
 ## Yor Smriti
 
-Is your girlfriend or wife angry at you ? Or did you had a breakup.
-Send them this to show how much you care about them. 
-**Dedicated to the person I love, Anya.(Fictional Character)**
-Live Demo: https://yor-smriti.vercel.app
+Cinematic, private web experiences for apology and reconciliation.
 
-```bash
-Username =yorayrin
-Password =yorayrin
-```
+Live demo: https://yor-smriti.vercel.app
 
-Yor Smriti is a cinematic, interactive apology and memory web experience built with Next.js.
-It combines narrative screens, motion-heavy transitions, and custom stage flows across multiple routes
-like landing, login, message, panda, and director experiences.
-
-## Tech Stack
-
-- Next.js (App Router)
-- React + TypeScript
-- Framer Motion
-- Tailwind CSS
-
-## Run Locally
+Quick start
 
 1. Install dependencies and start the dev server:
 
@@ -29,62 +12,33 @@ like landing, login, message, panda, and director experiences.
 npm install && npm run dev
 ```
 
-2. Open:
+2. Open `http://localhost:3000`
 
-```text
-http://localhost:3000
+Configuration
+
+Set these server-side environment variables for production:
+
+- `APP_USERNAME`
+- `APP_PASSWORD`
+
+Development (local) credentials
+
+Use these demo credentials for local testing only:
+
+```
+Username: yorayrin
+Password: yorayrin
 ```
 
-3. Configure login credentials in a local env file before testing login:
+Tech
 
-Create `.env.local` in the project root:
+- Next.js (App Router)
+- React + TypeScript
+- Framer Motion
+- Tailwind CSS
 
-You can change these values to anything you want.
+Deployment
 
-## Login Credentials
+Recommended: Vercel. Ensure `APP_USERNAME` and `APP_PASSWORD` are configured in project settings.
 
-Login is validated by `POST /api/login`.
-
-By default, the app accepts these demo credentials:
-
-```bash
-Username =yorayrin
-Password =yorayrin
-```
-
-You can override them with environment variables.
-
-- Preferred server-side variables:
-	- `APP_USERNAME`
-	- `APP_PASSWORD`
-- Fallback variables supported by the route:
-	- `NEXT_PUBLIC_APP_USERNAME`
-	- `NEXT_PUBLIC_APP_PASSWORD`
-
-If no environment variables are set, the built-in demo credentials above are used.
-
-## Deployment Notes
-
-### Vercel (Recommended)
-
-1. Import the repository into Vercel.
-2. Set environment variables in Project Settings -> Environment Variables:
-	 - `APP_USERNAME`
-	 - `APP_PASSWORD`
-3. Deploy.
-
-Default Next.js settings work out of the box:
-
-- Install command: `npm install`
-- Build command: `npm run build`
-- Start command: `npm start`
-
-### Other Platforms
-
-For any Node hosting provider:
-
-1. Set the same environment variables (`APP_USERNAME`, `APP_PASSWORD`).
-2. Build with `npm run build`.
-3. Run with `npm start`.
-
-Without login env vars, authentication will fail in production.
+Other providers: set the same environment variables, build with `npm run build`, and run with `npm start`.

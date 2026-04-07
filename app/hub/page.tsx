@@ -24,58 +24,58 @@ interface Experience {
 const EXPERIENCES: Experience[] = [
   {
     href: '/timeline',
-    eyebrow: 'our story',
+    eyebrow: 'timeline',
     title: 'Memory Timeline',
-    description: 'Trace the moments that shaped us — glance back, feel forward.',
+    description: 'Review key moments on a focused timeline.',
     emoji: '🌙',
     delay: 0.1,
     tech: ['Next.js', 'React', 'Framer Motion'],
     metrics: {
-      performance: 'Instant timeline scrubbing',
-      scale: 'Scales to thousands of moments',
-      results: 'Deep, reflective engagement',
+      performance: 'Instant',
+      scale: 'Thousands of moments',
+      results: 'Reflective engagement',
     },
   },
   {
     href: '/reasons',
-    eyebrow: 'from my heart',
+    eyebrow: 'reasons',
     title: 'Why I Love You',
-    description: 'A concise deck of reasons — clear, intimate, touchable.',
+    description: 'Short, shareable reasons presented as a concise deck.',
     emoji: '🌸',
     delay: 0.2,
     tech: ['React', 'Tailwind', 'Accessible UI'],
     metrics: {
-      performance: 'Fast card flips (~120ms)',
-      scale: 'Compact — dozens of reasons',
-      results: 'Stronger emotional clarity',
+      performance: 'Fast',
+      scale: 'Dozens of items',
+      results: 'Clarified sentiment',
     },
   },
   {
     href: '/stars',
-    eyebrow: 'our universe',
+    eyebrow: 'visual',
     title: 'Our Constellation',
-    description: 'Interactive stars that surface memories with gentle motion.',
+    description: 'Interactive starfield that surfaces memories.',
     emoji: '✨',
     delay: 0.3,
     tech: ['Three.js', 'React', 'WebGL'],
     metrics: {
-      performance: 'Smooth WebGL, 60fps on modern devices',
-      scale: 'Hundreds of stars supported',
-      results: 'High immersion and visual recall',
+      performance: '60fps on modern devices',
+      scale: 'Hundreds of stars',
+      results: 'High immersion',
     },
   },
   {
     href: '/promise',
-    eyebrow: 'my word to you',
+    eyebrow: 'commitments',
     title: 'My Promises',
-    description: 'Concrete promises with simple commitments you can revisit.',
+    description: 'Simple, revisitable commitments to support accountability.',
     emoji: '🕯️',
     delay: 0.4,
     tech: ['React', 'LocalStorage', 'Animations'],
     metrics: {
-      performance: 'Local-first, instant state updates',
-      scale: 'Per-user commitments stored locally',
-      results: 'Higher accountability through reminders',
+      performance: 'Local-first',
+      scale: 'Per-user commitments',
+      results: 'Improved accountability',
     },
   },
 ];
@@ -92,7 +92,6 @@ export default function HubPage() {
           'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
       }}
     >
-      {/* Ambient glow orbs */}
       <div className="pointer-events-none fixed inset-0" aria-hidden="true">
         <motion.div
           animate={{ opacity: [0.12, 0.22, 0.12], scale: [1, 1.08, 1] }}
@@ -106,6 +105,7 @@ export default function HubPage() {
             filter: 'blur(40px)',
           }}
         />
+
         <motion.div
           animate={{ opacity: [0.08, 0.16, 0.08], scale: [1, 1.06, 1] }}
           transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
@@ -120,7 +120,6 @@ export default function HubPage() {
         />
       </div>
 
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -135,8 +134,9 @@ export default function HubPage() {
             fontSize: '0.6rem',
           }}
         >
-          everything I made for you
+          Experiences
         </p>
+
         <h1
           style={{
             fontFamily: 'var(--font-cormorant)',
@@ -146,9 +146,9 @@ export default function HubPage() {
             fontWeight: 400,
           }}
         >
-          Choose where to go,{' '}
-          <em style={{ fontStyle: 'italic', color: 'rgba(255, 180, 215, 0.9)' }}>Keyrin</em>
+          Explore experiences
         </h1>
+
         <p
           className="mx-auto mt-3 max-w-[36ch]"
           style={{
@@ -158,11 +158,10 @@ export default function HubPage() {
             lineHeight: 1.6,
           }}
         >
-          Each one of these is a piece of my heart, made just for you.
+          Interactive, cinematic experiences for reflection and repair.
         </p>
       </motion.div>
 
-      {/* Experience grid */}
       <div className="relative z-10 grid w-full max-w-2xl gap-4 sm:grid-cols-2">
         {EXPERIENCES.map((exp) => (
           <motion.div
@@ -193,7 +192,6 @@ export default function HubPage() {
                     'linear-gradient(160deg, rgba(40, 14, 32, 0.92) 0%, rgba(18, 7, 16, 0.96) 100%)',
                 }}
               >
-                {/* Radial glow on hover */}
                 <motion.div
                   className="pointer-events-none absolute inset-0"
                   animate={{ opacity: hovered === exp.href ? 1 : 0 }}
@@ -205,11 +203,7 @@ export default function HubPage() {
                 />
 
                 <div className="relative">
-                  <span
-                    className="mb-4 block"
-                    style={{ fontSize: '2rem', lineHeight: 1 }}
-                    aria-hidden="true"
-                  >
+                  <span className="mb-4 block" style={{ fontSize: '2rem', lineHeight: 1 }} aria-hidden>
                     {exp.emoji}
                   </span>
 
@@ -310,7 +304,6 @@ export default function HubPage() {
         ))}
       </div>
 
-      {/* Back link */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -327,7 +320,7 @@ export default function HubPage() {
             textTransform: 'uppercase',
           }}
         >
-          ← back to the message
+          ← Back to message
         </Link>
       </motion.div>
     </main>
