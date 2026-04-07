@@ -3,16 +3,32 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: "I'm Sorry",
-  description: 'A quiet moment. An honest space.',
+  description: 'Private, guided experiences that help repair relationships.',
+  keywords: [
+    'apology',
+    'private experience',
+    'relationship repair',
+    'guided apology',
+  ],
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
   },
   openGraph: {
     title: "I'm Sorry",
-    description: 'A quiet moment. An honest space.',
+    description: 'Private, guided experiences that help repair relationships.',
     type: 'website',
   },
+  twitter: {
+    card: 'summary',
+    title: "I'm Sorry",
+    description: 'Private, guided experiences that help repair relationships.',
+  },
+  themeColor: '#05030a',
 };
 
 export const viewport: Viewport = {
@@ -32,6 +48,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="dark" />
+        <link rel="canonical" href="/" />
       </head>
       <body className="antialiased">
         <a
