@@ -187,7 +187,7 @@ export default function HubPage() {
                   y: hovered === exp.href ? -4 : 0,
                 }}
                 transition={{ duration: 0.4, ease: EASE_SOFT }}
-                className="relative overflow-hidden rounded-[1.6rem] border px-6 py-7"
+                className="hub-card micro-hover relative overflow-hidden rounded-[1.6rem] border px-6 py-7"
                 style={{
                   background:
                     'linear-gradient(160deg, rgba(40, 14, 32, 0.92) 0%, rgba(18, 7, 16, 0.96) 100%)',

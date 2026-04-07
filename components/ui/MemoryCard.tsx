@@ -33,7 +33,7 @@ export const MemoryCard = memo(function MemoryCard({
     >
       {/* Card */}
       <div
-        className="relative overflow-hidden rounded-sm"
+        className="memory-card micro-hover"
         style={{
           aspectRatio: '4 / 3',
           background: gradient,

@@ -246,6 +246,37 @@ select:focus-visible {
   max-width: min(420px, 90vw);
 }
 
+/* Micro-interactions: lightweight, GPU-accelerated hover + transitions */
+.micro-hover {
+  transition: transform 220ms var(--ease-breathe), box-shadow 220ms var(--ease-breathe), opacity 200ms var(--ease-breathe);
+  will-change: transform, box-shadow, opacity;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .micro-hover:hover,
+  .micro-hover:focus-visible {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 28px 60px rgba(0,0,0,0.44);
+  }
+
+  .micro-tilt:hover {
+    transform: translateY(-6px) rotateX(0.6deg) scale(1.006);
+  }
+}
+
+/* Enhance memory-card with a subtle lift on hover */
+.memory-card {
+  transition: transform 260ms var(--ease-breathe), filter 260ms var(--ease-breathe), box-shadow 260ms var(--ease-breathe);
+  will-change: transform, filter, box-shadow;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .memory-card:hover {
+    transform: translateY(-8px) scale(1.012);
+    filter: none;
+  }
+}
+
 .memory-card::before {
   content: '';
   position: absolute;
@@ -328,6 +359,7 @@ select:focus-visible {
   border-color: rgba(247, 85, 144, 0.45);
   color: var(--text-primary);
   background: var(--accent-faint);
+  transform: translateY(-2px);
 }
 
 /* ─── Sound Toggle ───────────────────────────────────────────────────── */
