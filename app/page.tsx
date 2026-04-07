@@ -146,7 +146,7 @@ export default function LoginPage() {
             lineHeight: 1.15,
           }}
         >
-          Login
+          I create private apology experiences
         </h1>
 
         <p
@@ -157,7 +157,7 @@ export default function LoginPage() {
             fontSize: '0.95rem',
           }}
         >
-          Enter username and password.
+          Private, guided experiences that help repair relationships.
         </p>
 
         <form className="mx-auto w-full max-w-sm space-y-5 text-left" onSubmit={handleSubmit}>
@@ -257,7 +257,7 @@ export default function LoginPage() {
               cursor: showKissNote || isAuthenticating ? 'wait' : 'pointer',
             }}
           >
-            {showKissNote ? 'Sending love...' : isAuthenticating ? 'Checking...' : 'Login'}
+            {showKissNote ? 'Sending love...' : isAuthenticating ? 'Checking...' : 'Begin private experience'}
           </button>
         </form>
 
