@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { sanitizeString } from '@/lib/sanitize';
+import { getOptionalServerEnv, getOpenAiModel } from '@/lib/serverEnv';
 
 type CharacterEmotion =
   | 'calm'
@@ -210,12 +212,16 @@ async function requestOpenAIReply(
   message: string,
   memoryMood = 0
 ): Promise<ChatPayload | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getOptionalServerEnv('OPENAI_API_KEY');
   if (!apiKey) {
     return null;
   }
 
-  const model = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4.1-mini';
+  const model = getOpenAiModel();
+
+  // sanitize message defensively
+  const safeMessage = sanitizeString(message, { maxLength: 2000, allowNewlines: false });
+
   const systemPrompt = [
     'You are Ayrin, a warm and emotionally intelligent male character speaking with gentle confidence.',
     'Reply in one or two short sentences.',
@@ -238,7 +244,7 @@ async function requestOpenAIReply(
         max_tokens: 180,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message },
+          { role: 'user', content: safeMessage },
         ],
       }),
     });
@@ -270,17 +276,14 @@ async function requestOpenAIReply(
       text = content
         .map((part) => {
           if (!part) return '';
-          // part may be an object with different shapes (text, parts, etc.)
           if (typeof (part as any) === 'string') return part as any;
           return (part as any).text ?? (Array.isArray((part as any).parts) ? (part as any).parts.join('') : '');
         })
         .join('');
     } else if (content && typeof content === 'object') {
-      // handle content objects with `parts`
       text = Array.isArray((content as any).parts) ? (content as any).parts.join('') : JSON.stringify(content);
     }
   } catch (err) {
-    // response wasn't JSON — try to read as text
     try {
       text = await response.text();
     } catch {
@@ -292,11 +295,15 @@ async function requestOpenAIReply(
   const cleaned = text.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').replace(/`/g, '').trim();
 
   const parsed = extractJson(cleaned) ?? extractJson(text);
-  if (parsed) return parsed;
+  if (parsed) {
+    // sanitize reply field defensively
+    parsed.reply = sanitizeString(parsed.reply, { maxLength: 1000, allowNewlines: true });
+    return parsed;
+  }
 
   // If we couldn't extract JSON but got a textual reply, return it as the reply
   if (text && text.trim()) {
-    const replyText = text.trim().slice(0, 1000);
+    const replyText = sanitizeString(text.trim().slice(0, 1000), { allowNewlines: true });
     return {
       reply: replyText,
       emotion: detectEmotion(replyText, memoryMood),

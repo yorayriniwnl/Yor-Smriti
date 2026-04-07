@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
+import { sanitizeString } from '@/lib/sanitize';
+import { secureCompare } from '@/lib/security';
+import { getOptionalServerEnv } from '@/lib/serverEnv';
 
 interface LoginRequestBody {
   username?: string;
   password?: string;
 }
 
-function getConfiguredCredentials() {
-  // Only use server-side env vars for credentials (never expose via NEXT_PUBLIC_)
-  const username = process.env.APP_USERNAME ?? '';
-  const password = process.env.APP_PASSWORD ?? '';
-  return { username, password };
-}
-
 export async function POST(request: Request) {
   try {
-    const { username: configuredUsername, password: configuredPassword } = getConfiguredCredentials();
+    const configuredUsername = getOptionalServerEnv('APP_USERNAME') ?? '';
+    const configuredPassword = getOptionalServerEnv('APP_PASSWORD') ?? '';
 
     if (!configuredUsername || !configuredPassword) {
       // Server is not configured to accept logins safely.
@@ -29,14 +26,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const username = typeof body.username === 'string' ? body.username.trim() : '';
-    const password = typeof body.password === 'string' ? body.password : '';
+    const rawUser = typeof body.username === 'string' ? body.username : '';
+    const rawPass = typeof body.password === 'string' ? body.password : '';
+
+    const username = sanitizeString(rawUser, { maxLength: 128, allowNewlines: false });
+    const password = sanitizeString(rawPass, { maxLength: 256, allowNewlines: false });
 
     if (!username || !password) {
       return NextResponse.json({ ok: false, error: 'Missing username or password.' }, { status: 400 });
     }
 
-    const isValid = username === configuredUsername && password === configuredPassword;
+    // Use constant-time compare to avoid timing attacks
+    const isValid = secureCompare(username, configuredUsername) && secureCompare(password, configuredPassword);
 
     if (!isValid) {
       return NextResponse.json({ ok: false, error: 'Invalid credentials.' }, { status: 401 });

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { safeFetchJson } from '@/lib/safeFetch';
 
 function LipPrint({ tint }: { tint: string }) {
   return (
@@ -54,31 +55,14 @@ export default function LoginPage() {
     setIsAuthenticating(true);
 
     try {
-      const response = await fetch('/api/login', {
+      const res = await safeFetchJson('/api/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username.trim(),
-          password,
-        }),
-      });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password }),
+      }, { timeoutMs: 12000 });
 
-      if (!response.ok) {
-        let apiError = 'Invalid username or password.';
-
-        try {
-          const data = (await response.json()) as { error?: string };
-
-          if (typeof data.error === 'string' && data.error.trim()) {
-            apiError = data.error;
-          }
-        } catch {
-          // Fall back to the generic message when the error response is not JSON.
-        }
-
-        setErrorMessage(apiError);
+      if (!res.ok) {
+        setErrorMessage(res.error ?? 'Invalid username or password.');
         return;
       }
 
@@ -92,8 +76,12 @@ export default function LoginPage() {
       successTimerRef.current = window.setTimeout(() => {
         router.push('/message');
       }, 2200);
-    } catch {
-      setErrorMessage('Unable to login right now. Please try again.');
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setErrorMessage('Login aborted.');
+      } else {
+        setErrorMessage('Unable to login right now. Please try again.');
+      }
     } finally {
       setIsAuthenticating(false);
     }

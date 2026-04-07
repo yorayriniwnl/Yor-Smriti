@@ -5,6 +5,7 @@ import {
   useEffect, useRef, useState, useCallback,
   useMemo, useLayoutEffect, memo
 } from 'react';
+import { safeFetchJson } from '@/lib/safeFetch';
 import { AyrinCanvas } from './AyrinCanvas';
 import { AyrinVoiceCard } from './AyrinVoiceCard';
 
@@ -1383,32 +1384,25 @@ function useVoiceFusion({
     requestAbortRef.current = controller;
 
     try {
-      const response = await fetch('/api/chat', {
+      const res = await safeFetchJson('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          memory: {
-            mood: voiceStateRef.current.mood,
-          },
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, memory: { mood: voiceStateRef.current.mood } }),
         signal: controller.signal,
-      });
+      }, { timeoutMs: 12000 });
 
-      if (!response.ok) {
-        throw new Error(`Chat route failed with ${response.status}`);
+      if (!res.ok) {
+        setPhase('error');
+        setErrorMessage(res.error ?? 'Ayrin could not think of a reply.');
+        setCaption(res.error ?? 'Ayrin could not think of a reply.');
+        return;
       }
 
-      const payload = await response.json() as {
-        reply?: string;
-        emotion?: string;
-      };
-      const nextReply = typeof payload.reply === 'string' && payload.reply.trim()
+      const payload = res.data as { reply?: string; emotion?: string } | undefined;
+      const nextReply = payload && typeof payload.reply === 'string' && payload.reply.trim()
         ? payload.reply.trim()
         : "I'm here with you.";
-      const nextEmotion = normalizeConversationEmotion(payload.emotion);
+      const nextEmotion = normalizeConversationEmotion(payload?.emotion);
 
       setReply(nextReply);
       setCaption(nextReply);
