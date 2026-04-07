@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EASE_SOFT, type Heart } from '@/components/experiences/director/screens/CinematicApologyScreens/shared';
+import { CinematicPanel } from '@/components/experiences/director/screens/CinematicApologyScreens/components/CinematicPanel';
 
 export function Screen87ComeBack() {
   const [hearts, setHearts] = useState<Heart[]>([]);
@@ -53,26 +54,20 @@ export function Screen87ComeBack() {
 
   return (
     <section className="mx-auto w-full max-w-[26rem]" data-nav-ignore="true">
-      <div
-        className="relative overflow-hidden rounded-[2.2rem] border pb-7 pt-8"
-        style={{
-          borderColor: 'rgba(244, 173, 210, 0.28)',
-          background:
-            'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
-          boxShadow: '0 36px 74px rgba(0, 0, 0, 0.46), 0 16px 34px rgba(247, 85, 144, 0.16)',
-        }}
+      <CinematicPanel
+        topDecoration={
+          <motion.div
+            className="pointer-events-none absolute inset-x-0 top-0 h-40"
+            aria-hidden
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              background:
+                'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(247, 85, 144, 0.3), transparent)',
+            }}
+          />
+        }
       >
-        <motion.div
-          className="pointer-events-none absolute inset-x-0 top-0 h-40"
-          aria-hidden
-          animate={{ opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            background:
-              'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(247, 85, 144, 0.3), transparent)',
-          }}
-        />
-
         <div className="relative flex flex-col items-center gap-6 px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -231,7 +226,7 @@ export function Screen87ComeBack() {
             </Link>
           </motion.div>
         </div>
-      </div>
+      </CinematicPanel>
     </section>
   );
 }

@@ -4,21 +4,15 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { ExperienceScreenProps } from '@/hooks/useExperienceFlow';
 import { EASE_SOFT, LETTER_PARAGRAPHS } from '@/components/experiences/director/screens/CinematicApologyScreens/shared';
+import { CinematicPanel } from '@/components/experiences/director/screens/CinematicApologyScreens/components/CinematicPanel';
+import { ContinueControls } from '@/components/experiences/director/screens/CinematicApologyScreens/components/ContinueControls';
 
 export function Screen86ALetter({ onNext, onPrev }: ExperienceScreenProps) {
   const [allRevealed, setAllRevealed] = useState(false);
 
   return (
     <section className="mx-auto w-full max-w-[26rem]" data-nav-ignore="true">
-      <div
-        className="relative overflow-hidden rounded-[2.2rem] border pb-6 pt-7"
-        style={{
-          borderColor: 'rgba(244, 173, 210, 0.28)',
-          background:
-            'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
-          boxShadow: '0 36px 74px rgba(0, 0, 0, 0.46), 0 16px 34px rgba(247, 85, 144, 0.16)',
-        }}
-      >
+      <CinematicPanel>
         <motion.div
           className="relative mx-4 rounded-xl border px-5 py-5"
           initial={{ opacity: 0, scale: 0.98 }}
@@ -66,8 +60,8 @@ export function Screen86ALetter({ onNext, onPrev }: ExperienceScreenProps) {
                     paragraph.style === 'salutation'
                       ? '1.4rem'
                       : paragraph.style === 'signature'
-                        ? '1.1rem'
-                        : '0.97rem',
+                      ? '1.1rem'
+                      : '0.97rem',
                   fontStyle: 'italic',
                   lineHeight: 1.65,
                   color: paragraph.style
@@ -83,49 +77,8 @@ export function Screen86ALetter({ onNext, onPrev }: ExperienceScreenProps) {
           </div>
         </motion.div>
 
-        <motion.div
-          className="mt-5 flex items-center justify-between gap-3 px-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: allRevealed ? 1 : 0 }}
-          transition={{ duration: 1, ease: EASE_SOFT }}
-        >
-          <motion.button
-            type="button"
-            onClick={onPrev}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            style={{
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '0.62rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'rgba(255, 195, 225, 0.6)',
-            }}
-          >
-            ← Back
-          </motion.button>
-
-          <motion.button
-            type="button"
-            onClick={onNext}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className="rounded-full px-5 py-2.5"
-            style={{
-              background:
-                'linear-gradient(90deg, rgba(232, 80, 153, 0.92), rgba(200, 60, 130, 0.92))',
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '0.68rem',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: '#fff',
-              boxShadow: '0 8px 22px rgba(232, 80, 153, 0.35)',
-            }}
-          >
-            The final moment →
-          </motion.button>
-        </motion.div>
-      </div>
+        <ContinueControls show={allRevealed} onPrev={onPrev} onNext={onNext} nextLabel="The final moment →" prevLabel="← Back" />
+      </CinematicPanel>
     </section>
   );
 }
