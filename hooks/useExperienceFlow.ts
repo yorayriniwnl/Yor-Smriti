@@ -76,13 +76,30 @@ interface UseExperienceFlowOptions {
   initialIndex?: number;
 }
 
+export interface UseExperienceFlowReturn {
+  current: Screen | null;
+  index: number;
+  total: number;
+  next: () => void;
+  prev: () => void;
+  goTo: (nextIndex: number) => void;
+  isFirst: boolean;
+  isLast: boolean;
+  pause: () => void;
+  resume: () => void;
+  isPaused: boolean;
+  emotionPath: Emotion[];
+  pushEmotionSignal: (emotion: Emotion) => void;
+  resetProgress: () => void;
+}
+
 export function useExperienceFlow(
   screens: Screen[],
   options: UseExperienceFlowOptions = {},
-) {
+): UseExperienceFlowReturn {
   const initialIndex = options.initialIndex ?? 0;
-  const [index, setIndex] = useState(initialIndex);
-  const [isPaused, setIsPaused] = useState(false);
+  const [index, setIndex] = useState<number>(initialIndex);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [emotionPath, setEmotionPath] = useState<Emotion[]>([]);
 
   const autoAdvance = options.autoAdvance ?? true;
@@ -91,7 +108,7 @@ export function useExperienceFlow(
   const persistKey = options.persistKey;
 
   const safeLastIndex = Math.max(screens.length - 1, 0);
-  const current = useMemo(() => screens[index] ?? null, [screens, index]);
+  const current = useMemo<Screen | null>(() => screens[index] ?? null, [screens, index]);
   const isFirst = index <= 0;
   const isLast = index >= safeLastIndex;
 
@@ -207,11 +224,13 @@ export function useExperienceFlow(
 
     const silenceLeadDelayMs = current.kind === 'silence' ? 500 : 0;
 
-    const timer = setTimeout(() => {
+    const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
       next();
     }, baseDuration + emotionPauseMs + silenceLeadDelayMs);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [
     autoAdvance,
     current,
