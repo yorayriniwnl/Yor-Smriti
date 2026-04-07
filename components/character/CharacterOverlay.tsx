@@ -15,7 +15,7 @@ import {
   type CharacterVariant,
 } from '@/components/character/characterConfig';
 import { useCharacterState } from '@/components/character/useCharacterState';
-import { useGLTF } from '@react-three/drei/core/Gltf';
+import { useAppStore } from '@/hooks/useStageController';
 
 interface CharacterOverlayProps {
   screenId?: number | null;
@@ -89,8 +89,11 @@ function CharacterAura({
 export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
   const config = useCharacterState(screenId);
   const [availability, setAvailability] = useState<ModelAvailability>({});
+  const interactionStarted = useAppStore((s) => s.interactionStarted);
 
   useEffect(() => {
+    // Only probe / prefetch models after the user has started interacting.
+    if (!interactionStarted) return;
     if (!config || availability[config.variant] !== undefined) {
       return;
     }
@@ -107,20 +110,20 @@ export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
         [config.variant]: isAvailable,
       }));
 
-        if (isAvailable) {
-          // Prefetch the GLTF asset into the browser cache without importing drei's Gltf module.
-          try {
-            await fetch(config.url, { cache: 'force-cache' });
-          } catch (e) {
-            // ignore prefetch failures
-          }
+      if (isAvailable) {
+        // Prefetch the GLTF asset into the browser cache without importing drei's Gltf module.
+        try {
+          await fetch(config.url, { cache: 'force-cache' });
+        } catch (e) {
+          // ignore prefetch failures
         }
+      }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [availability, config]);
+  }, [availability, config, interactionStarted]);
 
   if (!config) {
     return null;
@@ -147,7 +150,8 @@ export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
         rim={config.rim}
         shadow={config.shadow}
       />
-      <Canvas
+      {interactionStarted ? (
+        <Canvas
         dpr={[1, 1.5]}
         gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
         camera={{ position: [0, 1.45, 3.2], fov: 28 }}
@@ -159,7 +163,8 @@ export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
         <Suspense fallback={<CanvasModelPlaceholder />}>
           <CharacterModel config={config} />
         </Suspense>
-      </Canvas>
+        </Canvas>
+      ) : null}
     </div>
   );
 }
