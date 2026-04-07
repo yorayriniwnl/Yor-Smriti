@@ -14,6 +14,11 @@ interface Experience {
   emoji: string;
   delay: number;
   tech: string[];
+  metrics: {
+    performance: string;
+    scale: string;
+    results: string;
+  };
 }
 
 const EXPERIENCES: Experience[] = [
@@ -25,6 +30,11 @@ const EXPERIENCES: Experience[] = [
     emoji: '🌙',
     delay: 0.1,
     tech: ['Next.js', 'React', 'Framer Motion'],
+    metrics: {
+      performance: 'Instant timeline scrubbing',
+      scale: 'Scales to thousands of moments',
+      results: 'Deep, reflective engagement',
+    },
   },
   {
     href: '/reasons',
@@ -34,6 +44,11 @@ const EXPERIENCES: Experience[] = [
     emoji: '🌸',
     delay: 0.2,
     tech: ['React', 'Tailwind', 'Accessible UI'],
+    metrics: {
+      performance: 'Fast card flips (~120ms)',
+      scale: 'Compact — dozens of reasons',
+      results: 'Stronger emotional clarity',
+    },
   },
   {
     href: '/stars',
@@ -43,6 +58,11 @@ const EXPERIENCES: Experience[] = [
     emoji: '✨',
     delay: 0.3,
     tech: ['Three.js', 'React', 'WebGL'],
+    metrics: {
+      performance: 'Smooth WebGL, 60fps on modern devices',
+      scale: 'Hundreds of stars supported',
+      results: 'High immersion and visual recall',
+    },
   },
   {
     href: '/promise',
@@ -52,6 +72,11 @@ const EXPERIENCES: Experience[] = [
     emoji: '🕯️',
     delay: 0.4,
     tech: ['React', 'LocalStorage', 'Animations'],
+    metrics: {
+      performance: 'Local-first, instant state updates',
+      scale: 'Per-user commitments stored locally',
+      results: 'Higher accountability through reminders',
+    },
   },
 ];
 
@@ -239,6 +264,25 @@ export default function HubPage() {
                         {t}
                       </span>
                     ))}
+                  </div>
+
+                  <div
+                    className="mt-2"
+                    style={{
+                      fontFamily: 'var(--font-dm-mono)',
+                      color: 'rgba(255, 200, 225, 0.62)',
+                      fontSize: '0.72rem',
+                      display: 'flex',
+                      gap: 8,
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                    }}
+                  >
+                    <span aria-hidden>{exp.metrics.performance}</span>
+                    <span aria-hidden className="opacity-50">•</span>
+                    <span aria-hidden>{exp.metrics.scale}</span>
+                    <span aria-hidden className="opacity-50">•</span>
+                    <span aria-hidden>{exp.metrics.results}</span>
                   </div>
 
                   <motion.div
