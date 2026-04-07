@@ -66,7 +66,8 @@ export function HoldStage() {
             >
               <button
                 onClick={advanceStage}
-                className="outline-none"
+                className="outline-none touch-target"
+                aria-label="Skip and continue"
                 style={{
                   fontFamily: 'var(--font-dm-mono)',
                   fontSize: '0.58rem',

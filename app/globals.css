@@ -362,6 +362,14 @@ select:focus-visible {
   transform: translateY(-2px);
 }
 
+/* Small utility to ensure interactive elements meet mobile touch targets */
+.touch-target {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ─── Sound Toggle ───────────────────────────────────────────────────── */
 .sound-toggle {
   position: fixed;

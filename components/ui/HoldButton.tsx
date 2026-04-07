@@ -109,7 +109,7 @@ export function HoldButton({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 1.2, delay: 0.4 } }}
             exit={{ opacity: 0, y: -8, transition: { duration: 0.6 } }}
-            className="relative select-none overflow-hidden rounded-sm"
+            className="relative select-none overflow-hidden rounded-sm touch-target"
             style={{
               border: '1px solid rgba(201, 169, 110, 0.2)',
               cursor: 'pointer',

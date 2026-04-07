@@ -33,6 +33,7 @@ const CharacterOverlay = dynamic(
   { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 import { PageTransition } from '@/components/transitions/PageTransition';
+import { useRouter } from 'next/navigation';
 import { useImmersiveNavigation } from '@/components/experiences/panda/hooks/useImmersiveNavigation';
 import { resolveSceneAudioProfile } from '@/components/experiences/panda/audio/sceneAudioProfile';
 import {
@@ -755,6 +756,8 @@ export function ExperienceController({
     disabled: !allowTapToContinue || areGesturesLocked,
   });
 
+  const router = useRouter();
+
   const handleSurfacePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       if (
@@ -1028,23 +1031,50 @@ export function ExperienceController({
       ) : null}
 
       {!isUiVoidScreen ? (
-        <motion.button
-          type="button"
-          data-nav-ignore="true"
-          onClick={toggleSilentMode}
-          className="absolute right-4 top-4 z-30 rounded-full border px-3 py-1 text-[0.58rem] uppercase tracking-[0.1em]"
-          style={{
-            borderColor: 'rgba(255,255,255,0.24)',
-            color: activeTheme.textColor,
-            fontFamily: 'var(--font-dm-mono)',
-            opacity: soundToggleOpacity,
-            pointerEvents: soundToggleOpacity < 0.08 ? 'none' : 'auto',
-          }}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-        >
-          {isSilentMode ? 'Silent' : 'Sound'}
-        </motion.button>
+        <>
+          <motion.button
+            type="button"
+            data-nav-ignore="true"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/hub');
+              }
+            }}
+            aria-label="Exit experience"
+            className="absolute left-4 top-4 z-30 rounded-full border px-3 py-1 text-[0.68rem] uppercase tracking-[0.1em] touch-target"
+            style={{
+              borderColor: 'rgba(255,255,255,0.24)',
+              color: activeTheme.textColor,
+              fontFamily: 'var(--font-dm-mono)',
+              opacity: soundToggleOpacity,
+              pointerEvents: soundToggleOpacity < 0.08 ? 'none' : 'auto',
+            }}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            Exit
+          </motion.button>
+
+          <motion.button
+            type="button"
+            data-nav-ignore="true"
+            onClick={toggleSilentMode}
+            className="absolute right-4 top-4 z-30 rounded-full border px-3 py-1 text-[0.58rem] uppercase tracking-[0.1em] touch-target"
+            style={{
+              borderColor: 'rgba(255,255,255,0.24)',
+              color: activeTheme.textColor,
+              fontFamily: 'var(--font-dm-mono)',
+              opacity: soundToggleOpacity,
+              pointerEvents: soundToggleOpacity < 0.08 ? 'none' : 'auto',
+            }}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            {isSilentMode ? 'Silent' : 'Sound'}
+          </motion.button>
+        </>
       ) : null}
 
       {showPauseButton && autoAdvance && !isUiVoidScreen ? (
@@ -1146,7 +1176,7 @@ export function ExperienceController({
                 disabled={isFirst}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em] disabled:cursor-not-allowed disabled:opacity-45"
+                className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em] touch-target disabled:cursor-not-allowed disabled:opacity-45"
                 style={{
                   borderColor: 'color-mix(in oklab, white 22%, transparent)',
                   color: activeTheme.textColor,
@@ -1161,7 +1191,7 @@ export function ExperienceController({
                   onClick={handleNextWithControl}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="rounded-full px-5 py-2 text-[0.68rem] uppercase tracking-[0.1em]"
+                  className="rounded-full px-5 py-2 text-[0.68rem] uppercase tracking-[0.1em] touch-target"
                   style={{
                     background: `linear-gradient(90deg, ${activeTheme.accentColor}, #f75590)`,
                     color: '#fff',
@@ -1178,7 +1208,7 @@ export function ExperienceController({
                   onClick={isPaused ? resume : pause}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em]"
+                  className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em] touch-target"
                   style={{
                     borderColor: 'color-mix(in oklab, white 22%, transparent)',
                     color: activeTheme.textColor,
@@ -1193,7 +1223,7 @@ export function ExperienceController({
                 onClick={() => handleReplay()}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em]"
+                className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em] touch-target"
                 style={{
                   borderColor: 'color-mix(in oklab, white 22%, transparent)',
                   color: activeTheme.textColor,
@@ -1208,7 +1238,7 @@ export function ExperienceController({
                   onClick={handleShare}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em]"
+                  className="rounded-full border px-4 py-2 text-[0.68rem] uppercase tracking-[0.1em] touch-target"
                   style={{
                     borderColor: 'color-mix(in oklab, white 22%, transparent)',
                     color: activeTheme.textColor,

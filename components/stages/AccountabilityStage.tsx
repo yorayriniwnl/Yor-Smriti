@@ -63,7 +63,8 @@ export function AccountabilityStage() {
             >
               <button
                 onClick={advanceStage}
-                className="group flex items-center gap-3 outline-none"
+                className="group flex items-center gap-3 outline-none touch-target"
+                aria-label="Continue to next step"
               >
                 <span
                   style={{

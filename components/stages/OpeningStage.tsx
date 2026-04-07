@@ -97,7 +97,7 @@ export function OpeningStage() {
             >
               <button
                 onClick={handleOkay}
-                className="group relative overflow-hidden rounded-sm"
+                className="group relative overflow-hidden rounded-sm touch-target"
                 style={{
                   padding: '0.75rem 2.5rem',
                   border: '1px solid rgba(201,169,110,0.25)',

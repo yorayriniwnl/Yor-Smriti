@@ -140,7 +140,8 @@ export function MemoryStage() {
             >
               <button
                 onClick={advanceStage}
-                className="group flex items-center gap-3 outline-none"
+                className="group flex items-center gap-3 outline-none touch-target"
+                aria-label="I want to say something"
               >
                 <span
                   style={{
