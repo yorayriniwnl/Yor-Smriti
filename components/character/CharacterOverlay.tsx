@@ -4,9 +4,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import dynamic from 'next/dynamic';
 
+import CanvasModelPlaceholder from '@/components/ui/CanvasFallback';
+
 const CharacterModel = dynamic(
   () => import('@/components/character/CharacterModel').then((m) => m.CharacterModel),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <CanvasModelPlaceholder /> },
 );
 import {
   type CharacterAnchor,
@@ -154,7 +156,7 @@ export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
         <directionalLight position={[2.6, 4.4, 5.2]} intensity={2.1} />
         <directionalLight position={[-2.4, 1.8, 2.6]} intensity={0.85} />
         <hemisphereLight intensity={0.48} color="#fff2eb" groundColor="#160d12" />
-        <Suspense fallback={null}>
+        <Suspense fallback={<CanvasModelPlaceholder />}>
           <CharacterModel config={config} />
         </Suspense>
       </Canvas>

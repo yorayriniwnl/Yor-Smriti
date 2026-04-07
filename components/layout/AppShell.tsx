@@ -4,9 +4,11 @@ import dynamic from 'next/dynamic';
 import { useAmbientSound } from '@/hooks/useAudioEngine';
 import { useAppStore } from '@/hooks/useStageController';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import LoadingFallback from '@/components/ui/LoadingFallback';
+
 const PetalCanvas = dynamic(
   () => import('@/components/ui/PetalCanvas').then((m) => m.PetalCanvas),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 import { GrainOverlay } from '@/components/ui/GrainOverlay';
 import { StageProgressBar } from '@/components/ui/StageProgressBar';

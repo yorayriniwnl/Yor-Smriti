@@ -5,30 +5,32 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
+import LoadingFallback from '@/components/ui/LoadingFallback';
+
 const AnimatedGradient = dynamic(
   () => import('@/components/background/AnimatedGradient').then((m) => m.AnimatedGradient),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 
 const FloatingParticles = dynamic(
   () => import('@/components/background/FloatingParticles').then((m) => m.FloatingParticles),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 
 const LightGlow = dynamic(
   () => import('@/components/background/LightGlow').then((m) => m.LightGlow),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 
 const RainLayer = dynamic(
   () => import('@/components/background/RainLayer').then((m) => m.RainLayer),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 
 // Lazy-load CharacterOverlay (three.js + drei) to avoid loading 3D stack on initial bundle.
 const CharacterOverlay = dynamic(
   () => import('@/components/character/CharacterOverlay').then((m) => m.CharacterOverlay),
-  { ssr: false, loading: () => null },
+  { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 import { PageTransition } from '@/components/transitions/PageTransition';
 import { useImmersiveNavigation } from '@/components/experiences/panda/hooks/useImmersiveNavigation';

@@ -4,9 +4,11 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
+import LoadingFallback from '@/components/ui/LoadingFallback';
+
 const CharacterPageOverlay = dynamic(
   () => import('./CharacterPageOverlay').then((m) => m.CharacterPageOverlay),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => <LoadingFallback compact /> }
 );
 
 export default function CharacterPageOverlayClient() {

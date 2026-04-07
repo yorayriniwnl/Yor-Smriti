@@ -6,12 +6,14 @@ import { usePathname } from 'next/navigation';
 import { KeyrinCharacter } from '@/components/character/KeyrinCharacter';
 import dynamic from 'next/dynamic';
 
+import LoadingFallback from '@/components/ui/LoadingFallback';
+
 // AyrinCharacter is a relatively heavy, animated character component (WebGL/complex
 // animation loops). Lazy-load it on the client to reduce initial JS bundle and improve
 // first-contentful-paint. SSR is disabled because the component is client-only.
 const AyrinCharacter = dynamic(
 	() => import('@/components/character/AyrinCharacter').then((m) => m.AyrinCharacter),
-	{ ssr: false, loading: () => null }
+	{ ssr: false, loading: () => <LoadingFallback compact /> }
 );
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
