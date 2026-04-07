@@ -21,10 +21,11 @@ export function HoldButton({
   onComplete,
 }: HoldButtonProps) {
   const [state, setState] = useState<HoldButtonState>('idle');
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<number>(0);
   const progressValue = Math.round(progress * 100);
 
   const rafRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const isPressedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -37,6 +38,10 @@ export function HoldButton({
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+    }
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
   }, []);
 
@@ -58,9 +63,10 @@ export function HoldButton({
         setState('revealed');
         setProgress(1);
         stopAnimation();
-        setTimeout(() => {
+        timeoutRef.current = window.setTimeout(() => {
           setState('complete');
           onCompleteRef.current?.();
+          timeoutRef.current = null;
         }, 800);
         return;
       }
@@ -81,7 +87,13 @@ export function HoldButton({
   }, [state, stopAnimation]);
 
   useEffect(() => {
-    return () => stopAnimation();
+    return () => {
+      stopAnimation();
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
   }, [stopAnimation]);
 
   const isRevealed = state === 'revealed' || state === 'complete';

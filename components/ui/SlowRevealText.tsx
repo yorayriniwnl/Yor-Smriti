@@ -39,7 +39,7 @@ export function SlowRevealText({
   }, [onAllRevealed]);
 
   useEffect(() => {
-    timersRef.current.forEach(clearTimeout);
+    timersRef.current.forEach((t) => clearTimeout(t));
     timersRef.current = [];
     setVisibleCount(0);
 
@@ -59,10 +59,9 @@ export function SlowRevealText({
     });
 
     return () => {
-      timersRef.current.forEach(clearTimeout);
+      timersRef.current.forEach((t) => clearTimeout(t));
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lines, initialDelay]);
 
   return (
     <div

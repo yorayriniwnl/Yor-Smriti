@@ -209,11 +209,11 @@ function drawBubble(
 }
 
 export function PetalCanvas({ stage }: PetalCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const frameRef = useRef<number>(0);
+  const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
-  const spawnRef = useRef<number>(0);
+  const spawnRef = useRef<number | null>(null);
 
   const mode = useMemo(() => modeFromStage(stage), [stage]);
 
@@ -329,7 +329,7 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
         created += 1;
       }
 
-      spawnRef.current = window.setTimeout(spawnLoop, baseRate + Math.random() * 220);
+      spawnRef.current = window.setTimeout(spawnLoop, baseRate + Math.random() * 220) as unknown as number;
     };
 
     spawnLoop();
@@ -337,8 +337,14 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
 
   useEffect(() => {
     particlesRef.current = [];
-    clearTimeout(spawnRef.current);
-    cancelAnimationFrame(frameRef.current);
+    if (spawnRef.current) {
+      clearTimeout(spawnRef.current);
+      spawnRef.current = null;
+    }
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
 
     resize();
     window.addEventListener('resize', resize);
@@ -349,8 +355,14 @@ export function PetalCanvas({ stage }: PetalCanvasProps) {
 
     return () => {
       window.removeEventListener('resize', resize);
-      clearTimeout(spawnRef.current);
-      cancelAnimationFrame(frameRef.current);
+      if (spawnRef.current) {
+        clearTimeout(spawnRef.current);
+        spawnRef.current = null;
+      }
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
     };
   }, [mode, resize, startSpawner, tick]);
 
