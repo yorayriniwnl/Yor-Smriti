@@ -90,7 +90,7 @@ export default function LoginPage() {
       }
 
       successTimerRef.current = window.setTimeout(() => {
-        router.push('/login');
+        router.push('/message');
       }, 2200);
     } catch {
       setErrorMessage('Unable to login right now. Please try again.');
