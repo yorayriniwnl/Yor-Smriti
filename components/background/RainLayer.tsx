@@ -1,15 +1,11 @@
-'use client';
+"use client";
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { seededUnit } from '@/lib/seeded';
 
 interface RainLayerProps {
   count?: number;
-}
-
-function seededUnit(seed: number): number {
-  const raw = Math.sin(seed * 12.9898) * 43758.5453;
-  return raw - Math.floor(raw);
 }
 
 export function RainLayer({ count = 64 }: RainLayerProps) {

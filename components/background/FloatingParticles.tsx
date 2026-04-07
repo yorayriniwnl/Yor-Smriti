@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { Emotion } from '@/lib/emotionThemes';
+import { seededUnit } from '@/lib/seeded';
 
 interface FloatingParticlesProps {
   emotion: Emotion;
@@ -15,11 +16,6 @@ function formatPct(value: number): string {
 
 function formatPx(value: number): string {
   return `${value.toFixed(5)}px`;
-}
-
-function seededUnit(seed: number): number {
-  const raw = Math.sin(seed * 12.9898) * 43758.5453;
-  return raw - Math.floor(raw);
 }
 
 const emotionParticleColor: Record<Emotion, string> = {
