@@ -5,6 +5,9 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import type { AppStore, StageId } from '@/types';
 import { getNextStage } from '@/lib/stages';
 
+// Shared timer used to debounce/clear overlapping transition timers
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+
 // ─── Store ───────────────────────────────────────────────────────────────────
 
 export const useAppStore = create<AppStore>()(
@@ -32,12 +35,16 @@ export const useAppStore = create<AppStore>()(
       }));
 
       // Allow animation to complete before updating
-      setTimeout(() => {
+      if (transitionTimer) {
+        clearTimeout(transitionTimer);
+      }
+      transitionTimer = setTimeout(() => {
         set((state) => ({
           currentStage: nextStage,
           isTransitioning: false,
           stageHistory: [...state.stageHistory, nextStage],
         }));
+        transitionTimer = null;
       }, 100);
     },
 
@@ -50,12 +57,16 @@ export const useAppStore = create<AppStore>()(
         previousStage: state.currentStage,
       }));
 
-      setTimeout(() => {
+      if (transitionTimer) {
+        clearTimeout(transitionTimer);
+      }
+      transitionTimer = setTimeout(() => {
         set((state) => ({
           currentStage: stage,
           isTransitioning: false,
           stageHistory: [...state.stageHistory, stage],
         }));
+        transitionTimer = null;
       }, 100);
     },
 
