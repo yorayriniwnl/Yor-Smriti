@@ -319,6 +319,19 @@ export default function LoginPage() {
           </div>
         ) : null}
       </section>
+
+      <div className="fixed bottom-4 left-4 z-50 pointer-events-none" aria-hidden="true">
+        <div
+          className="rounded-md px-2 py-1 text-xs"
+          style={{
+            background: 'rgba(0,0,0,0.38)',
+            color: 'rgba(255,255,255,0.92)',
+            fontFamily: 'var(--font-dm-mono)',
+          }}
+        >
+          Total lines: 39,921
+        </div>
+      </div>
     </main>
   );
 }

@@ -639,7 +639,7 @@ void main(){
 function useWebGLOverlay(
   ref: React.RefObject<HTMLCanvasElement | null>,
   lod: LODConfig,
-  face: FaceState,
+  faceRef: React.RefObject<FaceState>,
   _size: { w: number; h: number }
 ) {
   const gl   = useRef<WebGLRenderingContext|null>(null);
@@ -672,6 +672,8 @@ function useWebGLOverlay(
     if(!canvas||!ctx||!p||lod.shaderQuality==='off') return;
     t0.current = performance.now();
     const tick=()=>{
+      const face = faceRef.current;
+      if(!face){ raf.current = requestAnimationFrame(tick); return; }
       const t=(performance.now()-t0.current)*0.001;
       ctx.viewport(0,0,canvas.width,canvas.height); ctx.clear(ctx.COLOR_BUFFER_BIT);
       ctx.useProgram(p);
@@ -679,15 +681,15 @@ function useWebGLOverlay(
       const q=lod.shaderQuality==='high'?1.0:0.62;
       ctx.uniform1f(u('t'),t);
       ctx.uniform1f(u('inten'),lod.glowIntensity*q);
-      ctx.uniform1f(u('warmth'),Math.max(0,-face.mouthCornerL/2));
-      ctx.uniform1f(u('lightP'),face.lightPulse);
-      ctx.uniform1f(u('rimP'),face.rimPulse);
+      ctx.uniform1f(u('warmth'),Math.max(0,-(face.mouthCornerL ?? 0)/2));
+      ctx.uniform1f(u('lightP'),face.lightPulse ?? 0);
+      ctx.uniform1f(u('rimP'),face.rimPulse ?? 0);
       ctx.drawArrays(ctx.TRIANGLE_STRIP,0,4);
       raf.current=requestAnimationFrame(tick);
     };
     raf.current=requestAnimationFrame(tick);
     return ()=>cancelAnimationFrame(raf.current);
-  },[lod.glowIntensity,lod.shaderQuality,face,ref]);
+  },[lod.glowIntensity,lod.shaderQuality,ref, faceRef]);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2131,6 +2133,7 @@ export function AyrinCharacter({
   },[]);
 
   const [face,setFace]=useState<FaceState>(()=>composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
+  const faceRef = useRef<FaceState>(composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
   const initialRig = resolveRigTarget(composeFaceState(EMOTIONS.calm, EMPTY_MICRO_STATE));
   const rigRef=useRef<CharacterRig>(initialRig);
   const [rig,setRig]=useState<CharacterRig>(initialRig);
@@ -2172,6 +2175,7 @@ export function AyrinCharacter({
       const nextRig = stepRig(rigRef.current, nextFace);
       rigRef.current = nextRig;
       setRig(nextRig);
+      faceRef.current = nextFace;
       setFace(nextFace);
       raf=requestAnimationFrame(merge);
     };
@@ -2188,7 +2192,7 @@ export function AyrinCharacter({
     stopSpeaking();
   }, [stopSpeaking]);
 
-  useWebGLOverlay(canvasRef,lodCfg,face,cSize);
+  useWebGLOverlay(canvasRef,lodCfg,faceRef,cSize);
 
   const irisAngles=useMemo(()=>
     ALL_RAYS.filter((_,i)=>i%Math.max(1,Math.round(28/Math.max(1,lodCfg.irisRayCount)))===0),

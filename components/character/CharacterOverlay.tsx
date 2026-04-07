@@ -1,14 +1,19 @@
-'use client';
+ 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { CharacterModel } from '@/components/character/CharacterModel';
+import dynamic from 'next/dynamic';
+
+const CharacterModel = dynamic(
+  () => import('@/components/character/CharacterModel').then((m) => m.CharacterModel),
+  { ssr: false, loading: () => null },
+);
 import {
   type CharacterAnchor,
   type CharacterVariant,
 } from '@/components/character/characterConfig';
 import { useCharacterState } from '@/components/character/useCharacterState';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei/core/Gltf';
 
 interface CharacterOverlayProps {
   screenId?: number | null;
@@ -90,7 +95,7 @@ export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
 
     let cancelled = false;
 
-    void checkModelAvailability(config.url).then((isAvailable) => {
+    void checkModelAvailability(config.url).then(async (isAvailable) => {
       if (cancelled) {
         return;
       }
@@ -100,9 +105,14 @@ export function CharacterOverlay({ screenId }: CharacterOverlayProps) {
         [config.variant]: isAvailable,
       }));
 
-      if (isAvailable) {
-        useGLTF.preload(config.url);
-      }
+        if (isAvailable) {
+          // Prefetch the GLTF asset into the browser cache without importing drei's Gltf module.
+          try {
+            await fetch(config.url, { cache: 'force-cache' });
+          } catch (e) {
+            // ignore prefetch failures
+          }
+        }
     });
 
     return () => {

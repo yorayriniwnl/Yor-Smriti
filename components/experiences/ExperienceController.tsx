@@ -3,11 +3,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { motion } from 'framer-motion';
-import { AnimatedGradient } from '@/components/background/AnimatedGradient';
-import { FloatingParticles } from '@/components/background/FloatingParticles';
-import { LightGlow } from '@/components/background/LightGlow';
-import { RainLayer } from '@/components/background/RainLayer';
-import { CharacterOverlay } from '@/components/character/CharacterOverlay';
+import dynamic from 'next/dynamic';
+
+const AnimatedGradient = dynamic(
+  () => import('@/components/background/AnimatedGradient').then((m) => m.AnimatedGradient),
+  { ssr: false, loading: () => null },
+);
+
+const FloatingParticles = dynamic(
+  () => import('@/components/background/FloatingParticles').then((m) => m.FloatingParticles),
+  { ssr: false, loading: () => null },
+);
+
+const LightGlow = dynamic(
+  () => import('@/components/background/LightGlow').then((m) => m.LightGlow),
+  { ssr: false, loading: () => null },
+);
+
+const RainLayer = dynamic(
+  () => import('@/components/background/RainLayer').then((m) => m.RainLayer),
+  { ssr: false, loading: () => null },
+);
+
+// Lazy-load CharacterOverlay (three.js + drei) to avoid loading 3D stack on initial bundle.
+const CharacterOverlay = dynamic(
+  () => import('@/components/character/CharacterOverlay').then((m) => m.CharacterOverlay),
+  { ssr: false, loading: () => null },
+);
 import { PageTransition } from '@/components/transitions/PageTransition';
 import { useImmersiveNavigation } from '@/components/experiences/panda/hooks/useImmersiveNavigation';
 import { resolveSceneAudioProfile } from '@/components/experiences/panda/audio/sceneAudioProfile';

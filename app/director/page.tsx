@@ -1,5 +1,6 @@
-import { DirectorExperienceClient } from '@/components/experiences/director/DirectorExperienceClient';
 import { Suspense } from 'react';
+import DirectorExperienceClientWrapper from '@/components/experiences/director/DirectorExperienceClientWrapper';
+import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 
 interface DirectorPageProps {
   searchParams: Promise<{
@@ -24,15 +25,18 @@ export default async function DirectorPage({ searchParams }: DirectorPageProps) 
   const params = await searchParams;
 
   return (
-    <Suspense fallback={null}>
-      <DirectorExperienceClient
-        startParam={takeFirst(params.start)}
-        pathParam={takeFirst(params.path)}
-        endingParam={takeFirst(params.ending)}
-        nameParam={takeFirst(params.name)}
-        memoryParam={takeFirst(params.memory)}
-        messageParam={takeFirst(params.message)}
-      />
-    </Suspense>
+    <>
+      <CharacterPageOverlayClient />
+      <Suspense fallback={null}>
+        <DirectorExperienceClientWrapper
+          startParam={takeFirst(params.start)}
+          pathParam={takeFirst(params.path)}
+          endingParam={takeFirst(params.ending)}
+          nameParam={takeFirst(params.name)}
+          memoryParam={takeFirst(params.memory)}
+          messageParam={takeFirst(params.message)}
+        />
+      </Suspense>
+    </>
   );
 }

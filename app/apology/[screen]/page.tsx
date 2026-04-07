@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { DirectorExperienceClient } from '@/components/experiences/director/DirectorExperienceClient';
+import DirectorExperienceClientWrapper from '@/components/experiences/director/DirectorExperienceClientWrapper';
+import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { getDirectorRouteConfig } from '@/lib/apologyDirectorRouting';
 import { PANDA_SCREEN_IDS } from '@/lib/pandaScreenRegistry';
 
@@ -23,12 +24,15 @@ export default async function ApologyScreenPage({
   }
 
   return (
-    <Suspense fallback={null}>
-      <DirectorExperienceClient
-        startParam={String(routeConfig.start)}
-        endingParam={routeConfig.ending ?? null}
-        pathParam={null}
-      />
-    </Suspense>
+    <>
+      <CharacterPageOverlayClient />
+      <Suspense fallback={null}>
+        <DirectorExperienceClientWrapper
+          startParam={String(routeConfig.start)}
+          endingParam={routeConfig.ending ?? null}
+          pathParam={null}
+        />
+      </Suspense>
+    </>
   );
 }

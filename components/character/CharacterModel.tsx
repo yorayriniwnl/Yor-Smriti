@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useAnimations, useGLTF } from '@react-three/drei';
+import { useAnimations } from '@react-three/drei/core/useAnimations';
 import * as THREE from 'three';
-import { SkeletonUtils } from 'three-stdlib';
 import type { CharacterSceneConfig } from '@/components/character/characterConfig';
 
 interface CharacterModelProps {
@@ -13,12 +12,14 @@ interface CharacterModelProps {
 
 export function CharacterModel({ config }: CharacterModelProps) {
   const group = useRef<THREE.Group>(null);
-  const { scene, animations } = useGLTF(config.url);
-  const clonedScene = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const { actions, names } = useAnimations(animations, group);
+  const [gltf, setGltf] = useState<any | null>(null);
+  const [clonedScene, setClonedScene] = useState<THREE.Object3D | null>(null);
+  const [animations, setAnimations] = useState<any[]>([]);
+  const { actions, names } = useAnimations(animations, group as any);
 
   useEffect(() => {
-    clonedScene.traverse((child) => {
+    if (!clonedScene) return;
+    clonedScene.traverse((child: any) => {
       child.frustumCulled = false;
     });
   }, [clonedScene]);
@@ -35,6 +36,67 @@ export function CharacterModel({ config }: CharacterModelProps) {
       idleAction.fadeOut(0.18);
     };
   }, [actions, names]);
+
+  // Load GLTF via three's examples GLTFLoader dynamically and cache it.
+  const gltfCache: Map<string, Promise<any>> = (globalThis as any).__yor_gltf_cache ||= new Map();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!config.url) {
+      setGltf(null);
+      setAnimations([]);
+      return;
+    }
+
+    let p = gltfCache.get(config.url);
+    if (!p) {
+      p = (async () => {
+        // Dynamically load GLTFLoader from three examples
+        const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader');
+        const loader = new GLTFLoader();
+        const gl = await loader.loadAsync(config.url);
+        return gl;
+      })();
+      gltfCache.set(config.url, p);
+    }
+
+    p.then((gl) => {
+      if (cancelled) return;
+      setGltf(gl);
+      setAnimations(gl?.animations ?? []);
+    }).catch(() => {
+      if (cancelled) return;
+      setGltf(null);
+      setAnimations([]);
+    });
+
+    return () => { cancelled = true; };
+  }, [config.url]);
+
+  // Clone the loaded scene using three/examples SkeletonUtils at runtime to avoid
+  // bundling the entire `three-stdlib` package.
+  useEffect(() => {
+    let cancelled = false;
+    const scene = gltf?.scene ?? null;
+    if (!scene) {
+      setClonedScene(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const mod = await import('three/examples/jsm/utils/SkeletonUtils');
+        const SkeletonUtils = (mod as any).SkeletonUtils ?? (mod as any).default ?? mod;
+        const clone = SkeletonUtils.clone(scene as any);
+        if (!cancelled) setClonedScene(clone as any);
+      } catch (e) {
+        if (!cancelled) setClonedScene(scene as any);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [gltf]);
 
   useFrame((state) => {
     if (!group.current) {
@@ -53,6 +115,6 @@ export function CharacterModel({ config }: CharacterModelProps) {
     group.current.rotation.y = config.rotationY + swayOffset;
   });
 
-  return <primitive ref={group} object={clonedScene} />;
+  return clonedScene ? <primitive ref={group} object={clonedScene} /> : null;
 }
 

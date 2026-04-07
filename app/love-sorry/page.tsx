@@ -1,5 +1,5 @@
-import LoveSorryExperience from '@/components/experiences/LoveSorryExperience';
+import LoveSorryExperienceLoader from '@/components/experiences/LoveSorryExperienceLoader';
 
 export default function LoveSorryPage() {
-  return <LoveSorryExperience />;
+  return <LoveSorryExperienceLoader />;
 }
