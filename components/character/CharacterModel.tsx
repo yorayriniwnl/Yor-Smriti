@@ -49,22 +49,22 @@ export function CharacterModel({ config }: CharacterModelProps) {
       return;
     }
 
-    let p = gltfCache.get(config.url);
-    if (!p) {
-      p = (async () => {
+    let loadPromise = gltfCache.get(config.url);
+    if (!loadPromise) {
+      loadPromise = (async () => {
         // Dynamically load GLTFLoader from three examples
         const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader');
         const loader = new GLTFLoader();
-        const gl = await loader.loadAsync(config.url);
-        return gl;
+        const gltfResult = await loader.loadAsync(config.url);
+        return gltfResult;
       })();
-      gltfCache.set(config.url, p);
+      gltfCache.set(config.url, loadPromise);
     }
 
-    p.then((gl) => {
+    loadPromise.then((gltfResult) => {
       if (cancelled) return;
-      setGltf(gl);
-      setAnimations(gl?.animations ?? []);
+      setGltf(gltfResult);
+      setAnimations(gltfResult?.animations ?? []);
     }).catch(() => {
       if (cancelled) return;
       setGltf(null);
@@ -86,10 +86,10 @@ export function CharacterModel({ config }: CharacterModelProps) {
 
     (async () => {
       try {
-        const mod = await import('three/examples/jsm/utils/SkeletonUtils');
-        const SkeletonUtils = (mod as any).SkeletonUtils ?? (mod as any).default ?? mod;
-        const clone = SkeletonUtils.clone(scene as any);
-        if (!cancelled) setClonedScene(clone as any);
+        const skeletonUtilsModule = await import('three/examples/jsm/utils/SkeletonUtils');
+        const SkeletonUtils = (skeletonUtilsModule as any).SkeletonUtils ?? (skeletonUtilsModule as any).default ?? skeletonUtilsModule;
+        const cloned = SkeletonUtils.clone(scene as any);
+        if (!cancelled) setClonedScene(cloned as any);
       } catch (e) {
         if (!cancelled) setClonedScene(scene as any);
       }
