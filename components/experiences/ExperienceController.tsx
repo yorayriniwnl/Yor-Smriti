@@ -293,6 +293,77 @@ function buildScreenSequence(
   return [...prefix, ...shuffleBySeed(memoryBand, seed), ...suffix];
 }
 
+// Compute evolved audio profile (extracted for reuse)
+function computeEvolvedAudioProfile(
+  audioProfile: any,
+  opts: {
+    currentScreenId: number;
+    finalScreenId: number;
+    isAudioGraceWindow: boolean;
+    isSilentMode: boolean;
+    lastAudibleVolume: number;
+    physics: any;
+    journeyProgress: number;
+  }
+) {
+  const { currentScreenId, finalScreenId, isAudioGraceWindow, isSilentMode, lastAudibleVolume, physics, journeyProgress } = opts;
+
+  const muteFadeTuning =
+    currentScreenId === 99
+      ? 0.58
+      : currentScreenId === 110
+        ? 1.3
+        : 1;
+
+  const shouldDelayAudioCut = currentScreenId === finalScreenId && isAudioGraceWindow && !isSilentMode;
+  const baseVolume = audioProfile.enabled
+    ? clampNumber(audioProfile.volume * physics.audioGain, 0, 1)
+    : 0;
+  const graceVolume = shouldDelayAudioCut
+    ? clampNumber(lastAudibleVolume * 0.62, 0.02, 0.18)
+    : 0;
+
+  return {
+    ...audioProfile,
+    enabled: (!isSilentMode && audioProfile.enabled) || shouldDelayAudioCut,
+    volume: shouldDelayAudioCut ? graceVolume : baseVolume,
+    fadeMs: Math.round(
+      audioProfile.fadeMs
+      * (1 + physics.silenceWeight * 0.3)
+      * (0.92 + journeyProgress * 0.18)
+      * muteFadeTuning,
+    ),
+  };
+}
+
+// Create a cursor hide scheduler function that holds its own timer ref
+function createCursorScheduler(
+  setCursorHidden: (v: boolean) => void,
+  cursorInactivityTimerRef: { current: number | null },
+) {
+  return function scheduleCursorHide() {
+    if (cursorInactivityTimerRef.current !== null) {
+      window.clearTimeout(cursorInactivityTimerRef.current);
+    }
+
+    setCursorHidden(false);
+
+    cursorInactivityTimerRef.current = window.setTimeout(() => {
+      setCursorHidden(true);
+      cursorInactivityTimerRef.current = null;
+    }, 1700) as unknown as number;
+  };
+}
+
+function clearTimerRefs(...refs: Array<{ current: number | null }>) {
+  for (const r of refs) {
+    if (r.current !== null) {
+      window.clearTimeout(r.current);
+      r.current = null;
+    }
+  }
+}
+
 export function ExperienceController({
   screens,
   autoAdvance = true,
@@ -422,47 +493,27 @@ export function ExperienceController({
   const temperatureTint = emotionTemperatureTint[activeEmotion];
   const breathDuration = 4;
 
-  const evolvedAudioProfile = useMemo(
-    () => {
-      const muteFadeTuning =
-        currentScreenId === 99
-          ? 0.58
-          : currentScreenId === 110
-            ? 1.3
-            : 1;
-
-      const shouldDelayAudioCut = currentScreenId === finalScreenId && isAudioGraceWindow && !isSilentMode;
-      const baseVolume = audioProfile.enabled
-        ? clampNumber(audioProfile.volume * physics.audioGain, 0, 1)
-        : 0;
-      const graceVolume = shouldDelayAudioCut
-        ? clampNumber(lastAudibleVolume * 0.62, 0.02, 0.18)
-        : 0;
-
-      return {
-        ...audioProfile,
-        enabled: (!isSilentMode && audioProfile.enabled) || shouldDelayAudioCut,
-        volume: shouldDelayAudioCut ? graceVolume : baseVolume,
-        fadeMs: Math.round(
-          audioProfile.fadeMs
-          * (1 + physics.silenceWeight * 0.3)
-          * (0.92 + journeyProgress * 0.18)
-          * muteFadeTuning,
-        ),
-      };
-    },
-    [
-      audioProfile,
+  const evolvedAudioProfile = useMemo(() =>
+    computeEvolvedAudioProfile(audioProfile, {
       currentScreenId,
       finalScreenId,
       isAudioGraceWindow,
       isSilentMode,
       lastAudibleVolume,
-      physics.audioGain,
-      physics.silenceWeight,
+      physics,
       journeyProgress,
-    ],
-  );
+    }),
+  [
+    audioProfile,
+    currentScreenId,
+    finalScreenId,
+    isAudioGraceWindow,
+    isSilentMode,
+    lastAudibleVolume,
+    physics.audioGain,
+    physics.silenceWeight,
+    journeyProgress,
+  ]);
 
   useEffect(() => {
     if (isAudioGraceWindow) {
@@ -523,18 +574,10 @@ export function ExperienceController({
     };
   }, []);
 
-  const scheduleCursorHide = useCallback(() => {
-    if (cursorInactivityTimerRef.current !== null) {
-      window.clearTimeout(cursorInactivityTimerRef.current);
-    }
-
-    setCursorHidden(false);
-
-    cursorInactivityTimerRef.current = window.setTimeout(() => {
-      setCursorHidden(true);
-      cursorInactivityTimerRef.current = null;
-    }, 1700);
-  }, []);
+  const scheduleCursorHide = useMemo(
+    () => createCursorScheduler(setCursorHidden, cursorInactivityTimerRef),
+    [setCursorHidden, cursorInactivityTimerRef],
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isPrivateMode) {
@@ -739,29 +782,14 @@ export function ExperienceController({
 
   useEffect(() => {
     return () => {
-      if (restartTimerRef.current !== null) {
-        window.clearTimeout(restartTimerRef.current);
-      }
-
-      if (restartFinishTimerRef.current !== null) {
-        window.clearTimeout(restartFinishTimerRef.current);
-      }
-
-      if (manualResumeTimerRef.current !== null) {
-        window.clearTimeout(manualResumeTimerRef.current);
-      }
-
-      if (attentionLockTimerRef.current !== null) {
-        window.clearTimeout(attentionLockTimerRef.current);
-      }
-
-      if (cursorInactivityTimerRef.current !== null) {
-        window.clearTimeout(cursorInactivityTimerRef.current);
-      }
-
-      if (audioGraceTimerRef.current !== null) {
-        window.clearTimeout(audioGraceTimerRef.current);
-      }
+      clearTimerRefs(
+        restartTimerRef,
+        restartFinishTimerRef,
+        manualResumeTimerRef,
+        attentionLockTimerRef,
+        cursorInactivityTimerRef,
+        audioGraceTimerRef,
+      );
     };
   }, []);
 
