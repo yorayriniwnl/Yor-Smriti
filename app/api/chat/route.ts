@@ -224,36 +224,86 @@ async function requestOpenAIReply(
     `The user's current mood memory is ${memoryMood.toFixed(2)}.`,
   ].join(' ');
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.85,
-      max_tokens: 180,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
+  let response: Response;
+  try {
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.85,
+        max_tokens: 180,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message },
+        ],
+      }),
+    });
+  } catch (err) {
+    console.error('OpenAI request failed:', err);
     return null;
   }
 
-  const data = await response.json() as OpenAIChoiceResponse;
-  const content = data.choices?.[0]?.message?.content;
-  const text = Array.isArray(content)
-    ? content.map((part) => part.text ?? '').join('')
-    : typeof content === 'string'
-      ? content
-      : '';
+  if (!response.ok) {
+    // Log error body when available for debugging
+    try {
+      const errBody = await response.text();
+      console.error('OpenAI API error', response.status, errBody);
+    } catch (e) {
+      console.error('OpenAI API error, status:', response.status);
+    }
+    return null;
+  }
 
-  return extractJson(text);
+  // Best-effort: parse JSON, but fall back to text if the body isn't JSON
+  let text = '';
+  try {
+    const data = (await response.json()) as OpenAIChoiceResponse;
+    const content = data.choices?.[0]?.message?.content;
+
+    if (typeof content === 'string') {
+      text = content;
+    } else if (Array.isArray(content)) {
+      text = content
+        .map((part) => {
+          if (!part) return '';
+          // part may be an object with different shapes (text, parts, etc.)
+          if (typeof (part as any) === 'string') return part as any;
+          return (part as any).text ?? (Array.isArray((part as any).parts) ? (part as any).parts.join('') : '');
+        })
+        .join('');
+    } else if (content && typeof content === 'object') {
+      // handle content objects with `parts`
+      text = Array.isArray((content as any).parts) ? (content as any).parts.join('') : JSON.stringify(content);
+    }
+  } catch (err) {
+    // response wasn't JSON — try to read as text
+    try {
+      text = await response.text();
+    } catch {
+      text = '';
+    }
+  }
+
+  // Remove common markdown code fences that may wrap the JSON
+  const cleaned = text.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').replace(/`/g, '').trim();
+
+  const parsed = extractJson(cleaned) ?? extractJson(text);
+  if (parsed) return parsed;
+
+  // If we couldn't extract JSON but got a textual reply, return it as the reply
+  if (text && text.trim()) {
+    const replyText = text.trim().slice(0, 1000);
+    return {
+      reply: replyText,
+      emotion: detectEmotion(replyText, memoryMood),
+    };
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
