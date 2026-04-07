@@ -13,6 +13,7 @@ interface Experience {
   description: string;
   emoji: string;
   delay: number;
+  tech: string[];
 }
 
 const EXPERIENCES: Experience[] = [
@@ -20,33 +21,37 @@ const EXPERIENCES: Experience[] = [
     href: '/timeline',
     eyebrow: 'our story',
     title: 'Memory Timeline',
-    description: 'Every moment that made us, traced from the beginning.',
+    description: 'Trace the moments that shaped us — glance back, feel forward.',
     emoji: '🌙',
     delay: 0.1,
+    tech: ['Next.js', 'React', 'Framer Motion'],
   },
   {
     href: '/reasons',
     eyebrow: 'from my heart',
     title: 'Why I Love You',
-    description: 'A deck of cards — one reason per card. Tap through them.',
+    description: 'A concise deck of reasons — clear, intimate, touchable.',
     emoji: '🌸',
     delay: 0.2,
+    tech: ['React', 'Tailwind', 'Accessible UI'],
   },
   {
     href: '/stars',
     eyebrow: 'our universe',
     title: 'Our Constellation',
-    description: 'Every memory is a star. Touch one and feel it.',
+    description: 'Interactive stars that surface memories with gentle motion.',
     emoji: '✨',
     delay: 0.3,
+    tech: ['Three.js', 'React', 'WebGL'],
   },
   {
     href: '/promise',
     eyebrow: 'my word to you',
     title: 'My Promises',
-    description: 'Not just words. Things I will prove with every single day.',
+    description: 'Concrete promises with simple commitments you can revisit.',
     emoji: '🕯️',
     delay: 0.4,
+    tech: ['React', 'LocalStorage', 'Animations'],
   },
 ];
 
@@ -217,6 +222,24 @@ export default function HubPage() {
                   >
                     {exp.description}
                   </p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {exp.tech.map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontFamily: 'var(--font-dm-mono)',
+                          fontSize: '0.64rem',
+                          color: 'rgba(255, 200, 225, 0.7)',
+                          background: 'rgba(255,255,255,0.02)',
+                          padding: '6px 8px',
+                          borderRadius: '999px',
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
 
                   <motion.div
                     className="mt-5 flex items-center gap-2"
