@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import ParticleRainFX from '@/components/hero/ParticleRainFX';
 
-function Scene() {
+function Scene({ fxEnabled = true }: { fxEnabled?: boolean }) {
   const meshRef = useRef<any>(null);
   const timeRef = useRef(0);
 
@@ -36,6 +37,8 @@ function Scene() {
       <directionalLight position={[3, 5, 2]} intensity={0.78} />
       <directionalLight position={[-4, -2, -3]} intensity={0.28} />
 
+      {fxEnabled && <ParticleRainFX enabled={fxEnabled} />}
+
       <mesh ref={meshRef} position={[0, 0.8, 0]}>
         <icosahedronGeometry args={[0.9, 1]} />
         <meshStandardMaterial
@@ -66,14 +69,49 @@ function Scene() {
 }
 
 export function CinematicHero() {
+  const [fxEnabled, setFxEnabled] = useState(true);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('fx.rain.enabled');
+      if (v !== null) setFxEnabled(v === '1');
+    } catch (e) {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('fx.rain.enabled', fxEnabled ? '1' : '0');
+    } catch (e) {
+      /* ignore */
+    }
+  }, [fxEnabled]);
+
   return (
-    <Canvas
-      dpr={[1, 1.5]}
-      gl={{ antialias: true }}
-      camera={{ position: [0, 1.25, 8], fov: 40 }}
-      style={{ width: '100%', height: '100%' }}
-    >
-      <Scene />
-    </Canvas>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <Canvas dpr={[1, 1.5]} gl={{ antialias: true }} camera={{ position: [0, 1.25, 8], fov: 40 }} style={{ width: '100%', height: '100%' }}>
+        <Scene fxEnabled={fxEnabled} />
+      </Canvas>
+
+      <div style={{ position: 'absolute', right: 12, bottom: 12, zIndex: 6 }}>
+        <button
+          type="button"
+          onClick={() => setFxEnabled((s) => !s)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: fxEnabled ? 'linear-gradient(90deg,#ff9ecb,#f65a8d)' : 'rgba(255,255,255,0.03)',
+            color: '#fff',
+            fontSize: '12px',
+            cursor: 'pointer',
+            boxShadow: fxEnabled ? '0 10px 26px rgba(246,90,141,0.14)' : 'none',
+          }}
+        >
+          {fxEnabled ? 'FX: On' : 'FX: Off'}
+        </button>
+      </div>
+    </div>
   );
 }
