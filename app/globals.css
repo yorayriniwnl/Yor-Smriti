@@ -403,7 +403,7 @@ body {
 .emotional-cta {
   position: fixed;
   left: 50%;
-  bottom: clamp(16px, 4vw, 40px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(16px, 4vw, 40px));
   transform: translateX(-50%);
   z-index: 60;
   pointer-events: auto;

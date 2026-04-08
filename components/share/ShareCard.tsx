@@ -156,7 +156,7 @@ export default function ShareCard({
       // @ts-ignore - ClipboardItem may not be in lib
       await (navigator.clipboard as any).write([new ClipboardItem({ [blob.type]: blob })]);
     } catch (e) {
-      console.warn('copy failed', e);
+          // copy failed - silently ignore (user can download instead)
     }
   }, [previewUrl]);
 
@@ -183,7 +183,7 @@ export default function ShareCard({
       </div>
 
       <div className="share-card-controls flex gap-3">
-        <button className="btn-ghost" onClick={draw} aria-disabled={loading}>
+            <button className="btn-ghost" type="button" onClick={draw} disabled={loading} aria-disabled={loading}>
           Regenerate
         </button>
         <button className="btn-ghost" onClick={onDownload} disabled={!previewUrl}>

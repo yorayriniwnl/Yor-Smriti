@@ -40,6 +40,7 @@ export default function EmotionalCTA() {
 
         <div className="cta-actions">
           <motion.button
+            type="button"
             className="cta-primary"
             onClick={handlePrimary}
             aria-describedby="cta-copy"
@@ -52,7 +53,7 @@ export default function EmotionalCTA() {
             <span>Begin a guided apology</span>
           </motion.button>
 
-          <button className="cta-secondary" onClick={handleSecondary} aria-label="Share or preview">
+          <button type="button" className="cta-secondary" onClick={handleSecondary} aria-label="Share or preview">
             Share
           </button>
         </div>
