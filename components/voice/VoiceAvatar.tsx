@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import RippleButton from '@/components/ui/RippleButton';
 
 export default function VoiceAvatar({ defaultText }: { defaultText?: string }) {
   const [text, setText] = useState(defaultText ?? "Hello, I'm Ayrin. I'm here to help.");
@@ -109,22 +110,23 @@ export default function VoiceAvatar({ defaultText }: { defaultText?: string }) {
         />
 
         <div className="mt-2 flex items-center gap-2">
-          <button
-            type="button"
+          <RippleButton
             onClick={speak}
             disabled={isSpeaking}
-            className="px-3 py-1 rounded-md bg-gradient-to-r from-pink-500 to-pink-400 text-white text-xs"
+            loading={isSpeaking}
+            className="px-3 py-1 rounded-md bg-gradient-to-r from-pink-500 to-pink-400 text-white text-xs hover-glow"
           >
             Speak
-          </button>
-          <button
-            type="button"
+          </RippleButton>
+
+          <RippleButton
             onClick={stop}
             disabled={!isSpeaking}
             className="px-3 py-1 rounded-md bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-white text-xs"
           >
             Stop
-          </button>
+          </RippleButton>
+
           <div className="ml-auto text-xs text-[rgba(255,255,255,0.66)]">{isSpeaking ? 'Speaking…' : 'Ready'}</div>
         </div>
       </div>

@@ -362,6 +362,41 @@ select:focus-visible {
   transform: translateY(-2px);
 }
 
+/* ─── Ripple effect (lightweight) ───────────────────────────────────── */
+.ripple { position: relative; overflow: hidden; }
+.ripple .ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  pointer-events: none;
+  will-change: transform, opacity;
+  background: rgba(247,85,144,0.16);
+  animation: ripple 560ms var(--ease-breathe);
+}
+
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* hover glow utility */
+.hover-glow { transition: box-shadow 260ms var(--ease-breathe), transform 260ms var(--ease-breathe); }
+.hover-glow:hover { box-shadow: 0 16px 36px rgba(247,85,144,0.14), 0 8px 20px rgba(0,0,0,0.24); transform: translateY(-3px); }
+
+/* loading spinner */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.08);
+  border-top-color: rgba(247,85,144,0.98);
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* helper for buttons with loading state */
+.btn-loading { opacity: 0.9; pointer-events: none; }
+
 /* Small utility to ensure interactive elements meet mobile touch targets */
 .touch-target {
   min-height: 44px;

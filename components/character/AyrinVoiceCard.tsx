@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import RippleButton from '@/components/ui/RippleButton';
 
 interface Props {
   voicePhase: string;
@@ -75,32 +76,23 @@ export function AyrinVoiceCard({
         ) : null}
       </div>
 
-      <button
+      <RippleButton
         type="button"
         onClick={onVoiceButtonClick}
         disabled={voiceButtonDisabled}
         aria-pressed={voicePhase === 'listening' || voicePhase === 'speaking'}
-        style={{
-          border: '1px solid rgba(255,255,255,0.16)',
-          background:
+        className={
+          `px-4 py-2 rounded-full text-xs uppercase tracking-[0.18em] ${
             voicePhase === 'listening'
-              ? 'linear-gradient(135deg, #2563eb, #38bdf8)'
+              ? 'bg-[linear-gradient(135deg,#2563eb,#38bdf8)]'
               : voicePhase === 'speaking'
-              ? 'linear-gradient(135deg, #7c3aed, #ec4899)'
-              : 'linear-gradient(135deg, #1f1630, #4b2f60)',
-          color: '#FFF8F2',
-          padding: '10px 16px',
-          borderRadius: '999px',
-          cursor: voiceButtonDisabled ? 'wait' : 'pointer',
-          fontSize: '11px',
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          boxShadow: '0 10px 24px rgba(0,0,0,0.24)',
-          opacity: voiceButtonDisabled ? 0.8 : 1,
-        }}
+              ? 'bg-[linear-gradient(135deg,#7c3aed,#ec4899)]'
+              : 'bg-[linear-gradient(135deg,#1f1630,#4b2f60)]'
+          }`
+        }
       >
         {voiceButtonLabel}
-      </button>
+      </RippleButton>
     </div>
   );
 }

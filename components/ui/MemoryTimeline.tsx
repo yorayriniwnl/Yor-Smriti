@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import RippleButton from '@/components/ui/RippleButton';
 
 export type MemoryItem = {
   id: string;
@@ -85,7 +86,7 @@ export default function MemoryTimeline({ memories }: { memories: MemoryItem[] })
                         <div>{m.details ?? m.excerpt}</div>
 
                         <div className="mt-3 flex items-center gap-2">
-                          <button
+                          <RippleButton
                             onClick={(e) => {
                               e.stopPropagation();
                               // placeholder action — replace with open behavior
@@ -94,9 +95,9 @@ export default function MemoryTimeline({ memories }: { memories: MemoryItem[] })
                             className="text-xs px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-pink-400 text-white"
                           >
                             Open
-                          </button>
+                          </RippleButton>
 
-                          <button
+                          <RippleButton
                             onClick={(e) => {
                               e.stopPropagation();
                               setExpanded(null);
@@ -104,7 +105,7 @@ export default function MemoryTimeline({ memories }: { memories: MemoryItem[] })
                             className="text-xs px-3 py-1 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.04)] text-white"
                           >
                             Close
-                          </button>
+                          </RippleButton>
                         </div>
                       </div>
                     </motion.div>
