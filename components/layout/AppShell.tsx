@@ -1,13 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useAmbientSound } from '@/hooks/useAmbientSound';
 import { useAppStore } from '@/hooks/useStageController';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
-import { PetalCanvas } from '@/components/ui/PetalCanvas';
+const PetalCanvas = dynamic(() => import('@/components/ui/PetalCanvas').then((m) => m.PetalCanvas), {
+  ssr: false,
+  loading: () => null,
+});
 import { GrainOverlay } from '@/components/ui/GrainOverlay';
 import { StageProgressBar } from '@/components/ui/StageProgressBar';
 import { SoundToggle } from '@/components/ui/SoundToggle';
-import { StageRenderer } from '@/components/layout/StageRenderer';
+const StageRenderer = dynamic(() => import('@/components/layout/StageRenderer').then((m) => m.StageRenderer), {
+  ssr: false,
+  loading: () => null,
+});
 
 // ─── AppShell ─────────────────────────────────────────────────────────────────
 
