@@ -398,6 +398,48 @@ select:focus-visible {
 .btn-loading { opacity: 0.9; pointer-events: none; }
 
 /* Small utility to ensure interactive elements meet mobile touch targets */
+
+/* ─── Cinematic Page Transition Styles ────────────────────────────────── */
+.page-transition {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  will-change: transform, opacity;
+}
+
+.page-transition-inner {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+}
+
+.cinematic-blur-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  backdrop-filter: blur(6px) saturate(1.05);
+  background: linear-gradient(180deg, rgba(5,3,10,0.06), rgba(5,3,10,0.02));
+  opacity: 0;
+  will-change: opacity, backdrop-filter;
+}
+
+/* Lightweight depth shadow used at transitions */
+.cinematic-depth-shadow {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 10%, rgba(0,0,0,0.06), transparent 40%);
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+}
+
+/* Section-level choreography helpers */
+.section-entrance {
+  will-change: transform, opacity;
+}
+
 .touch-target {
   min-height: 44px;
   display: inline-flex;

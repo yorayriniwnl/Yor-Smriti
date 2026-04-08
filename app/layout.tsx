@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import PersonalizationProvider from '@/components/ui/PersonalizationProvider';
+import CinematicTransition from '@/components/transitions/CinematicTransition';
 
 export const metadata: Metadata = {
   title: "I'm Sorry",
@@ -64,7 +66,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
         >
           Skip to content
         </a>
-        {children}
+        <PersonalizationProvider>
+          <CinematicTransition>
+            {children}
+          </CinematicTransition>
+        </PersonalizationProvider>
       </body>
     </html>
   );
