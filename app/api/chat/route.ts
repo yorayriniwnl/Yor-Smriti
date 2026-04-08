@@ -217,6 +217,7 @@ async function requestOpenAIReply(
 ): Promise<ChatPayload | null> {
   const apiKey = getOptionalServerEnv('OPENAI_API_KEY');
   if (!apiKey) {
+    incMetric('openai_unavailable_total');
     return null;
   }
 
@@ -235,6 +236,7 @@ async function requestOpenAIReply(
 
   let response: Response;
   try {
+    incMetric('openai_requests_total', { model });
     response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -253,6 +255,7 @@ async function requestOpenAIReply(
     });
   } catch (err) {
     logger.error('OpenAI request failed:', err);
+    incMetric('openai_request_failed_total', { model });
     return null;
   }
 
@@ -261,8 +264,10 @@ async function requestOpenAIReply(
     try {
       const errBody = await response.text();
       logger.error('OpenAI API error', response.status, errBody);
+      incMetric('openai_request_failed_total', { model, status: String(response.status) });
     } catch (e) {
       logger.error('OpenAI API error, status:', response.status);
+      incMetric('openai_request_failed_total', { model, status: String(response.status) });
     }
     return null;
   }
@@ -301,18 +306,20 @@ async function requestOpenAIReply(
   if (parsed) {
     // sanitize reply field defensively
     parsed.reply = sanitizeString(parsed.reply, { maxLength: 1000, allowNewlines: true });
+    incMetric('openai_replies_parsed_json_total', { model });
     return parsed;
   }
 
   // If we couldn't extract JSON but got a textual reply, return it as the reply
   if (text && text.trim()) {
     const replyText = sanitizeString(text.trim().slice(0, 1000), { allowNewlines: true });
+    incMetric('openai_replies_text_total', { model });
     return {
       reply: replyText,
       emotion: detectEmotion(replyText, memoryMood),
     };
   }
-
+  incMetric('openai_replies_failed_total', { model });
   return null;
 }
 
@@ -354,9 +361,10 @@ export async function POST(request: Request) {
   const openAIReply = await requestOpenAIReply(message, memoryMood).catch(() => null);
 
   if (openAIReply) {
+    incMetric('chat_replies_openai_total');
     return NextResponse.json(openAIReply, { status: 200 });
   }
-
+  incMetric('chat_replies_fallback_total');
   const emotion = detectEmotion(message, memoryMood);
   const reply = selectFallbackReply(message, emotion);
 
