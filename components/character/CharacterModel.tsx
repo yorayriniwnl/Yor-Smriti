@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAnimations } from '@react-three/drei/core/useAnimations';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { CharacterSceneConfig } from '@/components/character/characterConfig';
 
 interface CharacterModelProps {
