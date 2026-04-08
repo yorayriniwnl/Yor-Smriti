@@ -1,7 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/hooks/useStageController';
 import type { StageId } from '@/types';
 
@@ -56,10 +57,35 @@ const STAGE_COMPONENTS: Record<StageId, React.ComponentType<any>> = {
 export function StageRenderer() {
   const currentStage = useAppStore((s) => s.currentStage);
   const StageComponent = STAGE_COMPONENTS[currentStage];
+  const regionRef = useRef<HTMLDivElement | null>(null);
+
+  // Move focus to the stage region when the stage changes so screen readers announce it.
+  useEffect(() => {
+    const el = regionRef.current;
+    if (!el) return;
+    // Ensure element is focusable then focus
+    const prevTab = el.getAttribute('tabindex');
+    el.setAttribute('tabindex', '-1');
+    el.focus({ preventScroll: true });
+    if (prevTab === null) el.removeAttribute('tabindex');
+  }, [currentStage]);
 
   return (
     <AnimatePresence mode="wait">
-      <StageComponent key={currentStage} />
+      <motion.div
+        key={currentStage}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0, transition: { duration: 0.5 } }}
+        exit={{ opacity: 0, y: -6, transition: { duration: 0.4 } }}
+        ref={regionRef}
+        role="region"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={`Stage: ${currentStage}`}
+        className="stage-region"
+      >
+        <StageComponent />
+      </motion.div>
     </AnimatePresence>
   );
 }

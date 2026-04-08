@@ -44,6 +44,12 @@
   --font-dm-sans:    'DM Sans', 'Segoe UI', sans-serif;
 }
 
+/* Accessible focus visible styling (high contrast, consistent) */
+:focus-visible {
+  outline: 3px solid rgba(247,85,144,0.95);
+  outline-offset: 3px;
+}
+
 /* ─── Base Reset ─────────────────────────────────────────────────────── */
 *,
 *::before,

@@ -70,6 +70,27 @@ export function AppShell() {
     touchStartTime.current = null;
   };
 
+  // Keyboard navigation for accessibility: ArrowRight -> next, ArrowLeft -> previous
+  useEffect(() => {
+    const handler = (ev: KeyboardEvent) => {
+      try {
+        const active = document.activeElement?.tagName?.toUpperCase() ?? '';
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(active)) return;
+
+        if (ev.key === 'ArrowRight') {
+          advanceStage();
+        } else if (ev.key === 'ArrowLeft') {
+          if (previousStage) goToStage(previousStage);
+        }
+      } catch (e) {
+        // swallow errors
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [advanceStage, goToStage, previousStage]);
+
   return (
     <div
       className="relative h-dvh w-dvw overflow-hidden"
