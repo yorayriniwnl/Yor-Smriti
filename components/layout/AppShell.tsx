@@ -12,6 +12,7 @@ const PetalCanvas = dynamic(() => import('@/components/ui/PetalCanvas').then((m)
 import { GrainOverlay } from '@/components/ui/GrainOverlay';
 import { StageProgressBar } from '@/components/ui/StageProgressBar';
 import { SoundToggle } from '@/components/ui/SoundToggle';
+import EmotionalCTA from '@/components/ui/EmotionalCTA';
 const StageRenderer = dynamic(() => import('@/components/layout/StageRenderer').then((m) => m.StageRenderer), {
   ssr: false,
   loading: () => null,
@@ -113,6 +114,9 @@ export function AppShell() {
       {/* Layer 5: Progress + sound controls */}
       <StageProgressBar />
       <SoundToggle />
+
+      {/* High-conversion emotional CTA shown on opening stage */}
+      {currentStage === 'opening' && <EmotionalCTA />}
 
       {/* Accessible skip navigation */}
       <a
