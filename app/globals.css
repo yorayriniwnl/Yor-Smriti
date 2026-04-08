@@ -66,10 +66,17 @@ body {
   font-family: var(--font-crimson);
   font-size: 1.1rem;
   line-height: 1.75;
-  overflow: hidden;
-  height: 100dvh;
-  width: 100dvw;
-  position: fixed;
+}
+
+/* Keep the fixed full-viewport layout only on larger screens
+   so mobile browsers retain natural scrolling & overscroll behavior. */
+@media (min-width: 1024px) {
+  body {
+    overflow: hidden;
+    height: 100dvh;
+    width: 100dvw;
+    position: fixed;
+  }
 }
 
 /* ─── Panda Theme Scene ─────────────────────────────────────────────── */
@@ -695,6 +702,34 @@ body {
   }
   50% {
     transform: scale(1.05);
+  }
+}
+
+/* Respect user's reduced-motion preference and provide a low-impact mode. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* Tone down visual noise */
+  .grain-texture,
+  .ambient-orb {
+    display: none !important;
+  }
+  /* Reduce canvas intensity if present */
+  canvas {
+    opacity: 0.45 !important;
+    filter: none !important;
+  }
+}
+
+/* Small-screen tweaks: reduce paddings and heavy visual offsets */
+@media (max-width: 720px) {
+  .stage-root {
+    padding: clamp(0.75rem, 4vw, 1.5rem);
   }
 }
 
