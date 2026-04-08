@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 export type RateLimitEntry = { count: number; first: number };
 
 const store = new Map<string, RateLimitEntry>();
@@ -14,19 +16,19 @@ async function getRedisClient() {
     // attach lightweight logging/monitoring hooks
     try {
       __redisClient.on('connect', () => {
-        console.info('[rateLimiter] Redis connected');
+        logger.info('[rateLimiter] Redis connected');
       });
       __redisClient.on('ready', () => {
-        console.info('[rateLimiter] Redis ready');
+        logger.info('[rateLimiter] Redis ready');
       });
       __redisClient.on('error', (err: any) => {
-        console.error('[rateLimiter] Redis error', err?.message ?? err);
+        logger.error('[rateLimiter] Redis error', err?.message ?? err);
       });
       __redisClient.on('close', () => {
-        console.warn('[rateLimiter] Redis connection closed');
+        logger.warn('[rateLimiter] Redis connection closed');
       });
       __redisClient.on('reconnecting', () => {
-        console.warn('[rateLimiter] Redis reconnecting');
+        logger.warn('[rateLimiter] Redis reconnecting');
       });
     } catch (e) {
       // ignore listener attach errors
@@ -86,4 +88,15 @@ export async function resetRateLimitKey(key: string) {
     }
   }
   store.delete(key);
+}
+
+export async function getRedisInfo() {
+  const client = await getRedisClient();
+  if (!client) return { available: false };
+  try {
+    const pong = await client.ping();
+    return { available: true, pong };
+  } catch (e) {
+    return { available: false };
+  }
 }

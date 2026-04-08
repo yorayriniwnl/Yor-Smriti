@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sanitizeString } from '@/lib/sanitize';
 import { secureCompare } from '@/lib/security';
 import { getOptionalServerEnv } from '@/lib/serverEnv';
+import { logger } from '@/lib/logger';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 
 interface LoginRequestBody {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
 
     if (!configuredUsername || !configuredPassword) {
       // Server is not configured to accept logins safely.
-      console.error('Login API misconfigured: APP_USERNAME and APP_PASSWORD must be set.');
+      logger.error('Login API misconfigured: APP_USERNAME and APP_PASSWORD must be set.');
       return NextResponse.json({ ok: false, error: 'Server misconfiguration.' }, { status: 500 });
     }
 
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
-    console.error('Login API error:', err);
+    logger.error('Login API error:', err);
     return NextResponse.json({ ok: false, error: 'Internal server error.' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sanitizeString } from '@/lib/sanitize';
 import { getOptionalServerEnv, getOpenAiModel } from '@/lib/serverEnv';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger';
 
 type CharacterEmotion =
   | 'calm'
@@ -250,7 +251,7 @@ async function requestOpenAIReply(
       }),
     });
   } catch (err) {
-    console.error('OpenAI request failed:', err);
+    logger.error('OpenAI request failed:', err);
     return null;
   }
 
@@ -258,9 +259,9 @@ async function requestOpenAIReply(
     // Log error body when available for debugging
     try {
       const errBody = await response.text();
-      console.error('OpenAI API error', response.status, errBody);
+      logger.error('OpenAI API error', response.status, errBody);
     } catch (e) {
-      console.error('OpenAI API error, status:', response.status);
+      logger.error('OpenAI API error, status:', response.status);
     }
     return null;
   }
@@ -343,7 +344,7 @@ export async function POST(request: Request) {
     }
   } catch (e) {
     // If rate limiter fails unexpectedly, continue but log server-side.
-    console.error('Rate limiter error for /api/chat:', e);
+    logger.error('Rate limiter error for /api/chat:', e);
   }
 
   const memoryMood = typeof body.memory?.mood === 'number' ? body.memory.mood : 0;

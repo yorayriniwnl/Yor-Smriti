@@ -1,7 +1,9 @@
+import { logger } from './logger';
+
 export function getRequiredServerEnv(name: string): string {
   const val = process.env[name];
   if (!val) {
-    console.error(`Missing required server environment variable: ${name}`);
+    logger.error(`Missing required server environment variable: ${name}`);
     throw new Error(`Missing required server environment variable: ${name}`);
   }
   return val;
