@@ -698,6 +698,13 @@ body {
   }
 }
 
+/* ─── Share Card Styles ───────────────────────────────────────────────────── */
+.share-card { display: flex; flex-direction: column; align-items: flex-start; }
+.share-card-preview img { max-width: 100%; height: auto; display: block; border-radius: 8px; }
+.share-card-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.share-card .btn-ghost { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+
+
 @keyframes panda-pulse {
   0%,
   100% {
