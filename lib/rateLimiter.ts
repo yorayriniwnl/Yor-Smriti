@@ -11,6 +11,26 @@ async function getRedisClient() {
   try {
     const { default: Redis } = await import('ioredis');
     __redisClient = new Redis(url);
+    // attach lightweight logging/monitoring hooks
+    try {
+      __redisClient.on('connect', () => {
+        console.info('[rateLimiter] Redis connected');
+      });
+      __redisClient.on('ready', () => {
+        console.info('[rateLimiter] Redis ready');
+      });
+      __redisClient.on('error', (err: any) => {
+        console.error('[rateLimiter] Redis error', err?.message ?? err);
+      });
+      __redisClient.on('close', () => {
+        console.warn('[rateLimiter] Redis connection closed');
+      });
+      __redisClient.on('reconnecting', () => {
+        console.warn('[rateLimiter] Redis reconnecting');
+      });
+    } catch (e) {
+      // ignore listener attach errors
+    }
     (globalThis as any).__yor_redis_client = __redisClient;
     return __redisClient;
   } catch (e) {
