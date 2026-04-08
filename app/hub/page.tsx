@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import MemoryTimeline, { MemoryItem } from '@/components/ui/MemoryTimeline';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -82,6 +83,43 @@ const EXPERIENCES: Experience[] = [
 
 export default function HubPage() {
   const [hovered, setHovered] = useState<string | null>(null);
+
+  const SAMPLE_MEMORIES: MemoryItem[] = [
+    {
+      id: 'm1',
+      date: '2024-09-12',
+      title: 'First Conversation',
+      excerpt: 'A small but meaningful conversation about expectations and care.',
+      details:
+        'We talked about small, actionable gestures and why they matter. This memory helped us establish a pattern of checking in regularly.',
+      tags: ['talk', 'check-in'],
+    },
+    {
+      id: 'm2',
+      date: '2025-01-03',
+      title: 'Dinner on New Year',
+      excerpt: 'Celebratory dinner that turned into a deep conversation about the year ahead.',
+      details:
+        'Shared hopes and vulnerabilities. We made a promise to make space for weekly check-ins, which lasted for months and helped clarify priorities.',
+      tags: ['celebration', 'promise'],
+    },
+    {
+      id: 'm3',
+      date: '2025-06-18',
+      title: 'Small Apology',
+      excerpt: 'A sincere apology that mended a misunderstanding quickly.',
+      details: 'We practiced short, clear apologies and immediate repair gestures. It reduced friction and increased trust.',
+      tags: ['apology', 'repair'],
+    },
+    {
+      id: 'm4',
+      date: '2025-11-02',
+      title: 'Quiet Support',
+      excerpt: 'A quiet night where listening mattered more than fixing.',
+      details: 'Being present and listening strengthened our emotional connection. This memory is a reference for holding space.',
+      tags: ['support', 'listening'],
+    },
+  ];
 
   return (
     <main
@@ -310,6 +348,10 @@ export default function HubPage() {
         transition={{ delay: 0.8, duration: 0.8 }}
         className="relative z-10 mt-10"
       >
+        <div className="mb-8">
+          <h3 className="mb-3 text-sm font-mono uppercase text-pink-200">Timeline</h3>
+          <MemoryTimeline memories={SAMPLE_MEMORIES} />
+        </div>
         <Link
           href="/message"
           style={{
