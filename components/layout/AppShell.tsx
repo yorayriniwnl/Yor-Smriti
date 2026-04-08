@@ -5,6 +5,7 @@ import { useEffect, useState, useRef, type TouchEvent } from 'react';
 import { useAmbientSound } from '@/hooks/useAmbientSound';
 import { useAppStore } from '@/hooks/useStageController';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import DynamicBackground from '@/components/background/DynamicBackground';
 const PetalCanvas = dynamic(() => import('@/components/ui/PetalCanvas').then((m) => m.PetalCanvas), {
   ssr: false,
   loading: () => null,
@@ -99,7 +100,8 @@ export function AppShell() {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {/* Layer 1: Background atmosphere */}
+      {/* Layer 1: Dynamic canvas background + ambient overlay */}
+      <DynamicBackground stage={currentStage} />
       <AmbientBackground stage={currentStage} />
 
       {/* Layer 2: Particle atmosphere (disabled on small/touch devices) */}
