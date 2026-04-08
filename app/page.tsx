@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { safeFetchJson } from '@/lib/safeFetch';
+import ScrollStory from '@/components/scroll/ScrollStory';
 
 const CinematicHero = dynamic(
   () => import('@/components/hero/CinematicHero').then((m) => m.CinematicHero),
@@ -96,7 +97,7 @@ export default function LoginPage() {
   return (
     <main
       id="main-content"
-      className="relative flex h-dvh w-dvw items-center justify-center overflow-hidden px-4"
+      className="relative flex h-dvh w-dvw items-center justify-center px-4"
       style={{
         background:
           'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
@@ -111,20 +112,66 @@ export default function LoginPage() {
         }}
       />
 
-      <section
-        className="relative w-full max-w-lg rounded-[2rem] border px-6 py-10 text-center md:px-10"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
-          borderColor: 'rgba(244, 173, 210, 0.28)',
-          boxShadow: '0 36px 74px rgba(0, 0, 0, 0.56), 0 16px 34px rgba(247, 85, 144, 0.22)',
-        }}
-      >
-        <div className="absolute inset-0 -z-10 rounded-[2rem] overflow-hidden" aria-hidden>
-          {/* Cinematic 3D hero background (lazy-loaded) */}
-          <CinematicHero />
+      <ScrollStory>
+        <div className="relative w-full h-screen flex items-center justify-center">
+          <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden>
+            <CinematicHero />
+          </div>
+
+          <div className="relative z-10 px-6 text-center max-w-2xl">
+            <p
+              className="mb-2 uppercase tracking-[0.18em]"
+              style={{
+                fontFamily: 'var(--font-dm-mono)',
+                color: 'rgba(255, 193, 223, 0.78)',
+                fontSize: '0.62rem',
+              }}
+            >
+              Private
+            </p>
+
+            <h1
+              className="mb-2"
+              style={{
+                fontFamily: 'var(--font-cormorant)',
+                color: 'rgba(255, 236, 246, 0.98)',
+                fontSize: 'clamp(1.8rem, 4.2vw, 2.5rem)',
+                lineHeight: 1.15,
+              }}
+            >
+              Private cinematic apology experiences
+            </h1>
+
+            <p
+              className="mx-auto mb-6 max-w-[34ch]"
+              style={{
+                color: 'rgba(255, 210, 230, 0.84)',
+                fontFamily: 'var(--font-crimson)',
+                fontSize: '0.95rem',
+              }}
+            >
+              Interactive, guided experiences for relationship repair.
+            </p>
+
+            <a
+              href="#login-section"
+              className="mt-6 inline-block rounded-full px-6 py-3 bg-gradient-to-r from-pink-400 to-pink-600 text-white"
+            >
+              Start experience
+            </a>
+          </div>
         </div>
 
+        <section
+          id="login-section"
+          className="relative w-full max-w-lg rounded-[2rem] border px-6 py-10 text-center md:px-10"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
+            borderColor: 'rgba(244, 173, 210, 0.28)',
+            boxShadow: '0 36px 74px rgba(0, 0, 0, 0.56), 0 16px 34px rgba(247, 85, 144, 0.22)',
+          }}
+        >
         <p
           className="mb-2 uppercase tracking-[0.18em]"
           style={{
@@ -318,6 +365,8 @@ export default function LoginPage() {
           </div>
         ) : null}
       </section>
+
+      </ScrollStory>
 
       <div className="fixed bottom-4 left-4 z-50 pointer-events-none" aria-hidden="true">
         <div
