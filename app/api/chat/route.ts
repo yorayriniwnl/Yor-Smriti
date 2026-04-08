@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sanitizeString } from '@/lib/sanitize';
 import { getOptionalServerEnv, getOpenAiModel } from '@/lib/serverEnv';
+import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 
 type CharacterEmotion =
   | 'calm'
@@ -325,6 +326,24 @@ export async function POST(request: Request) {
   const message = typeof body.message === 'string' ? body.message.trim() : '';
   if (!message) {
     return NextResponse.json({ error: 'Message is required.' }, { status: 400 });
+  }
+
+  // Rate-limit chat requests per IP to protect API usage.
+  try {
+    const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0].trim();
+    const realIp = request.headers.get('x-real-ip');
+    const ip = forwardedFor ?? realIp ?? 'unknown';
+    const rateKey = `chat:${ip}`;
+    const limit = Number(getOptionalServerEnv('CHAT_RATE_LIMIT') ?? '20');
+    const windowMs = Number(getOptionalServerEnv('CHAT_RATE_WINDOW_MS') ?? '60000');
+    const rl = await checkAndRecordRateLimit(rateKey, limit, windowMs);
+    if (!rl.allowed) {
+      const retryAfter = Math.max(0, Math.ceil((rl.resetMs - Date.now()) / 1000));
+      return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
+    }
+  } catch (e) {
+    // If rate limiter fails unexpectedly, continue but log server-side.
+    console.error('Rate limiter error for /api/chat:', e);
   }
 
   const memoryMood = typeof body.memory?.mood === 'number' ? body.memory.mood : 0;
