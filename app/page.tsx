@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
+import dynamic from 'next/dynamic';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { safeFetchJson } from '@/lib/safeFetch';
+
+const CinematicHero = dynamic(
+  () => import('@/components/hero/CinematicHero').then((m) => m.CinematicHero),
+  { ssr: false, loading: () => null }
+);
 
 function LipPrint({ tint }: { tint: string }) {
   return (
@@ -114,6 +120,11 @@ export default function LoginPage() {
           boxShadow: '0 36px 74px rgba(0, 0, 0, 0.56), 0 16px 34px rgba(247, 85, 144, 0.22)',
         }}
       >
+        <div className="absolute inset-0 -z-10 rounded-[2rem] overflow-hidden" aria-hidden>
+          {/* Cinematic 3D hero background (lazy-loaded) */}
+          <CinematicHero />
+        </div>
+
         <p
           className="mb-2 uppercase tracking-[0.18em]"
           style={{
