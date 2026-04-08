@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sanitizeString } from '@/lib/sanitize';
 import { secureCompare } from '@/lib/security';
 import { getOptionalServerEnv } from '@/lib/serverEnv';
+import { incMetric } from '@/lib/metrics';
 import { logger } from '@/lib/logger';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 
@@ -47,9 +48,11 @@ export async function POST(request: Request) {
     const windowMs = Number(getOptionalServerEnv('LOGIN_RATE_WINDOW_MS') ?? '60000');
     const rl = await checkAndRecordRateLimit(rateKey, limit, windowMs);
     if (!rl.allowed) {
+      incMetric('rate_limit_blocked_total', { endpoint: 'login' });
       const retryAfter = Math.max(0, Math.ceil((rl.resetMs - Date.now()) / 1000));
       return NextResponse.json({ ok: false, error: 'Too many login attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
     }
+    incMetric('rate_limit_allowed_total', { endpoint: 'login' });
 
     // Use constant-time compare to avoid timing attacks
     const isValid = secureCompare(username, configuredUsername) && secureCompare(password, configuredPassword);

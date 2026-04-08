@@ -3,6 +3,7 @@ import { sanitizeString } from '@/lib/sanitize';
 import { getOptionalServerEnv, getOpenAiModel } from '@/lib/serverEnv';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger';
+import { incMetric } from '@/lib/metrics';
 
 type CharacterEmotion =
   | 'calm'
@@ -339,9 +340,11 @@ export async function POST(request: Request) {
     const windowMs = Number(getOptionalServerEnv('CHAT_RATE_WINDOW_MS') ?? '60000');
     const rl = await checkAndRecordRateLimit(rateKey, limit, windowMs);
     if (!rl.allowed) {
+      incMetric('rate_limit_blocked_total', { endpoint: 'chat' });
       const retryAfter = Math.max(0, Math.ceil((rl.resetMs - Date.now()) / 1000));
       return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
     }
+    incMetric('rate_limit_allowed_total', { endpoint: 'chat' });
   } catch (e) {
     // If rate limiter fails unexpectedly, continue but log server-side.
     logger.error('Rate limiter error for /api/chat:', e);
