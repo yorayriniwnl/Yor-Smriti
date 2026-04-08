@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { safeFetchJson } from '@/lib/safeFetch';
 import ScrollStory from '@/components/scroll/ScrollStory';
+import VoiceAvatar from '@/components/voice/VoiceAvatar';
 
 const CinematicHero = dynamic(
   () => import('@/components/hero/CinematicHero').then((m) => m.CinematicHero),
@@ -159,6 +160,10 @@ export default function LoginPage() {
             >
               Start experience
             </a>
+
+            <div className="mt-6">
+              <VoiceAvatar defaultText={"Hi — I can speak and move my mouth. Try it."} />
+            </div>
           </div>
         </div>
 
