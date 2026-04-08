@@ -28,7 +28,6 @@ export const metadata: Metadata = {
     title: "I'm Sorry",
     description: 'Private, guided experiences that help repair relationships.',
   },
-  themeColor: '#05030a',
 };
 
 export const viewport: Viewport = {
