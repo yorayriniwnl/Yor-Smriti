@@ -2,7 +2,42 @@ export type RateLimitEntry = { count: number; first: number };
 
 const store = new Map<string, RateLimitEntry>();
 
-export function checkAndRecordRateLimit(key: string, limit = 5, windowMs = 60_000) {
+let __redisClient: any | null = (globalThis as any).__yor_redis_client ?? null;
+
+async function getRedisClient() {
+  if (__redisClient) return __redisClient;
+  const url = process.env.REDIS_URL;
+  if (!url) return null;
+  try {
+    const { default: Redis } = await import('ioredis');
+    __redisClient = new Redis(url);
+    (globalThis as any).__yor_redis_client = __redisClient;
+    return __redisClient;
+  } catch (e) {
+    // If ioredis isn't available or fails to load, fall back to memory
+    return null;
+  }
+}
+
+export async function checkAndRecordRateLimit(key: string, limit = 5, windowMs = 60_000) {
+  // Prefer Redis-backed counter if configured, otherwise fall back to in-memory Map.
+  const client = await getRedisClient();
+  if (client) {
+    try {
+      const redisKey = `rl:${key}`;
+      const script = `local current = redis.call('INCR', KEYS[1])\nif tonumber(current) == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end\nreturn current`;
+      const res = await client.eval(script, 1, redisKey, String(windowMs));
+      const count = Number(res ?? 0);
+      const ttl = await client.pttl(redisKey);
+      const resetMs = Date.now() + (ttl > 0 ? ttl : windowMs);
+      const allowed = count <= limit;
+      return { allowed, remaining: Math.max(0, limit - count), resetMs };
+    } catch (err) {
+      // On any Redis error, silently fall back to in-memory behavior.
+    }
+  }
+
+  // In-memory fallback
   const now = Date.now();
   const entry = store.get(key);
   if (!entry || now - entry.first >= windowMs) {
@@ -20,6 +55,15 @@ export function checkAndRecordRateLimit(key: string, limit = 5, windowMs = 60_00
   return { allowed: true, remaining: Math.max(0, limit - entry.count), resetMs: entry.first + windowMs };
 }
 
-export function resetRateLimitKey(key: string) {
+export async function resetRateLimitKey(key: string) {
+  const client = await getRedisClient();
+  if (client) {
+    try {
+      await client.del(`rl:${key}`);
+      return;
+    } catch (e) {
+      // ignore and fall back
+    }
+  }
   store.delete(key);
 }

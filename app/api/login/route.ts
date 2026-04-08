@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const rateKey = `${ip}:${username}`;
     const limit = Number(getOptionalServerEnv('LOGIN_RATE_LIMIT') ?? '5');
     const windowMs = Number(getOptionalServerEnv('LOGIN_RATE_WINDOW_MS') ?? '60000');
-    const rl = checkAndRecordRateLimit(rateKey, limit, windowMs);
+    const rl = await checkAndRecordRateLimit(rateKey, limit, windowMs);
     if (!rl.allowed) {
       const retryAfter = Math.max(0, Math.ceil((rl.resetMs - Date.now()) / 1000));
       return NextResponse.json({ ok: false, error: 'Too many login attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
