@@ -41,7 +41,7 @@ const EndingStage = dynamic(() => import('@/components/stages/EndingStage').then
 
 // ─── Stage Map ────────────────────────────────────────────────────────────────
 
-const STAGE_COMPONENTS: Record<StageId, React.ComponentType<any>> = {
+const STAGE_COMPONENTS: Record<StageId, React.ComponentType> = {
   opening: OpeningStage,
   chat: ChatStage,
   transition: TransitionStage,

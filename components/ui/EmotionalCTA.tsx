@@ -34,7 +34,7 @@ export default function EmotionalCTA() {
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       >
         <div className="cta-copy" id="cta-copy">
-          <h2 className="cta-headline">Repair what's important</h2>
+          <h2 className="cta-headline">Repair what&apos;s important</h2>
           <p className="cta-subline">Begin a guided apology that helps you make amends with care.</p>
         </div>
 
