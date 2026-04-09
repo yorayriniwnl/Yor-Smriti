@@ -1,11 +1,11 @@
-export interface SafeFetchResult<T = any> {
+export interface SafeFetchResult<T = unknown> {
   ok: boolean;
   status: number;
   data?: T;
   error?: string;
 }
 
-export async function safeFetchJson<T = any>(
+export async function safeFetchJson<T = unknown>(
   input: RequestInfo,
   init: RequestInit = {},
   options?: { timeoutMs?: number }
@@ -35,7 +35,7 @@ export async function safeFetchJson<T = any>(
     const response = await fetch(input, { ...init, signal: combined.signal });
 
     const contentType = response.headers.get('content-type') ?? '';
-    let parsed: any = undefined;
+    let parsed: unknown = undefined;
 
     if (contentType.includes('application/json')) {
       try {
@@ -58,21 +58,24 @@ export async function safeFetchJson<T = any>(
     }
 
     if (!response.ok) {
-      const errMsg = parsed && typeof parsed === 'object' && 'error' in parsed
-        ? String((parsed as any).error)
-        : response.statusText || `HTTP ${response.status}`;
+      let errMsg = response.statusText || `HTTP ${response.status}`;
+      if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+        const parsedObj = parsed as Record<string, unknown>;
+        if (parsedObj.error != null) errMsg = String(parsedObj.error);
+      }
 
-      return { ok: false, status: response.status, error: errMsg, data: parsed };
+      return { ok: false, status: response.status, error: errMsg, data: parsed as T };
     }
 
-    return { ok: true, status: response.status, data: parsed };
+    return { ok: true, status: response.status, data: parsed as T };
   } catch (err: any) {
     // Preserve AbortError so callers that rely on it can detect it
-    if (err && err.name === 'AbortError') {
+    if (err && typeof err === 'object' && 'name' in err && (err as { name?: unknown }).name === 'AbortError') {
       throw err;
     }
 
-    return { ok: false, status: 0, error: err?.message ?? 'Network error' };
+    const msg = err && typeof err === 'object' && 'message' in err ? String((err as { message?: unknown }).message) : 'Network error';
+    return { ok: false, status: 0, error: msg };
   } finally {
     if (typeof timeoutId === 'number') {
       clearTimeout(timeoutId);

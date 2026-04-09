@@ -2,6 +2,8 @@ import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
 import nextTypescript from 'eslint-config-next/typescript';
 
 const config = [
+  // Ignore generated imports folder to reduce lint noise
+  { ignores: ['_imports/**'] },
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
