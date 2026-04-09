@@ -4,9 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/hooks/useStageController';
 import { stageVariants } from '@/lib/animations';
-import { MemoryCard } from '@/components/ui/MemoryCard';
 import { MEMORIES } from '@/lib/messages';
-import type { Memory } from '@/types';
 
 // ─── MemoryStage ──────────────────────────────────────────────────────────────
 
@@ -14,7 +12,6 @@ export function MemoryStage() {
   const advanceStage = useAppStore((s) => s.advanceStage);
 
   const [currentMemoryIndex, setCurrentMemoryIndex] = useState<number>(-1);
-  const [activeMemory, setActiveMemory] = useState<Memory | null>(null);
   const [isDone, setIsDone] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
 
@@ -38,7 +35,6 @@ export function MemoryStage() {
 
       const showTimer = setTimeout(() => {
         setCurrentMemoryIndex(index);
-        setActiveMemory(memory);
       }, cumulativeDelay);
       timersRef.current.push(showTimer);
 
@@ -48,7 +44,7 @@ export function MemoryStage() {
       // Hide (except last)
       if (index < MEMORIES.length - 1) {
         const hideTimer = setTimeout(() => {
-          setActiveMemory(null);
+          setCurrentMemoryIndex(-1);
         }, cumulativeDelay - 1200);
         timersRef.current.push(hideTimer);
       }
@@ -95,24 +91,31 @@ export function MemoryStage() {
           ))}
         </motion.div>
 
-        {/* Memory card area */}
+        {/* Memory text area (card visuals removed) */}
         <div className="relative flex h-[320px] w-full max-w-[420px] items-center justify-center">
           <AnimatePresence mode="wait">
-            {activeMemory && (
+            {currentMemoryIndex >= 0 && (
               <motion.div
-                key={activeMemory.id}
+                key={MEMORIES[currentMemoryIndex].id}
                 className="absolute inset-0 flex items-center justify-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1, transition: { duration: 0.4 } }}
                 exit={{ opacity: 0, transition: { duration: 0.8 } }}
               >
-                <MemoryCard memory={activeMemory} isVisible={true} />
+                <div className="px-3 text-center">
+                  <p className="text-4xl italic text-[var(--text-primary)]" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                    {MEMORIES[currentMemoryIndex].caption}
+                  </p>
+                  <p className="mt-3 text-xl text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-crimson)' }}>
+                    {MEMORIES[currentMemoryIndex].subCaption}
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Empty state placeholder while between cards */}
-          {!activeMemory && !isDone && (
+          {/* Empty state placeholder while between lines */}
+          {currentMemoryIndex < 0 && !isDone && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.2 }}

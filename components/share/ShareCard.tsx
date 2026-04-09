@@ -56,6 +56,11 @@ export default function ShareCard({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageUrl, setPageUrl] = useState('');
+
+  useEffect(() => {
+    setPageUrl(window.location.href);
+  }, []);
 
   const draw = useCallback(async () => {
     setLoading(true);
@@ -162,9 +167,9 @@ export default function ShareCard({
 
   const onCopyLink = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(pageUrl || window.location.href);
     } catch (e) {}
-  }, []);
+  }, [pageUrl]);
 
   return (
     <div className="share-card p-6 max-w-4xl mx-auto">
@@ -197,7 +202,7 @@ export default function ShareCard({
         </button>
         <a
           className="btn-ghost"
-          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(window.location.href)}`}
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(pageUrl || '')}`}
           target="_blank"
           rel="noreferrer"
         >

@@ -31,10 +31,12 @@ export default function DynamicBackground({ stage }: DynamicBackgroundProps) {
   const reduced = useReducedMotion()
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d', { alpha: true })
-    if (!ctx) return
+    const canvasEl = canvasRef.current
+    if (!canvasEl) return
+    const context = canvasEl.getContext('2d', { alpha: true })
+    if (!context) return
+    const safeCanvas = canvasEl as HTMLCanvasElement
+    const safeContext = context as CanvasRenderingContext2D
 
     let running = true
     const dpr = Math.max(1, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)
@@ -42,12 +44,12 @@ export default function DynamicBackground({ stage }: DynamicBackgroundProps) {
     function resize() {
       const w = Math.max(1, Math.floor(window.innerWidth * dpr))
       const h = Math.max(1, Math.floor(window.innerHeight * dpr))
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w
-        canvas.height = h
-        canvas.style.width = `${window.innerWidth}px`
-        canvas.style.height = `${window.innerHeight}px`
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (safeCanvas.width !== w || safeCanvas.height !== h) {
+        safeCanvas.width = w
+        safeCanvas.height = h
+        safeCanvas.style.width = `${window.innerWidth}px`
+        safeCanvas.style.height = `${window.innerHeight}px`
+        safeContext.setTransform(dpr, 0, 0, dpr, 0, 0)
       }
     }
 
@@ -99,18 +101,18 @@ export default function DynamicBackground({ stage }: DynamicBackgroundProps) {
     }
 
     function drawBase() {
-      const w = canvas.width / dpr
-      const h = canvas.height / dpr
+      const w = safeCanvas.width / dpr
+      const h = safeCanvas.height / dpr
       const cs = getComputedStyle(document.documentElement)
       const top = cs.getPropertyValue('--panda-pink-50') || '#fff0f5'
       const mid = cs.getPropertyValue('--panda-cream') || '#fdf8f0'
       const bottom = cs.getPropertyValue('--panda-pink-200') || '#ffb3cf'
-      const g = ctx.createLinearGradient(0, 0, 0, h)
+      const g = safeContext.createLinearGradient(0, 0, 0, h)
       g.addColorStop(0, top.trim())
       g.addColorStop(0.5, mid.trim())
       g.addColorStop(1, bottom.trim())
-      ctx.fillStyle = g
-      ctx.fillRect(0, 0, w, h)
+      safeContext.fillStyle = g
+      safeContext.fillRect(0, 0, w, h)
     }
 
     function animate(now: number) {
@@ -120,9 +122,9 @@ export default function DynamicBackground({ stage }: DynamicBackgroundProps) {
 
       if (!reduced) {
         drawBase()
-        ctx.globalCompositeOperation = 'lighter'
-        const w = canvas.width / dpr
-        const h = canvas.height / dpr
+        safeContext.globalCompositeOperation = 'lighter'
+        const w = safeCanvas.width / dpr
+        const h = safeCanvas.height / dpr
         for (let p of particlesRef.current) {
           p.x += p.vx * p.speed * dt
           p.y += p.vy * p.speed * dt
@@ -132,15 +134,15 @@ export default function DynamicBackground({ stage }: DynamicBackgroundProps) {
           if (p.y > h + p.size) p.y = -p.size
 
           const rad = p.size
-          const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
+          const grad = safeContext.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
           grad.addColorStop(0, p.color)
           grad.addColorStop(1, 'rgba(0,0,0,0)')
-          ctx.fillStyle = grad
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, rad, 0, Math.PI * 2)
-          ctx.fill()
+          safeContext.fillStyle = grad
+          safeContext.beginPath()
+          safeContext.arc(p.x, p.y, rad, 0, Math.PI * 2)
+          safeContext.fill()
         }
-        ctx.globalCompositeOperation = 'source-over'
+        safeContext.globalCompositeOperation = 'source-over'
       } else {
         drawBase()
       }

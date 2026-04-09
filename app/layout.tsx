@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 
 export const metadata: Metadata = {
   title: "I'm Sorry",
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <meta name="color-scheme" content="light" />
       </head>
       <body className="antialiased">
+        <CharacterPageOverlayClient />
         {children}
       </body>
     </html>
