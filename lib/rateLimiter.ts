@@ -1,7 +1,5 @@
 import { logger } from './logger';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export type RateLimitEntry = { count: number; first: number };
 
 const store = new Map<string, RateLimitEntry>();
