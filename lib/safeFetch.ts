@@ -68,7 +68,7 @@ export async function safeFetchJson<T = unknown>(
     }
 
     return { ok: true, status: response.status, data: parsed as T };
-  } catch (err: unknown) {
+  } catch (err: any) {
     // Preserve AbortError so callers that rely on it can detect it
     if (err && typeof err === 'object' && 'name' in err && (err as { name?: unknown }).name === 'AbortError') {
       throw err;

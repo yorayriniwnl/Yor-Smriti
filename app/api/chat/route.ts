@@ -33,17 +33,7 @@ interface ChatPayload {
 interface OpenAIChoiceResponse {
   choices?: Array<{
     message?: {
-      content?:
-        | string
-        | Array<
-            | string
-            | {
-                text?: string;
-                parts?: string[];
-                type?: string;
-              }
-          >
-        | { parts?: string[]; text?: string };
+      content?: string | Array<{ text?: string; type?: string }>;
     };
   }>;
 }
@@ -294,15 +284,12 @@ async function requestOpenAIReply(
       text = content
         .map((part) => {
           if (!part) return '';
-          if (typeof part === 'string') return part;
-          // part is an object
-          const p = part as { text?: string; parts?: string[] };
-          return p.text ?? (Array.isArray(p.parts) ? p.parts.join('') : '');
+          if (typeof (part as any) === 'string') return part as any;
+          return (part as any).text ?? (Array.isArray((part as any).parts) ? (part as any).parts.join('') : '');
         })
         .join('');
     } else if (content && typeof content === 'object') {
-      const obj = content as { parts?: string[]; text?: string };
-      text = Array.isArray(obj.parts) ? obj.parts.join('') : JSON.stringify(obj);
+      text = Array.isArray((content as any).parts) ? (content as any).parts.join('') : JSON.stringify(content);
     }
   } catch (err) {
     try {
