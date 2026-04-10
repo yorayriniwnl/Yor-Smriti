@@ -169,7 +169,7 @@ export default function LoginPage() {
 
         <section
           id="login-section"
-          className="relative mx-auto w-full max-w-lg rounded-[2rem] border px-6 py-10 text-center md:px-10"
+          className="relative w-full max-w-lg rounded-[2rem] border px-6 py-10 text-center md:px-10"
           style={{
             background:
               'linear-gradient(180deg, rgba(35, 11, 28, 0.9) 0%, rgba(20, 8, 19, 0.94) 100%)',
