@@ -40,7 +40,7 @@ export default function ScrollStory({ children }: Props) {
       {panels.map((child, idx) => (
         <section key={idx} className="story-panel snap-start min-h-screen flex items-center justify-center">
           <motion.div
-            className="w-full h-full"
+            className="flex min-h-screen w-full items-center justify-center"
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: false, amount: 0.5 }}
