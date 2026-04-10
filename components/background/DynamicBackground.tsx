@@ -125,7 +125,7 @@ export default function DynamicBackground({ stage }: DynamicBackgroundProps) {
         safeContext.globalCompositeOperation = 'lighter'
         const w = safeCanvas.width / dpr
         const h = safeCanvas.height / dpr
-        for (const p of particlesRef.current) {
+        for (let p of particlesRef.current) {
           p.x += p.vx * p.speed * dt
           p.y += p.vy * p.speed * dt
           if (p.x < -p.size) p.x = w + p.size
