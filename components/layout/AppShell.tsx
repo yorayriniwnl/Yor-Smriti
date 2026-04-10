@@ -92,6 +92,39 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handler);
   }, [advanceStage, goToStage, previousStage]);
 
+  // Global handler to auto-recover from chunk load errors (happens during HMR/dev restarts)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onError = (ev: ErrorEvent) => {
+      const err = ev?.error;
+      const msg = err?.message || ev?.message || '';
+      if (err?.name === 'ChunkLoadError' || /Loading chunk/.test(msg)) {
+        // Reload to fetch the new chunk map
+        // eslint-disable-next-line no-console
+        console.warn('ChunkLoadError detected — reloading page to recover');
+        window.location.reload();
+      }
+    };
+
+    const onRejection = (ev: PromiseRejectionEvent) => {
+      const reason = ev?.reason;
+      const msg = reason?.message || '';
+      if (reason?.name === 'ChunkLoadError' || /Loading chunk/.test(msg)) {
+        // eslint-disable-next-line no-console
+        console.warn('Unhandled promise rejection ChunkLoadError — reloading');
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection as any);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection as any);
+    };
+  }, []);
+
   return (
     <div
       className="relative h-dvh w-dvw overflow-hidden"
