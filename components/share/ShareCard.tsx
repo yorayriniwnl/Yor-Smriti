@@ -158,14 +158,8 @@ export default function ShareCard({
     try {
       const res = await fetch(previewUrl);
       const blob = await res.blob();
-      // @ts-expect-error - ClipboardItem may not be in lib
-      const writeFn = (navigator.clipboard as unknown as { write?: (items: unknown[]) => Promise<void> }).write;
-      // Use the platform ClipboardItem if available
-      // @ts-expect-error - ClipboardItem may not exist in older TS lib dom types
-      if (typeof writeFn === 'function' && typeof ClipboardItem === 'function') {
-        // @ts-expect-error - constructor typing may differ across environments
-        await writeFn.call(navigator.clipboard, [new ClipboardItem({ [blob.type]: blob })]);
-      }
+      // @ts-ignore - ClipboardItem may not be in lib
+      await (navigator.clipboard as any).write([new ClipboardItem({ [blob.type]: blob })]);
     } catch (e) {
           // copy failed - silently ignore (user can download instead)
     }
