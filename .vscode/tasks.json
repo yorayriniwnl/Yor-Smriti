@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "panel": "shared", "reveal": "always" }
+    },
+    {
+      "label": "npm: build",
+      "type": "shell",
+      "command": "npm run build",
+      "group": "build",
+      "presentation": { "panel": "shared", "reveal": "always" }
+    },
+    {
+      "label": "npm: lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "presentation": { "panel": "shared", "reveal": "always" }
+    },
+    {
+      "label": "npm: type-check",
+      "type": "shell",
+      "command": "npm run type-check",
+      "presentation": { "panel": "shared", "reveal": "always" }
+    }
+  ]
+}

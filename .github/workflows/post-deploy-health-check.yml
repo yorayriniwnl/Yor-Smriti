@@ -1,0 +1,58 @@
+name: Post-deploy Health Check
+
+on:
+  workflow_run:
+    workflows:
+      - 'Sync Vercel Env'
+    types:
+      - completed
+
+jobs:
+  health-check:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://yor-smriti.vercel.app
+      APP_USERNAME: ${{ secrets.APP_USERNAME }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - name: Wait for deployment to settle
+        run: sleep 10
+
+      - name: Check root
+        run: |
+          echo "Checking $BASE_URL"
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL" || true)
+          echo "Root status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Root returned $STATUS"
+            exit 1
+          fi
+
+      - name: Health endpoint
+        run: |
+          echo "Checking $BASE_URL/api/health"
+          RESP=$(curl -sS -f "$BASE_URL/api/health" || true)
+          echo "Response: $RESP"
+          if [ -z "$RESP" ]; then
+            echo "Empty health response"
+            exit 1
+          fi
+          echo "$RESP" | grep -E '"ok"\s*:\s*true' >/dev/null || (echo "health.ok != true" && exit 1)
+
+      - name: Optional login check
+        if: ${{ env.APP_USERNAME != '' && env.APP_PASSWORD != '' }}
+        run: |
+          echo "Attempting login using provided APP_USERNAME/APP_PASSWORD"
+          RESP=$(curl -sS -w '\n%{http_code}' -X POST "$BASE_URL/api/login" -H "Content-Type: application/json" -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\"}" || true)
+          HTTP=$(echo "$RESP" | tail -n1)
+          BODY=$(echo "$RESP" | sed '$d')
+          echo "HTTP: $HTTP"
+          echo "BODY: $BODY"
+          if [ "$HTTP" -ne 200 ]; then
+            echo "Login check failed (status $HTTP)"
+            exit 1
+          fi
+
+      - name: Success
+        run: echo "Health checks passed."
