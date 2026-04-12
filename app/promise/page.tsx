@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { Suspense, useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
+import { useSequenceMode } from '@/hooks/useSequenceMode';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -68,6 +69,8 @@ const PROMISES: Promise[] = [
   },
 ];
 
+const SEQUENCE_PROMISES: Promise[] = [PROMISES[0], PROMISES[1], PROMISES[3], PROMISES[4], PROMISES[6]];
+
 const WEIGHT_STYLES: Record<Promise['weight'], {
   border: string;
   titleColor: string;
@@ -99,20 +102,21 @@ const WEIGHT_STYLES: Record<Promise['weight'], {
 };
 
 // ─── Hold-to-seal button ─────────────────────────────────────────────────────
-function SealButton({ onSealed }: { onSealed: () => void }) {
+function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; autoplay?: boolean }) {
   const [holding, setHolding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sealed, setSealed] = useState(false);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
-  const HOLD_MS = 2800;
+  const autoStartTimeoutRef = useRef<number | null>(null);
+  const holdMs = autoplay ? 1700 : 2800;
 
   const startHold = useCallback(() => {
     if (sealed) return;
     setHolding(true);
     startRef.current = performance.now();
     const tick = (now: number) => {
-      const pct = Math.min((now - (startRef.current ?? now)) / HOLD_MS, 1);
+      const pct = Math.min((now - (startRef.current ?? now)) / holdMs, 1);
       setProgress(pct);
       if (pct >= 1) {
         setSealed(true);
@@ -123,7 +127,7 @@ function SealButton({ onSealed }: { onSealed: () => void }) {
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-  }, [sealed, onSealed]);
+  }, [holdMs, sealed, onSealed]);
 
   const stopHold = useCallback(() => {
     if (sealed) return;
@@ -132,7 +136,27 @@ function SealButton({ onSealed }: { onSealed: () => void }) {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
   }, [sealed]);
 
-  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+  useEffect(() => {
+    if (!autoplay || sealed) return;
+
+    autoStartTimeoutRef.current = window.setTimeout(() => {
+      startHold();
+    }, 240);
+
+    return () => {
+      if (autoStartTimeoutRef.current) {
+        window.clearTimeout(autoStartTimeoutRef.current);
+        autoStartTimeoutRef.current = null;
+      }
+    };
+  }, [autoplay, sealed, startHold]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (autoStartTimeoutRef.current) window.clearTimeout(autoStartTimeoutRef.current);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -145,7 +169,7 @@ function SealButton({ onSealed }: { onSealed: () => void }) {
           textTransform: 'uppercase',
         }}
       >
-        {sealed ? 'promise sealed' : 'hold to seal this promise'}
+        {sealed ? 'promise sealed' : autoplay ? 'sealing this promise' : 'hold to seal this promise'}
       </p>
 
       <motion.button
@@ -169,7 +193,8 @@ function SealButton({ onSealed }: { onSealed: () => void }) {
           boxShadow: sealed
             ? '0 0 40px rgba(247,85,144,0.35), 0 12px 28px rgba(0,0,0,0.4)'
             : '0 8px 20px rgba(0,0,0,0.3)',
-          cursor: sealed ? 'default' : 'pointer',
+          cursor: sealed || autoplay ? 'default' : 'pointer',
+          pointerEvents: autoplay ? 'none' : 'auto',
           transition: 'background 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease',
         }}
         aria-label={sealed ? 'Promise sealed' : 'Hold to seal promise'}
@@ -213,14 +238,46 @@ function SealButton({ onSealed }: { onSealed: () => void }) {
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
-export default function PromisePage() {
+function PromisePageContent() {
+  const isSequenceMode = useSequenceMode();
   const [current, setCurrent] = useState(0);
   const [allRead, setAllRead] = useState(false);
   const [sealComplete, setSealComplete] = useState(false);
 
-  const isLast = current === PROMISES.length - 1;
-  const promise = PROMISES[current];
+  const visiblePromises = isSequenceMode ? SEQUENCE_PROMISES : PROMISES;
+  const isLast = current === visiblePromises.length - 1;
+  const promise = visiblePromises[current] ?? visiblePromises[visiblePromises.length - 1];
   const style = WEIGHT_STYLES[promise.weight];
+
+  useEffect(() => {
+    if (!isSequenceMode) return;
+
+    setCurrent(0);
+    setAllRead(false);
+    setSealComplete(false);
+
+    const timeoutIds: number[] = [];
+
+    visiblePromises.forEach((_, index) => {
+      if (index === 0) return;
+
+      timeoutIds.push(
+        window.setTimeout(() => {
+          setCurrent(index);
+        }, 900 + index * 950),
+      );
+    });
+
+    timeoutIds.push(
+      window.setTimeout(() => {
+        setAllRead(true);
+      }, 900 + visiblePromises.length * 950 + 200),
+    );
+
+    return () => {
+      timeoutIds.forEach((id) => window.clearTimeout(id));
+    };
+  }, [isSequenceMode, visiblePromises.length]);
 
   const handleNext = useCallback(() => {
     if (isLast) {
@@ -271,7 +328,7 @@ export default function PromisePage() {
             fontSize: '0.58rem',
           }}
         >
-          my word to you
+          {isSequenceMode ? 'my word to you • autoplay' : 'my word to you'}
         </p>
         <h1
           style={{
@@ -320,7 +377,7 @@ export default function PromisePage() {
                   fontSize: '0.6rem',
                 }}
               >
-                Promise {String(promise.number).padStart(2, '0')} of {String(PROMISES.length).padStart(2, '0')}
+                Promise {String(isSequenceMode ? current + 1 : promise.number).padStart(2, '0')} of {String(visiblePromises.length).padStart(2, '0')}
               </p>
 
               <h2
@@ -350,7 +407,7 @@ export default function PromisePage() {
               <div className="mt-8 flex items-center justify-between">
                 {/* Progress dots */}
                 <div className="flex gap-1.5" aria-hidden="true">
-                  {PROMISES.map((_, i) => (
+                  {visiblePromises.map((_, i) => (
                     <div
                       key={i}
                       className="rounded-full transition-all duration-500"
@@ -498,7 +555,7 @@ export default function PromisePage() {
               >
                 Now seal this moment. Hold the button below and let me make it real.
               </p>
-              <SealButton onSealed={handleSealed} />
+              <SealButton onSealed={handleSealed} autoplay={isSequenceMode} />
             </div>
           </motion.div>
         )}
@@ -525,5 +582,13 @@ export default function PromisePage() {
         </Link>
       </motion.div>
     </main>
+  );
+}
+
+export default function PromisePage() {
+  return (
+    <Suspense fallback={null}>
+      <PromisePageContent />
+    </Suspense>
   );
 }

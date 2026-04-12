@@ -19,28 +19,28 @@ const REPLIES = [
 
 const EXPERIENCE_MOVIE_SLIDES = [
   {
-    href: '/timeline',
+    href: '/timeline?sequence=1',
     eyebrow: 'chapter one',
     title: 'Our Story',
     caption: 'Every moment that mattered, replayed like a memory we can still step inside.',
     duration: 8000,
   },
   {
-    href: '/reasons',
+    href: '/reasons?sequence=1',
     eyebrow: 'chapter two',
     title: 'Why I Love You',
     caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
     duration: 7200,
   },
   {
-    href: '/stars',
+    href: '/stars?sequence=1',
     eyebrow: 'chapter three',
     title: 'Our Stars',
     caption: 'Then the sky opens up, and every light remembers something about us.',
     duration: 8600,
   },
   {
-    href: '/promise',
+    href: '/promise?sequence=1',
     eyebrow: 'chapter four',
     title: 'My Promises',
     caption: 'And last, the promises. Not decoration. Not performance. The part I want to live.',
@@ -901,6 +901,8 @@ export default function HomePage() {
               className="experience-sequence-frame"
               title="Experience movie sequence"
               loading="eager"
+              tabIndex={-1}
+              aria-hidden="true"
             />
             <div className="experience-sequence-loading" aria-hidden="true">
               Loading the next chapter...

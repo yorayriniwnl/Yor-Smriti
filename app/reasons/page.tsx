@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
+import { useSequenceMode } from '@/hooks/useSequenceMode';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -33,6 +34,8 @@ const REASONS: ReasonCard[] = [
   { id: 'r14', number: 14, reason: 'The version of me I become around you. That version is better.', shade: 'gold' },
   { id: 'r15', number: 15, reason: 'Simply you. All of it. Every single part.', sub: 'Always.', shade: 'lavender' },
 ];
+
+const SEQUENCE_REASONS: ReasonCard[] = [REASONS[0], REASONS[3], REASONS[8], REASONS[14]];
 
 const SHADE_STYLES: Record<ReasonCard['shade'], {
   card: string; border: string; number: string; accent: string; glow: string;
@@ -74,14 +77,47 @@ const SHADE_STYLES: Record<ReasonCard['shade'], {
   },
 };
 
-export default function ReasonsPage() {
+function ReasonsPageContent() {
+  const isSequenceMode = useSequenceMode();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [completed, setCompleted] = useState(false);
 
-  const total = REASONS.length;
-  const card = REASONS[current];
+  const visibleReasons = isSequenceMode ? SEQUENCE_REASONS : REASONS;
+  const total = visibleReasons.length;
+  const card = visibleReasons[current] ?? visibleReasons[visibleReasons.length - 1];
   const style = SHADE_STYLES[card.shade];
+
+  useEffect(() => {
+    if (!isSequenceMode) return;
+
+    setCurrent(0);
+    setDirection(1);
+    setCompleted(false);
+
+    const timeoutIds: number[] = [];
+
+    visibleReasons.forEach((_, index) => {
+      if (index === 0) return;
+
+      timeoutIds.push(
+        window.setTimeout(() => {
+          setDirection(1);
+          setCurrent(index);
+        }, 1100 + index * 1150),
+      );
+    });
+
+    timeoutIds.push(
+      window.setTimeout(() => {
+        setCompleted(true);
+      }, 1100 + visibleReasons.length * 1150),
+    );
+
+    return () => {
+      timeoutIds.forEach((id) => window.clearTimeout(id));
+    };
+  }, [isSequenceMode, visibleReasons.length]);
 
   const goNext = useCallback(() => {
     if (current < total - 1) {
@@ -139,7 +175,7 @@ export default function ReasonsPage() {
             fontSize: '0.58rem',
           }}
         >
-          from my heart
+          {isSequenceMode ? 'from my heart • autoplay' : 'from my heart'}
         </p>
         <h1
           style={{
@@ -210,7 +246,7 @@ export default function ReasonsPage() {
                     fontSize: '0.62rem',
                   }}
                 >
-                  Reason {String(card.number).padStart(2, '0')} of {String(total).padStart(2, '0')}
+                  Reason {String(isSequenceMode ? current + 1 : card.number).padStart(2, '0')} of {String(total).padStart(2, '0')}
                 </p>
 
                 {/* Reason text */}
@@ -395,5 +431,13 @@ export default function ReasonsPage() {
         </Link>
       </motion.div>
     </main>
+  );
+}
+
+export default function ReasonsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReasonsPageContent />
+    </Suspense>
   );
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
+import { useSequenceMode } from '@/hooks/useSequenceMode';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -52,6 +53,17 @@ const CONSTELLATION_LINES: [string, string][] = [
   ['s13', 's15'],
 ];
 
+const SEQUENCE_STAR_IDS = ['s1', 's3', 's9', 's12', 's15'] as const;
+const SEQUENCE_STARS: Star[] = SEQUENCE_STAR_IDS.map((id) => {
+  const star = STARS.find((entry) => entry.id === id);
+
+  if (!star) {
+    throw new Error(`Missing star configuration for sequence preview: ${id}`);
+  }
+
+  return star;
+});
+
 function useWindowSize() {
   const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
@@ -70,16 +82,51 @@ function getStarCoords(star: Star, w: number, h: number) {
   };
 }
 
-export default function StarsPage() {
+function StarsPageContent() {
+  const isSequenceMode = useSequenceMode();
   const [active, setActive] = useState<Star | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const { w, h } = useWindowSize();
   const svgRef = useRef<SVGSVGElement>(null);
+  const discoveryTotal = isSequenceMode ? SEQUENCE_STARS.length : STARS.length;
+
+  useEffect(() => {
+    if (!isSequenceMode) return;
+
+    setActive(null);
+    setRevealed(new Set());
+
+    const timeoutIds: number[] = [];
+
+    SEQUENCE_STARS.forEach((star, index) => {
+      timeoutIds.push(
+        window.setTimeout(() => {
+          setActive(star);
+          setRevealed((prev) => {
+            const next = new Set(prev);
+            next.add(star.id);
+            return next;
+          });
+        }, 950 + index * 1250),
+      );
+    });
+
+    timeoutIds.push(
+      window.setTimeout(() => {
+        setActive(null);
+      }, 950 + SEQUENCE_STARS.length * 1250 + 650),
+    );
+
+    return () => {
+      timeoutIds.forEach((id) => window.clearTimeout(id));
+    };
+  }, [isSequenceMode]);
 
   const handleStarClick = useCallback((star: Star) => {
+    if (isSequenceMode) return;
     setActive(star);
     setRevealed((prev) => new Set([...prev, star.id]));
-  }, []);
+  }, [isSequenceMode]);
 
   const handleClose = useCallback(() => setActive(null), []);
 
@@ -149,7 +196,7 @@ export default function StarsPage() {
             fontStyle: 'italic',
           }}
         >
-          Each star is a memory. Touch one.
+          {isSequenceMode ? 'Each star wakes up in order now, like a memory finding its own light.' : 'Each star is a memory. Touch one.'}
         </p>
         <p
           className="mt-1"
@@ -160,7 +207,7 @@ export default function StarsPage() {
             letterSpacing: '0.08em',
           }}
         >
-          {revealed.size} / {STARS.length} discovered
+          {revealed.size} / {discoveryTotal} discovered
         </p>
       </motion.div>
 
@@ -203,12 +250,12 @@ export default function StarsPage() {
             return (
               <g
                 key={star.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`Memory star: ${isRevealed ? star.memory : 'unknown memory'}`}
-                onClick={() => handleStarClick(star)}
-                onKeyDown={(e) => e.key === 'Enter' && handleStarClick(star)}
-                style={{ cursor: 'pointer' }}
+                role={isSequenceMode ? undefined : 'button'}
+                tabIndex={isSequenceMode ? -1 : 0}
+                aria-label={isSequenceMode ? undefined : `Memory star: ${isRevealed ? star.memory : 'unknown memory'}`}
+                onClick={isSequenceMode ? undefined : () => handleStarClick(star)}
+                onKeyDown={isSequenceMode ? undefined : (e) => e.key === 'Enter' && handleStarClick(star)}
+                style={{ cursor: isSequenceMode ? 'default' : 'pointer' }}
               >
                 {/* Outer glow ring for special stars */}
                 {star.isSpecial && (
@@ -308,10 +355,10 @@ export default function StarsPage() {
       )}
 
       {/* Memory popup */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {active && (
           <motion.div
-            key="popup"
+            key={active.id}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 12 }}
@@ -382,7 +429,7 @@ export default function StarsPage() {
 
       {/* All discovered message */}
       <AnimatePresence>
-        {revealed.size === STARS.length && !active && (
+        {revealed.size === discoveryTotal && !active && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -432,5 +479,13 @@ export default function StarsPage() {
         }
       `}</style>
     </main>
+  );
+}
+
+export default function StarsPage() {
+  return (
+    <Suspense fallback={null}>
+      <StarsPageContent />
+    </Suspense>
   );
 }
