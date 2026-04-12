@@ -145,17 +145,11 @@ export default function HomePage() {
       });
 
       queueSequenceTimeout(() => {
-        if (token !== sequenceToken || !sequenceEnabled) return;
-        clearSequenceHighlights();
-        goScene('scene-chat');
-      }, 700 + cards.length * 1200 + 400);
-
-      queueSequenceTimeout(() => {
         if (token !== sequenceToken) return;
         clearSequenceHighlights();
         sequenceRunning = false;
         document.body.classList.remove('sequence-running');
-      }, 700 + cards.length * 1200 + 1100);
+      }, 700 + cards.length * 1200 + 500);
     };
 
     const sendMsg = () => {
