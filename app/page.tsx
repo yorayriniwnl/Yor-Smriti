@@ -131,12 +131,7 @@ export default function HomePage() {
       const token = sequenceToken;
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
-      goScene('scene-chat');
-
-      queueSequenceTimeout(() => {
-        if (token !== sequenceToken || !sequenceEnabled) return;
-        goScene('scene-hub');
-      }, 1600);
+      goScene('scene-hub');
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
       cards.forEach((card, index) => {
@@ -146,15 +141,21 @@ export default function HomePage() {
           card.classList.add('sequence-focus');
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
           spawnHearts();
-        }, 2500 + index * 1350);
+        }, 700 + index * 1200);
       });
+
+      queueSequenceTimeout(() => {
+        if (token !== sequenceToken || !sequenceEnabled) return;
+        clearSequenceHighlights();
+        goScene('scene-chat');
+      }, 700 + cards.length * 1200 + 400);
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken) return;
         clearSequenceHighlights();
         sequenceRunning = false;
         document.body.classList.remove('sequence-running');
-      }, 2500 + cards.length * 1350 + 500);
+      }, 700 + cards.length * 1200 + 1100);
     };
 
     const sendMsg = () => {
@@ -430,7 +431,7 @@ export default function HomePage() {
     if (openHeartBtn) {
       openHeartBtn.onclick = () => {
         if (!sequenceEnabled) {
-          goScene('scene-chat');
+          goScene('scene-hub');
           return;
         }
         runExperienceSequence();
