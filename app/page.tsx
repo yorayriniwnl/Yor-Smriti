@@ -69,10 +69,23 @@ export default function HomePage() {
       });
     };
 
+    const clearStoryHighlights = () => {
+      document.querySelectorAll<HTMLElement>('[data-sequence-story="true"]').forEach((section) => {
+        section.classList.remove('sequence-story-focus');
+      });
+      document.querySelectorAll<HTMLElement>('[data-sequence-story-label="true"]').forEach((label) => {
+        label.classList.remove('sequence-story-label-focus');
+      });
+      document.querySelectorAll<HTMLElement>('[data-sequence-timeline-item="true"]').forEach((item) => {
+        item.classList.remove('sequence-timeline-focus');
+      });
+    };
+
     const stopSequence = () => {
       sequenceToken += 1;
       clearSequenceTimeouts();
       clearSequenceHighlights();
+      clearStoryHighlights();
       sequenceRunning = false;
       document.body.classList.remove('sequence-running');
     };
@@ -132,8 +145,15 @@ export default function HomePage() {
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
       goScene('scene-hub');
+      const STORY_POINT_STEP_MS = 2000;
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
+      const storySection = document.querySelector<HTMLElement>('[data-sequence-story="true"]');
+      const storyLabel = document.querySelector<HTMLElement>('[data-sequence-story-label="true"]');
+      const storyItems = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-sequence-timeline-item="true"]'),
+      );
+
       cards.forEach((card, index) => {
         queueSequenceTimeout(() => {
           if (token !== sequenceToken || !sequenceEnabled) return;
@@ -144,12 +164,34 @@ export default function HomePage() {
         }, 700 + index * 1200);
       });
 
+      const storyStart = 700 + cards.length * 1200;
+
+      queueSequenceTimeout(() => {
+        if (token !== sequenceToken || !sequenceEnabled) return;
+        clearSequenceHighlights();
+        clearStoryHighlights();
+        storySection?.classList.add('sequence-story-focus');
+        storyLabel?.classList.add('sequence-story-label-focus');
+        storySection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        spawnHearts();
+      }, storyStart);
+
+      storyItems.forEach((_, index) => {
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          storyItems.forEach((storyItem, storyIndex) => {
+            storyItem.classList.toggle('sequence-timeline-focus', storyIndex <= index);
+          });
+        }, storyStart + 320 + index * STORY_POINT_STEP_MS);
+      });
+
       queueSequenceTimeout(() => {
         if (token !== sequenceToken) return;
+        clearStoryHighlights();
         clearSequenceHighlights();
         sequenceRunning = false;
         document.body.classList.remove('sequence-running');
-      }, 700 + cards.length * 1200 + 500);
+      }, storyStart + 320 + storyItems.length * STORY_POINT_STEP_MS + 900);
     };
 
     const sendMsg = () => {
@@ -657,41 +699,32 @@ export default function HomePage() {
             </a>
           </div>
 
-          <div style={{ width: '100%', maxWidth: 560, marginTop: '1rem' }}>
-            <p
-              style={{
-                fontFamily: 'var(--mono)',
-                fontSize: '0.58rem',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,171,210,0.55)',
-                marginBottom: '1.2rem',
-              }}
-            >
+          <div className="story-section" data-sequence-story="true">
+            <p className="story-label" data-sequence-story-label="true">
               Our story
             </p>
             <div className="timeline">
-              <div className="tl-item" style={{ animationDelay: '0.6s' }}>
+              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '0.6s' }}>
                 <p className="tl-date">May 18, 2025</p>
                 <p className="tl-title">First Connection</p>
                 <p className="tl-excerpt">A simple conversation that quietly turned into something worth holding onto.</p>
               </div>
-              <div className="tl-item" style={{ animationDelay: '0.75s' }}>
+              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '0.75s' }}>
                 <p className="tl-date">Aug 9, 2025</p>
                 <p className="tl-title">Finding Rhythm</p>
                 <p className="tl-excerpt">Conversations settled into something steady and familiar.</p>
               </div>
-              <div className="tl-item" style={{ animationDelay: '0.9s' }}>
+              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '0.9s' }}>
                 <p className="tl-date">Nov 12, 2025</p>
                 <p className="tl-title">Reconnection</p>
                 <p className="tl-excerpt">After some distance and change, two paths crossed again, this time as friends.</p>
               </div>
-              <div className="tl-item" style={{ animationDelay: '1.05s' }}>
+              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '1.05s' }}>
                 <p className="tl-date">Dec 14, 2025</p>
                 <p className="tl-title">Staying In Touch</p>
                 <p className="tl-excerpt">A consistent presence, where small check-ins carried quiet meaning.</p>
               </div>
-              <div className="tl-item" style={{ animationDelay: '1.2s' }}>
+              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '1.2s' }}>
                 <p className="tl-date">Apr 6, 2026</p>
                 <p className="tl-title">What Remains</p>
                 <p className="tl-excerpt">Time moved forward, but some connections chose to stay.</p>
@@ -1284,6 +1317,56 @@ export default function HomePage() {
 
         .hub-card:hover .card-arrow { gap: 0.7rem; }
 
+        .story-section {
+          width: 100%;
+          max-width: 560px;
+          margin-top: 1rem;
+          position: relative;
+          border-radius: 1.8rem;
+          border: 1px solid rgba(244,173,210,0.12);
+          background: linear-gradient(160deg, rgba(24,8,18,0.28) 0%, rgba(10,4,10,0.12) 100%);
+          padding: 1.35rem 1.5rem 1.15rem;
+          transition: transform 0.65s cubic-bezier(0.16,1,0.3,1), border-color 0.65s, box-shadow 0.65s, background 0.65s;
+          overflow: hidden;
+        }
+
+        .story-section::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 18% 0%, rgba(247,85,144,0.18), transparent 55%);
+          opacity: 0;
+          transition: opacity 0.65s ease;
+          pointer-events: none;
+        }
+
+        .story-section.sequence-story-focus {
+          transform: translateY(-6px) scale(1.01);
+          border-color: rgba(255,193,219,0.35);
+          background: linear-gradient(160deg, rgba(40,12,30,0.72) 0%, rgba(16,6,14,0.45) 100%);
+          box-shadow: 0 28px 60px rgba(0,0,0,0.46), 0 14px 34px rgba(247,85,144,0.24);
+        }
+
+        .story-section.sequence-story-focus::before { opacity: 1; }
+
+        .story-label {
+          font-family: var(--mono);
+          font-size: 0.58rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: rgba(255,171,210,0.55);
+          margin-bottom: 1.2rem;
+          transition: transform 0.55s cubic-bezier(0.16,1,0.3,1), color 0.55s ease, letter-spacing 0.55s ease;
+          position: relative;
+          z-index: 1;
+        }
+
+        .story-label.sequence-story-label-focus {
+          color: rgba(255,216,233,0.82);
+          letter-spacing: 0.24em;
+          transform: translateX(8px);
+        }
+
         .nav {
           position: fixed;
           bottom: 1.2rem;
@@ -1365,6 +1448,7 @@ export default function HomePage() {
           gap: 0;
           position: relative;
           padding-left: 2rem;
+          z-index: 1;
         }
 
         .timeline::before {
@@ -1375,12 +1459,18 @@ export default function HomePage() {
           bottom: 8px;
           width: 1px;
           background: linear-gradient(to bottom, transparent, rgba(247,85,144,0.4) 10%, rgba(247,85,144,0.4) 90%, transparent);
+          transition: background 0.55s ease, opacity 0.55s ease;
+        }
+
+        .story-section.sequence-story-focus .timeline::before {
+          background: linear-gradient(to bottom, transparent, rgba(255,193,219,0.62) 14%, rgba(247,85,144,0.68) 50%, rgba(255,193,219,0.62) 86%, transparent);
         }
 
         .tl-item {
           position: relative;
           padding: 0 0 1.8rem 1.2rem;
           animation: fadeUp 0.6s ease both;
+          transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.16,1,0.3,1), filter 0.45s ease;
         }
 
         .tl-item::before {
@@ -1394,6 +1484,7 @@ export default function HomePage() {
           background: var(--rose);
           box-shadow: 0 0 12px rgba(247,85,144,0.7);
           border: 2px solid var(--night);
+          transition: transform 0.45s ease, box-shadow 0.45s ease, background 0.45s ease;
         }
 
         .tl-date {
@@ -1403,6 +1494,7 @@ export default function HomePage() {
           color: rgba(255,171,210,0.55);
           text-transform: uppercase;
           margin-bottom: 0.3rem;
+          transition: color 0.45s ease;
         }
 
         .tl-title {
@@ -1410,6 +1502,7 @@ export default function HomePage() {
           font-size: 1.15rem;
           color: rgba(255,230,245,0.95);
           margin-bottom: 0.25rem;
+          transition: color 0.45s ease;
         }
 
         .tl-excerpt {
@@ -1418,6 +1511,36 @@ export default function HomePage() {
           color: rgba(255,200,225,0.65);
           line-height: 1.55;
           font-style: italic;
+          transition: color 0.45s ease;
+        }
+
+        .story-section.sequence-story-focus .tl-item {
+          opacity: 0.48;
+          filter: saturate(0.82);
+        }
+
+        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus {
+          opacity: 1;
+          filter: saturate(1);
+          transform: translateX(10px);
+        }
+
+        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus::before {
+          transform: scale(1.18);
+          background: rgba(255,196,221,0.98);
+          box-shadow: 0 0 0 6px rgba(247,85,144,0.12), 0 0 18px rgba(247,85,144,0.78);
+        }
+
+        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-date {
+          color: rgba(255,201,224,0.82);
+        }
+
+        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-title {
+          color: rgba(255,243,249,0.99);
+        }
+
+        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-excerpt {
+          color: rgba(255,218,236,0.82);
         }
 
         .sparkle {
@@ -1436,6 +1559,7 @@ export default function HomePage() {
           .glass-card { padding: 2rem 1.5rem; border-radius: 1.5rem; }
           .hub-grid { grid-template-columns: 1fr; }
           .hero-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
+          .story-section { padding: 1.2rem 1.1rem 1rem; }
         }
       `}</style>
     </>
