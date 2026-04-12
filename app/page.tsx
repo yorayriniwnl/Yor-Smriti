@@ -58,9 +58,9 @@ export default function HomePage() {
       nextScene?.classList.add('active', 'slide-in');
       window.setTimeout(() => nextScene?.classList.remove('slide-in'), 480);
 
-      const name = id.replace('scene-', '');
-      document.querySelectorAll<HTMLElement>('[data-scene-nav="true"]').forEach((btn) => btn.classList.remove('active'));
-      document.getElementById(`nav-${name}`)?.classList.add('active');
+      document.querySelectorAll<HTMLElement>('[data-scene-target]').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.sceneTarget === id);
+      });
     };
 
     const clearSequenceHighlights = () => {
@@ -389,9 +389,7 @@ export default function HomePage() {
     };
     document.addEventListener('keydown', keyHandler);
 
-    const navEntry = document.getElementById('nav-entry');
-    const navChat = document.getElementById('nav-chat');
-    const navHub = document.getElementById('nav-hub');
+    const navSceneButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-scene-target]'));
     const navPower = document.getElementById('nav-power');
     const openHeartBtn = document.getElementById('open-heart-btn');
 
@@ -402,18 +400,16 @@ export default function HomePage() {
     };
     applyPowerUi();
 
-    const bind = (el: HTMLElement | null, id: string) => {
-      if (!el) return;
+    navSceneButtons.forEach((el) => {
+      const id = el.dataset.sceneTarget;
+      if (!id) return;
       el.onclick = (event) => {
         event.preventDefault();
         event.stopPropagation();
         stopSequence();
         goScene(id);
       };
-    };
-    bind(navEntry, 'scene-entry');
-    bind(navChat, 'scene-chat');
-    bind(navHub, 'scene-hub');
+    });
 
     const sceneJumpButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-go-scene]'));
     sceneJumpButtons.forEach((el) => {
@@ -459,12 +455,12 @@ export default function HomePage() {
     }
 
     return () => {
+      navSceneButtons.forEach((el) => {
+        el.onclick = null;
+      });
       sceneJumpButtons.forEach((el) => {
         el.onclick = null;
       });
-      if (navEntry) navEntry.onclick = null;
-      if (navChat) navChat.onclick = null;
-      if (navHub) navHub.onclick = null;
       if (openHeartBtn) openHeartBtn.onclick = null;
       if (navPower) navPower.onclick = null;
       if (sendBtn) sendBtn.onclick = null;
@@ -714,13 +710,13 @@ export default function HomePage() {
         <button className="nav-btn" id="nav-power" type="button" aria-pressed="true">
           Power
         </button>
-        <button className="nav-btn active" id="nav-entry" data-scene-nav="true" type="button">
+        <button className="nav-btn active" id="nav-entry" data-scene-target="scene-entry" type="button">
           Home
         </button>
-        <button className="nav-btn" id="nav-hub" data-scene-nav="true" type="button">
+        <button className="nav-btn" id="nav-hub" data-scene-target="scene-hub" type="button">
           Explore
         </button>
-        <button className="nav-btn" id="nav-chat" data-scene-nav="true" type="button">
+        <button className="nav-btn" id="nav-chat" data-scene-target="scene-chat" type="button">
           Chat
         </button>
       </nav>
@@ -1308,8 +1304,8 @@ export default function HomePage() {
           transition: background 0.2s, color 0.2s;
         }
 
-        .nav-btn[data-scene-nav="true"].active,
-        .nav-btn[data-scene-nav="true"]:hover {
+        .nav-btn[data-scene-target].active,
+        .nav-btn[data-scene-target]:hover {
           background: rgba(247,85,144,0.2);
           color: rgba(255,193,219,0.95);
         }
