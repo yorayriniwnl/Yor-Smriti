@@ -19,7 +19,6 @@ const REPLIES = [
 
 export default function HomePage() {
   useEffect(() => {
-    const sceneOrder = ['scene-entry', 'scene-chat', 'scene-hub'] as const;
     const cur = document.getElementById('cursor') as HTMLDivElement | null;
     const ring = document.getElementById('cursor-ring') as HTMLDivElement | null;
     const petalContainer = document.getElementById('petals');
@@ -40,7 +39,6 @@ export default function HomePage() {
     let typingTimerId: number | undefined;
     let sequenceEnabled = true;
     let sequenceRunning = false;
-    let sequenceStep = 0;
     const sequenceTimeoutIds: number[] = [];
 
     const queueSequenceTimeout = (fn: () => void, ms: number) => {
@@ -53,14 +51,6 @@ export default function HomePage() {
       sequenceTimeoutIds.length = 0;
     };
 
-    const setSequenceStep = (step: number) => {
-      sequenceStep = step;
-      document.querySelectorAll<HTMLElement>('[data-sequence-step]').forEach((el) => {
-        const target = Number(el.dataset.sequenceStep);
-        el.classList.toggle('active', target === sequenceStep);
-      });
-    };
-
     const goScene = (id: string) => {
       document.querySelectorAll<HTMLElement>('.scene').forEach((scene) => scene.classList.remove('active'));
       const nextScene = document.getElementById(id);
@@ -68,13 +58,8 @@ export default function HomePage() {
       window.setTimeout(() => nextScene?.classList.remove('slide-in'), 480);
 
       const name = id.replace('scene-', '');
-      document.querySelectorAll<HTMLElement>('.nav-btn').forEach((btn) => btn.classList.remove('active'));
+      document.querySelectorAll<HTMLElement>('[data-scene-nav="true"]').forEach((btn) => btn.classList.remove('active'));
       document.getElementById(`nav-${name}`)?.classList.add('active');
-
-      const step = sceneOrder.indexOf(id as (typeof sceneOrder)[number]);
-      if (step >= 0) {
-        setSequenceStep(step);
-      }
     };
 
     const clearSequenceHighlights = () => {
@@ -143,11 +128,9 @@ export default function HomePage() {
       stopSequence();
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
-      setSequenceStep(1);
       goScene('scene-chat');
 
       queueSequenceTimeout(() => {
-        setSequenceStep(2);
         goScene('scene-hub');
       }, 1600);
 
@@ -455,8 +438,6 @@ export default function HomePage() {
     const hubCard = document.querySelector<HTMLElement>('[data-action="hearts"]');
     hubCard?.addEventListener('click', spawnHearts);
 
-    setSequenceStep(0);
-
     return () => {
       stopSequence();
       if (cursorRafId) cancelAnimationFrame(cursorRafId);
@@ -503,11 +484,6 @@ export default function HomePage() {
             >
               &quot;Wanna see how much I love you?&quot;
             </p>
-            <div className="sequence-track" aria-label="Experience sequence">
-              <span className="sequence-step active" data-sequence-step="0">Home</span>
-              <span className="sequence-step" data-sequence-step="1">Chat</span>
-              <span className="sequence-step" data-sequence-step="2">Explore</span>
-            </div>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn-primary" type="button" id="open-heart-btn">
                 💌 Open Your Heart
@@ -707,13 +683,13 @@ export default function HomePage() {
         <button className="nav-btn" id="nav-power" type="button" aria-pressed="true">
           Power
         </button>
-        <button className="nav-btn active" id="nav-entry" type="button">
+        <button className="nav-btn active" id="nav-entry" data-scene-nav="true" type="button">
           Home
         </button>
-        <button className="nav-btn" id="nav-chat" type="button">
+        <button className="nav-btn" id="nav-chat" data-scene-nav="true" type="button">
           Chat
         </button>
-        <button className="nav-btn" id="nav-hub" type="button">
+        <button className="nav-btn" id="nav-hub" data-scene-nav="true" type="button">
           Explore
         </button>
       </nav>
@@ -931,40 +907,6 @@ export default function HomePage() {
           inset: 0;
           background: radial-gradient(circle at 30% 20%, rgba(247,85,144,0.08), transparent 60%);
           pointer-events: none;
-        }
-
-        .sequence-track {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 1.2rem;
-          padding: 0.34rem 0.52rem;
-          border-radius: 999px;
-          border: 1px solid rgba(244,173,210,0.25);
-          background: rgba(24,8,20,0.75);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sequence-step {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 3.7rem;
-          border-radius: 999px;
-          padding: 0.22rem 0.62rem;
-          font-family: var(--mono);
-          font-size: 0.55rem;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: rgba(255,193,219,0.58);
-          transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .sequence-step.active {
-          color: rgba(255,235,245,0.96);
-          background: rgba(247,85,144,0.28);
-          box-shadow: 0 0 0 1px rgba(247,85,144,0.25) inset;
         }
 
         .btn-primary {
@@ -1374,7 +1316,8 @@ export default function HomePage() {
           transition: background 0.2s, color 0.2s;
         }
 
-        .nav-btn.active, .nav-btn:hover {
+        .nav-btn[data-scene-nav="true"].active,
+        .nav-btn[data-scene-nav="true"]:hover {
           background: rgba(247,85,144,0.2);
           color: rgba(255,193,219,0.95);
         }
