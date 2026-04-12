@@ -39,6 +39,7 @@ export default function HomePage() {
     let typingTimerId: number | undefined;
     let sequenceEnabled = true;
     let sequenceRunning = false;
+    let sequenceToken = 0;
     const sequenceTimeoutIds: number[] = [];
 
     const queueSequenceTimeout = (fn: () => void, ms: number) => {
@@ -69,6 +70,7 @@ export default function HomePage() {
     };
 
     const stopSequence = () => {
+      sequenceToken += 1;
       clearSequenceTimeouts();
       clearSequenceHighlights();
       sequenceRunning = false;
@@ -126,17 +128,20 @@ export default function HomePage() {
 
     const runExperienceSequence = () => {
       stopSequence();
+      const token = sequenceToken;
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
       goScene('scene-chat');
 
       queueSequenceTimeout(() => {
+        if (token !== sequenceToken || !sequenceEnabled) return;
         goScene('scene-hub');
       }, 1600);
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
       cards.forEach((card, index) => {
         queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
           clearSequenceHighlights();
           card.classList.add('sequence-focus');
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -145,6 +150,7 @@ export default function HomePage() {
       });
 
       queueSequenceTimeout(() => {
+        if (token !== sequenceToken) return;
         clearSequenceHighlights();
         sequenceRunning = false;
         document.body.classList.remove('sequence-running');
@@ -397,7 +403,9 @@ export default function HomePage() {
 
     const bind = (el: HTMLElement | null, id: string) => {
       if (!el) return;
-      el.onclick = () => {
+      el.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
         stopSequence();
         goScene(id);
       };
@@ -410,7 +418,9 @@ export default function HomePage() {
     sceneJumpButtons.forEach((el) => {
       const id = el.dataset.goScene;
       if (id) {
-        el.onclick = () => {
+        el.onclick = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
           stopSequence();
           goScene(id);
         };
