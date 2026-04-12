@@ -17,6 +17,37 @@ const REPLIES = [
   { text: "...I love you. That's the only reply I have.", emotion: 'affectionate' },
 ] as const;
 
+const EXPERIENCE_MOVIE_SLIDES = [
+  {
+    href: '/timeline',
+    eyebrow: 'chapter one',
+    title: 'Our Story',
+    caption: 'Every moment that mattered, replayed like a memory we can still step inside.',
+    duration: 8000,
+  },
+  {
+    href: '/reasons',
+    eyebrow: 'chapter two',
+    title: 'Why I Love You',
+    caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
+    duration: 7200,
+  },
+  {
+    href: '/stars',
+    eyebrow: 'chapter three',
+    title: 'Our Stars',
+    caption: 'Then the sky opens up, and every light remembers something about us.',
+    duration: 8600,
+  },
+  {
+    href: '/promise',
+    eyebrow: 'chapter four',
+    title: 'My Promises',
+    caption: 'And last, the promises. Not decoration. Not performance. The part I want to live.',
+    duration: 8800,
+  },
+] as const;
+
 export default function HomePage() {
   useEffect(() => {
     const cur = document.getElementById('cursor') as HTMLDivElement | null;
@@ -26,6 +57,13 @@ export default function HomePage() {
     const typing = document.getElementById('typing') as HTMLDivElement | null;
     const moodFill = document.getElementById('mood-fill') as HTMLDivElement | null;
     const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement | null;
+    const experienceSequence = document.getElementById('experience-sequence') as HTMLDivElement | null;
+    const experienceSequenceFrame = document.getElementById('experience-sequence-frame') as HTMLIFrameElement | null;
+    const experienceSequenceEyebrow = document.getElementById('experience-sequence-eyebrow') as HTMLParagraphElement | null;
+    const experienceSequenceTitle = document.getElementById('experience-sequence-title') as HTMLHeadingElement | null;
+    const experienceSequenceCaption = document.getElementById('experience-sequence-caption') as HTMLParagraphElement | null;
+    const experienceSequenceCount = document.getElementById('experience-sequence-count') as HTMLParagraphElement | null;
+    const experienceSequenceSkip = document.getElementById('experience-sequence-skip') as HTMLButtonElement | null;
 
     let mx = -100;
     let my = -100;
@@ -81,11 +119,71 @@ export default function HomePage() {
       });
     };
 
+    const resetExperienceMovie = () => {
+      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending');
+      document.body.classList.remove('sequence-cinema');
+
+      if (experienceSequenceFrame) {
+        experienceSequenceFrame.onload = null;
+        experienceSequenceFrame.src = 'about:blank';
+      }
+    };
+
+    const offerChatAfterMovie = () => {
+      resetExperienceMovie();
+      clearSequenceHighlights();
+      clearStoryHighlights();
+      sequenceRunning = false;
+      document.body.classList.remove('sequence-running');
+      goScene('scene-chat');
+
+      if (messages && !messages.querySelector('[data-sequence-chat-offer="true"]')) {
+        addMessage("I stayed through all of it. If you want, talk to me now. I'm here.", 'ayrin', 'warmAttention');
+        messages.lastElementChild?.setAttribute('data-sequence-chat-offer', 'true');
+      }
+
+      window.setTimeout(() => {
+        chatInput?.focus();
+      }, 420);
+
+      spawnHeart();
+    };
+
+    const loadMovieSlide = (index: number, token: number) => {
+      const slide = EXPERIENCE_MOVIE_SLIDES[index];
+      if (!slide || !experienceSequence || !experienceSequenceFrame) return;
+      if (token !== sequenceToken || !sequenceEnabled) return;
+
+      if (experienceSequenceEyebrow) {
+        experienceSequenceEyebrow.textContent = slide.eyebrow;
+      }
+      if (experienceSequenceTitle) {
+        experienceSequenceTitle.textContent = slide.title;
+      }
+      if (experienceSequenceCaption) {
+        experienceSequenceCaption.textContent = slide.caption;
+      }
+      if (experienceSequenceCount) {
+        experienceSequenceCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`;
+      }
+
+      experienceSequence.classList.add('active', 'is-loading');
+      document.body.classList.add('sequence-cinema');
+
+      experienceSequenceFrame.onload = () => {
+        if (token !== sequenceToken) return;
+        experienceSequence?.classList.remove('is-loading');
+      };
+
+      experienceSequenceFrame.src = slide.href;
+    };
+
     const stopSequence = () => {
       sequenceToken += 1;
       clearSequenceTimeouts();
       clearSequenceHighlights();
       clearStoryHighlights();
+      resetExperienceMovie();
       sequenceRunning = false;
       document.body.classList.remove('sequence-running');
     };
@@ -146,6 +244,8 @@ export default function HomePage() {
       document.body.classList.add('sequence-running');
       goScene('scene-hub');
       const STORY_POINT_STEP_MS = 2000;
+      const STORY_END_PAUSE_MS = 5000;
+      const MOVIE_TO_CHAT_TRANSITION_MS = 1800;
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
       const storySection = document.querySelector<HTMLElement>('[data-sequence-story="true"]');
@@ -185,13 +285,40 @@ export default function HomePage() {
         }, storyStart + 320 + index * STORY_POINT_STEP_MS);
       });
 
+      const storyFinalBeat = storyStart + 320 + (storyItems.length - 1) * STORY_POINT_STEP_MS;
+      const movieStart = storyFinalBeat + STORY_END_PAUSE_MS;
+
+      let movieCursor = movieStart;
+      EXPERIENCE_MOVIE_SLIDES.forEach((slide, index) => {
+        const slideStart = movieCursor;
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          clearSequenceHighlights();
+          clearStoryHighlights();
+          loadMovieSlide(index, token);
+        }, slideStart);
+        movieCursor += slide.duration;
+      });
+
       queueSequenceTimeout(() => {
-        if (token !== sequenceToken) return;
-        clearStoryHighlights();
-        clearSequenceHighlights();
-        sequenceRunning = false;
-        document.body.classList.remove('sequence-running');
-      }, storyStart + 320 + storyItems.length * STORY_POINT_STEP_MS + 900);
+        if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
+        experienceSequence.classList.add('is-ending');
+        if (experienceSequenceEyebrow) {
+          experienceSequenceEyebrow.textContent = 'finale';
+        }
+        if (experienceSequenceTitle) {
+          experienceSequenceTitle.textContent = 'Talk With Ayrin';
+        }
+        if (experienceSequenceCaption) {
+          experienceSequenceCaption.textContent = 'The movie is over. He stayed. The chat box is waiting for you.';
+        }
+        spawnHearts();
+      }, movieCursor);
+
+      queueSequenceTimeout(() => {
+        if (token !== sequenceToken || !sequenceEnabled) return;
+        offerChatAfterMovie();
+      }, movieCursor + MOVIE_TO_CHAT_TRANSITION_MS);
     };
 
     const sendMsg = () => {
@@ -485,6 +612,13 @@ export default function HomePage() {
       sendBtn.onclick = sendMsg;
     }
 
+    if (experienceSequenceSkip) {
+      experienceSequenceSkip.onclick = () => {
+        stopSequence();
+        offerChatAfterMovie();
+      };
+    }
+
     const hubCard = document.querySelector<HTMLElement>('[data-action="hearts"]');
     if (hubCard) {
       hubCard.onclick = spawnHearts;
@@ -500,6 +634,7 @@ export default function HomePage() {
       if (openHeartBtn) openHeartBtn.onclick = null;
       if (navPower) navPower.onclick = null;
       if (sendBtn) sendBtn.onclick = null;
+      if (experienceSequenceSkip) experienceSequenceSkip.onclick = null;
       if (hubCard) hubCard.onclick = null;
 
       stopSequence();
@@ -736,6 +871,46 @@ export default function HomePage() {
             ← Back
           </button>
         </section>
+      </div>
+
+      <div className="experience-sequence" id="experience-sequence" aria-hidden="true">
+        <div className="experience-sequence-shell">
+          <div className="experience-sequence-head">
+            <div>
+              <p className="experience-sequence-eyebrow" id="experience-sequence-eyebrow">
+                chapter one
+              </p>
+              <h3 className="experience-sequence-title" id="experience-sequence-title">
+                Our Story
+              </h3>
+            </div>
+
+            <div className="experience-sequence-actions">
+              <p className="experience-sequence-count" id="experience-sequence-count">
+                01 / 04
+              </p>
+              <button className="btn-ghost experience-sequence-skip" id="experience-sequence-skip" type="button">
+                Skip to chat
+              </button>
+            </div>
+          </div>
+
+          <div className="experience-sequence-stage">
+            <iframe
+              id="experience-sequence-frame"
+              className="experience-sequence-frame"
+              title="Experience movie sequence"
+              loading="eager"
+            />
+            <div className="experience-sequence-loading" aria-hidden="true">
+              Loading the next chapter...
+            </div>
+          </div>
+
+          <p className="experience-sequence-caption" id="experience-sequence-caption">
+            Every moment that mattered, replayed like a memory we can still step inside.
+          </p>
+        </div>
       </div>
 
       <nav className="nav">
@@ -1367,6 +1542,160 @@ export default function HomePage() {
           transform: translateX(8px);
         }
 
+        .experience-sequence {
+          position: fixed;
+          inset: 0;
+          z-index: 140;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+          background: rgba(4, 1, 8, 0.84);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
+
+        .experience-sequence.active {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .experience-sequence-shell {
+          width: min(94vw, 1180px);
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .experience-sequence-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .experience-sequence-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .experience-sequence-eyebrow {
+          margin: 0 0 0.45rem;
+          font-family: var(--mono);
+          font-size: 0.58rem;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          color: rgba(255, 193, 219, 0.68);
+        }
+
+        .experience-sequence-title {
+          margin: 0;
+          font-family: var(--serif);
+          font-size: clamp(1.8rem, 4vw, 3rem);
+          font-weight: 300;
+          font-style: italic;
+          color: rgba(255, 236, 246, 0.98);
+          line-height: 1.05;
+        }
+
+        .experience-sequence-count {
+          margin: 0;
+          font-family: var(--mono);
+          font-size: 0.62rem;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: rgba(255, 193, 219, 0.62);
+        }
+
+        .experience-sequence-skip {
+          padding-inline: 1.2rem;
+          background: rgba(255,255,255,0.04);
+        }
+
+        .experience-sequence-stage {
+          position: relative;
+          width: 100%;
+          height: min(76vh, 760px);
+          overflow: hidden;
+          border-radius: 2rem;
+          border: 1px solid rgba(244,173,210,0.24);
+          background: linear-gradient(160deg, rgba(18, 7, 16, 0.98), rgba(8, 3, 9, 1));
+          box-shadow: 0 42px 90px rgba(0,0,0,0.64), 0 18px 40px rgba(247,85,144,0.16);
+          transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), box-shadow 0.7s ease, opacity 0.45s ease;
+        }
+
+        .experience-sequence-stage::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, rgba(4,1,8,0.18), transparent 18%, transparent 82%, rgba(4,1,8,0.34));
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        .experience-sequence.active.is-loading .experience-sequence-stage {
+          transform: scale(0.985);
+          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(247,85,144,0.12);
+        }
+
+        .experience-sequence.active.is-ending .experience-sequence-stage {
+          transform: scale(0.99);
+          box-shadow: 0 36px 82px rgba(0,0,0,0.62), 0 16px 34px rgba(247,85,144,0.2);
+        }
+
+        .experience-sequence-frame {
+          width: 100%;
+          height: 100%;
+          border: 0;
+          background: #05030a;
+          pointer-events: none;
+        }
+
+        .experience-sequence-loading {
+          position: absolute;
+          inset: 0;
+          z-index: 3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+          text-align: center;
+          font-family: var(--mono);
+          font-size: 0.66rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: rgba(255, 212, 233, 0.78);
+          background: radial-gradient(circle at 50% 30%, rgba(247,85,144,0.12), rgba(4,1,8,0.94) 65%);
+          opacity: 0;
+          transition: opacity 0.45s ease;
+          pointer-events: none;
+        }
+
+        .experience-sequence.active.is-loading .experience-sequence-loading {
+          opacity: 1;
+        }
+
+        .experience-sequence-caption {
+          margin: 0;
+          max-width: 60ch;
+          font-family: var(--body);
+          font-size: clamp(0.95rem, 2vw, 1.08rem);
+          line-height: 1.7;
+          color: rgba(255, 209, 232, 0.8);
+        }
+
+        body.sequence-cinema .nav {
+          opacity: 0;
+          pointer-events: none;
+          transform: translateX(-50%) translateY(14px);
+        }
+
         .nav {
           position: fixed;
           bottom: 1.2rem;
@@ -1382,6 +1711,7 @@ export default function HomePage() {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(247,85,144,0.15);
+          transition: opacity 0.35s ease, transform 0.35s ease;
         }
 
         .nav-btn {
@@ -1560,6 +1890,10 @@ export default function HomePage() {
           .hub-grid { grid-template-columns: 1fr; }
           .hero-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
           .story-section { padding: 1.2rem 1.1rem 1rem; }
+          .experience-sequence { padding: 1rem; }
+          .experience-sequence-head { flex-direction: column; }
+          .experience-sequence-actions { width: 100%; justify-content: space-between; }
+          .experience-sequence-stage { height: min(64vh, 560px); border-radius: 1.4rem; }
         }
       `}</style>
     </>
