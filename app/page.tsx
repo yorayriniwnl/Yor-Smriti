@@ -672,24 +672,29 @@ export default function HomePage() {
             </p>
             <div className="timeline">
               <div className="tl-item" style={{ animationDelay: '0.6s' }}>
-                <p className="tl-date">Sep 12, 2024</p>
-                <p className="tl-title">First Conversation</p>
-                <p className="tl-excerpt">A small but meaningful conversation about expectations and care.</p>
+                <p className="tl-date">May 18, 2025</p>
+                <p className="tl-title">First Connection</p>
+                <p className="tl-excerpt">A simple conversation that quietly turned into something worth holding onto.</p>
               </div>
               <div className="tl-item" style={{ animationDelay: '0.75s' }}>
-                <p className="tl-date">Jan 3, 2025</p>
-                <p className="tl-title">Dinner on New Year</p>
-                <p className="tl-excerpt">Shared hopes and vulnerabilities. A promise to check in weekly.</p>
+                <p className="tl-date">Aug 9, 2025</p>
+                <p className="tl-title">Finding Rhythm</p>
+                <p className="tl-excerpt">Conversations settled into something steady and familiar.</p>
               </div>
               <div className="tl-item" style={{ animationDelay: '0.9s' }}>
-                <p className="tl-date">Jun 18, 2025</p>
-                <p className="tl-title">Small Apology</p>
-                <p className="tl-excerpt">A sincere apology that mended a misunderstanding quickly.</p>
+                <p className="tl-date">Nov 12, 2025</p>
+                <p className="tl-title">Reconnection</p>
+                <p className="tl-excerpt">After some distance and change, two paths crossed again, this time as friends.</p>
               </div>
               <div className="tl-item" style={{ animationDelay: '1.05s' }}>
-                <p className="tl-date">Nov 2, 2025</p>
-                <p className="tl-title">Quiet Support</p>
-                <p className="tl-excerpt">A quiet night where listening mattered more than fixing.</p>
+                <p className="tl-date">Dec 14, 2025</p>
+                <p className="tl-title">Staying In Touch</p>
+                <p className="tl-excerpt">A consistent presence, where small check-ins carried quiet meaning.</p>
+              </div>
+              <div className="tl-item" style={{ animationDelay: '1.2s' }}>
+                <p className="tl-date">Apr 6, 2026</p>
+                <p className="tl-title">What Remains</p>
+                <p className="tl-excerpt">Time moved forward, but some connections chose to stay.</p>
               </div>
             </div>
           </div>

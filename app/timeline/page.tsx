@@ -20,61 +20,44 @@ interface MemoryEntry {
 const MEMORIES: MemoryEntry[] = [
   {
     id: 'mem-1',
-    date: 'The beginning',
-    title: 'The first time I noticed you',
+    date: 'May 18, 2025',
+    title: 'First Connection',
     description:
-      'I did not say anything. I just noticed. The way you laughed, the way you existed in a room — I could not stop noticing.',
-    mood: 'soft',
-  },
-  {
-    id: 'mem-2',
-    date: 'Early days',
-    title: 'Our first real conversation',
-    description:
-      'We talked like we had known each other forever. I kept thinking — why does this feel so easy? Why does this feel so right?',
+      'A simple conversation that quietly turned into something worth holding onto.',
     mood: 'warm',
     isSpecial: true,
   },
   {
-    id: 'mem-3',
-    date: 'A quiet afternoon',
-    title: 'When I realized I was falling',
+    id: 'mem-2',
+    date: 'Aug 9, 2025',
+    title: 'Finding Rhythm',
     description:
-      'It was not a dramatic moment. It was just you, doing something ordinary. And something in me went completely still and certain.',
+      'Conversations settled into something steady and familiar.',
+    mood: 'soft',
+  },
+  {
+    id: 'mem-3',
+    date: 'Nov 12, 2025',
+    title: 'Reconnection',
+    description:
+      'After some distance and change, two paths crossed again, this time as friends.',
     mood: 'golden',
     isSpecial: true,
   },
   {
     id: 'mem-4',
-    date: 'Us',
-    title: 'The moments only we know',
+    date: 'Dec 14, 2025',
+    title: 'Staying In Touch',
     description:
-      'All the inside jokes. The things only we find funny. The silence that never felt uncomfortable. I hold those close.',
+      'A consistent presence, where small check-ins carried quiet meaning.',
     mood: 'tender',
   },
   {
     id: 'mem-5',
-    date: 'A hard day',
-    title: 'When you were there without being asked',
+    date: 'Apr 6, 2026',
+    title: 'What Remains',
     description:
-      'I did not say I needed you. But you knew. That kind of knowing is rare. I think about that more than you realize.',
-    mood: 'quiet',
-  },
-  {
-    id: 'mem-6',
-    date: 'My favourite memory',
-    title: 'When everything felt perfect',
-    description:
-      'I do not think either of us said anything important. But I remember thinking — I want more of this. I want all of this.',
-    mood: 'golden',
-    isSpecial: true,
-  },
-  {
-    id: 'mem-7',
-    date: 'Now',
-    title: 'You, still',
-    description:
-      'After everything. Through the silence and the hurt and the distance — it is still you. It has always been you.',
+      'Time moved forward, but some connections chose to stay.',
     mood: 'warm',
     isSpecial: true,
   },
