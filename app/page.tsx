@@ -19,28 +19,28 @@ const REPLIES = [
 
 const EXPERIENCE_MOVIE_SLIDES = [
   {
-    href: '/timeline?sequence=1',
+    href: '/timeline',
     eyebrow: 'chapter one',
     title: 'Our Story',
     caption: 'Every moment that mattered, replayed like a memory we can still step inside.',
     duration: 8000,
   },
   {
-    href: '/reasons?sequence=1',
+    href: '/reasons',
     eyebrow: 'chapter two',
     title: 'Why I Love You',
     caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
     duration: 7200,
   },
   {
-    href: '/stars?sequence=1',
+    href: '/stars',
     eyebrow: 'chapter three',
     title: 'Our Stars',
     caption: 'Then the sky opens up, and every light remembers something about us.',
     duration: 8600,
   },
   {
-    href: '/promise?sequence=1',
+    href: '/promise',
     eyebrow: 'chapter four',
     title: 'My Promises',
     caption: 'And last, the promises. Not decoration. Not performance. The part I want to live.',
@@ -64,6 +64,10 @@ export default function HomePage() {
     const experienceSequenceCaption = document.getElementById('experience-sequence-caption') as HTMLParagraphElement | null;
     const experienceSequenceCount = document.getElementById('experience-sequence-count') as HTMLParagraphElement | null;
     const experienceSequenceSkip = document.getElementById('experience-sequence-skip') as HTMLButtonElement | null;
+    const slideChapterCard = document.getElementById('slide-chapter-card') as HTMLDivElement | null;
+    const slideChapterEyebrow = document.getElementById('slide-chapter-eyebrow') as HTMLParagraphElement | null;
+    const slideChapterTitle = document.getElementById('slide-chapter-title') as HTMLHeadingElement | null;
+    const slideProgress = document.getElementById('slide-progress') as HTMLDivElement | null;
 
     let mx = -100;
     let my = -100;
@@ -120,8 +124,14 @@ export default function HomePage() {
     };
 
     const resetExperienceMovie = () => {
-      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending');
+      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending', 'slide-entering', 'slide-playing', 'slide-exiting');
+      slideChapterCard?.classList.remove('active');
       document.body.classList.remove('sequence-cinema');
+
+      if (slideProgress) {
+        slideProgress.style.animation = 'none';
+        slideProgress.style.width = '0%';
+      }
 
       if (experienceSequenceFrame) {
         experienceSequenceFrame.onload = null;
@@ -154,6 +164,22 @@ export default function HomePage() {
       if (!slide || !experienceSequence || !experienceSequenceFrame) return;
       if (token !== sequenceToken || !sequenceEnabled) return;
 
+      // Reset all animation phases for a clean slate
+      experienceSequence.classList.remove('slide-entering', 'slide-playing', 'slide-exiting');
+      experienceSequence.style.removeProperty('--kb-duration');
+
+      // Reset progress bar
+      if (slideProgress) {
+        slideProgress.style.animation = 'none';
+        slideProgress.style.width = '0%';
+      }
+
+      // Update chapter card content and show it as the transition moment
+      if (slideChapterEyebrow) slideChapterEyebrow.textContent = slide.eyebrow;
+      if (slideChapterTitle) slideChapterTitle.textContent = slide.title;
+      slideChapterCard?.classList.add('active');
+
+      // Pre-load shell content (hidden behind chapter card until entrance)
       if (experienceSequenceEyebrow) {
         experienceSequenceEyebrow.textContent = slide.eyebrow;
       }
@@ -291,17 +317,58 @@ export default function HomePage() {
       let movieCursor = movieStart;
       EXPERIENCE_MOVIE_SLIDES.forEach((slide, index) => {
         const slideStart = movieCursor;
+        const CHAPTER_HOLD_MS = 700;     // how long chapter card is visible before content enters
+        const REVEAL_MS = 1500;          // entrance animation duration before playing phase begins
+        const EXIT_LEAD_MS = 1500;       // how many ms before slide end the exit animation starts
+
+        // Step 1: load slide + show chapter card
         queueSequenceTimeout(() => {
           if (token !== sequenceToken || !sequenceEnabled) return;
           clearSequenceHighlights();
           clearStoryHighlights();
           loadMovieSlide(index, token);
         }, slideStart);
+
+        // Step 2: dismiss chapter card, trigger entrance animation
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          slideChapterCard?.classList.remove('active');
+          experienceSequence?.classList.add('slide-entering');
+        }, slideStart + CHAPTER_HOLD_MS);
+
+        // Step 3: transition to playing phase (Ken Burns + progress bar)
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          experienceSequence?.classList.remove('slide-entering');
+          experienceSequence?.classList.add('slide-playing');
+          // Set Ken Burns animation duration via CSS custom property
+          const playingDuration = slide.duration - CHAPTER_HOLD_MS - REVEAL_MS - EXIT_LEAD_MS;
+          experienceSequence?.style.setProperty('--kb-duration', `${Math.max(playingDuration, 2000)}ms`);
+          // Start progress bar fill animation
+          if (slideProgress) {
+            slideProgress.style.animation = 'none';
+            void (slideProgress as HTMLElement).offsetHeight; // force reflow
+            slideProgress.style.animation = `slideProgressFill ${Math.max(playingDuration, 2000)}ms linear forwards`;
+          }
+        }, slideStart + CHAPTER_HOLD_MS + REVEAL_MS);
+
+        // Step 4: start exit animation
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          experienceSequence?.classList.remove('slide-playing');
+          experienceSequence?.classList.add('slide-exiting');
+          if (slideProgress) {
+            slideProgress.style.animation = 'none';
+            slideProgress.style.width = '100%';
+          }
+        }, slideStart + slide.duration - EXIT_LEAD_MS);
+
         movieCursor += slide.duration;
       });
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
+        experienceSequence.classList.remove('slide-entering', 'slide-playing', 'slide-exiting');
         experienceSequence.classList.add('is-ending');
         if (experienceSequenceEyebrow) {
           experienceSequenceEyebrow.textContent = 'finale';
@@ -874,6 +941,16 @@ export default function HomePage() {
       </div>
 
       <div className="experience-sequence" id="experience-sequence" aria-hidden="true">
+
+        {/* Cinematic chapter transition card — shown at the start of each slide */}
+        <div className="slide-chapter-card" id="slide-chapter-card" aria-hidden="true">
+          <div className="slide-chapter-card-inner">
+            <p className="slide-chapter-card-eyebrow" id="slide-chapter-eyebrow"></p>
+            <div className="slide-chapter-card-rule" />
+            <h2 className="slide-chapter-card-title" id="slide-chapter-title"></h2>
+          </div>
+        </div>
+
         <div className="experience-sequence-shell">
           <div className="experience-sequence-head">
             <div>
@@ -901,11 +978,13 @@ export default function HomePage() {
               className="experience-sequence-frame"
               title="Experience movie sequence"
               loading="eager"
-              tabIndex={-1}
-              aria-hidden="true"
             />
             <div className="experience-sequence-loading" aria-hidden="true">
               Loading the next chapter...
+            </div>
+            {/* Slide progress bar */}
+            <div className="slide-progress-track" aria-hidden="true">
+              <div className="slide-progress-bar" id="slide-progress" />
             </div>
           </div>
 
@@ -1544,6 +1623,138 @@ export default function HomePage() {
           transform: translateX(8px);
         }
 
+        /* ═══════════════════════════════════════════════════════
+           EXPERIENCE SEQUENCE — CINEMATIC ANIMATION SYSTEM
+        ═══════════════════════════════════════════════════════ */
+
+        /* --- Keyframes --- */
+
+        @keyframes cinemaRevealUp {
+          from { opacity: 0; transform: translateY(22px); filter: blur(3px); }
+          to   { opacity: 1; transform: translateY(0);   filter: blur(0); }
+        }
+
+        @keyframes cinemaStageFadeIn {
+          from { opacity: 0; transform: scale(0.92) translateY(20px); filter: blur(4px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0); }
+        }
+
+        @keyframes cinemaStageKenBurns {
+          from { transform: scale(1)     translate(0, 0); }
+          to   { transform: scale(1.028) translate(-0.6%, -0.4%); }
+        }
+
+        @keyframes cinemaTextFadeOut {
+          from { opacity: 1; transform: translateY(0);    filter: blur(0); }
+          to   { opacity: 0; transform: translateY(-18px); filter: blur(3px); }
+        }
+
+        @keyframes cinemaStageFadeOut {
+          from { opacity: 1; transform: scale(1); }
+          to   { opacity: 0; transform: scale(1.05) translateY(-14px); }
+        }
+
+        @keyframes slideProgressFill {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+
+        @keyframes chapterCardIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+
+        @keyframes chapterEyebrowReveal {
+          from { opacity: 0; transform: translateY(14px) scaleX(0.96); letter-spacing: 0.18em; }
+          to   { opacity: 1; transform: translateY(0)    scaleX(1);    letter-spacing: 0.36em; }
+        }
+
+        @keyframes chapterTitleReveal {
+          from { opacity: 0; transform: translateY(28px); filter: blur(6px); }
+          to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+        }
+
+        @keyframes chapterRuleExpand {
+          from { width: 0; opacity: 0; }
+          to   { width: 3rem; opacity: 1; }
+        }
+
+        @keyframes borderPulse {
+          0%, 100% { border-color: rgba(244,173,210,0.22); box-shadow: 0 42px 90px rgba(0,0,0,0.64), 0 18px 40px rgba(247,85,144,0.16); }
+          50%       { border-color: rgba(247,85,144,0.38); box-shadow: 0 42px 90px rgba(0,0,0,0.72), 0 18px 40px rgba(247,85,144,0.28), 0 0 0 1px rgba(247,85,144,0.08); }
+        }
+
+        /* --- Chapter Transition Card --- */
+
+        .slide-chapter-card {
+          position: absolute;
+          inset: 0;
+          z-index: 60;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: radial-gradient(ellipse at 50% 44%, rgba(24, 6, 18, 0.97) 0%, rgba(4, 1, 8, 0.99) 100%);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1);
+        }
+
+        .slide-chapter-card.active {
+          opacity: 1;
+          animation: chapterCardIn 0.55s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        .slide-chapter-card-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+          text-align: center;
+          padding: 2rem;
+        }
+
+        .slide-chapter-card-eyebrow {
+          margin: 0;
+          font-family: var(--mono);
+          font-size: 0.58rem;
+          letter-spacing: 0.36em;
+          text-transform: uppercase;
+          color: rgba(255, 193, 219, 0.65);
+          opacity: 0;
+        }
+
+        .slide-chapter-card.active .slide-chapter-card-eyebrow {
+          animation: chapterEyebrowReveal 0.75s cubic-bezier(0.16,1,0.3,1) 0.15s both;
+        }
+
+        .slide-chapter-card-rule {
+          width: 0;
+          height: 1px;
+          background: linear-gradient(to right, transparent, rgba(247,85,144,0.65), transparent);
+          opacity: 0;
+        }
+
+        .slide-chapter-card.active .slide-chapter-card-rule {
+          animation: chapterRuleExpand 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+        }
+
+        .slide-chapter-card-title {
+          margin: 0;
+          font-family: var(--serif);
+          font-size: clamp(2rem, 5.5vw, 3.8rem);
+          font-weight: 300;
+          font-style: italic;
+          color: rgba(255, 236, 246, 0.97);
+          line-height: 1.1;
+          opacity: 0;
+        }
+
+        .slide-chapter-card.active .slide-chapter-card-title {
+          animation: chapterTitleReveal 0.95s cubic-bezier(0.16,1,0.3,1) 0.28s both;
+        }
+
+        /* --- Main Experience Sequence Shell --- */
+
         .experience-sequence {
           position: fixed;
           inset: 0;
@@ -1552,12 +1763,12 @@ export default function HomePage() {
           align-items: center;
           justify-content: center;
           padding: 2rem;
-          background: rgba(4, 1, 8, 0.84);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
+          background: rgba(4, 1, 8, 0.88);
+          backdrop-filter: blur(28px);
+          -webkit-backdrop-filter: blur(28px);
           opacity: 0;
           pointer-events: none;
-          transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1);
+          transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1);
         }
 
         .experience-sequence.active {
@@ -1586,6 +1797,104 @@ export default function HomePage() {
           flex-wrap: wrap;
           justify-content: flex-end;
         }
+
+        /* --- Text elements: invisible by default, phases control visibility --- */
+
+        .experience-sequence .experience-sequence-eyebrow,
+        .experience-sequence .experience-sequence-title,
+        .experience-sequence .experience-sequence-caption,
+        .experience-sequence .experience-sequence-actions {
+          opacity: 0;
+        }
+
+        /* --- ENTRANCE PHASE --- */
+
+        .experience-sequence.slide-entering .experience-sequence-eyebrow {
+          animation: cinemaRevealUp 0.85s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+        }
+
+        .experience-sequence.slide-entering .experience-sequence-title {
+          animation: cinemaRevealUp 1.0s cubic-bezier(0.16,1,0.3,1) 0.18s both;
+        }
+
+        .experience-sequence.slide-entering .experience-sequence-stage {
+          animation: cinemaStageFadeIn 1.25s cubic-bezier(0.16,1,0.3,1) 0.28s both;
+        }
+
+        .experience-sequence.slide-entering .experience-sequence-caption {
+          animation: cinemaRevealUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.48s both;
+        }
+
+        .experience-sequence.slide-entering .experience-sequence-actions {
+          animation: cinemaRevealUp 0.75s cubic-bezier(0.16,1,0.3,1) 0.62s both;
+        }
+
+        /* --- PLAYING PHASE --- */
+
+        .experience-sequence.slide-playing .experience-sequence-eyebrow,
+        .experience-sequence.slide-playing .experience-sequence-title,
+        .experience-sequence.slide-playing .experience-sequence-caption,
+        .experience-sequence.slide-playing .experience-sequence-actions {
+          opacity: 1;
+          animation: none;
+        }
+
+        .experience-sequence.slide-playing .experience-sequence-stage {
+          animation: cinemaStageKenBurns var(--kb-duration, 8s) ease-in-out forwards;
+        }
+
+        .experience-sequence.slide-playing .experience-sequence-stage {
+          border-color: rgba(244,173,210,0.22);
+          animation:
+            cinemaStageKenBurns var(--kb-duration, 8s) ease-in-out forwards,
+            borderPulse 4s ease-in-out infinite;
+        }
+
+        /* --- EXIT PHASE --- */
+
+        .experience-sequence.slide-exiting .experience-sequence-eyebrow {
+          animation: cinemaTextFadeOut 0.65s cubic-bezier(0.4,0,1,1) 0.1s both;
+        }
+
+        .experience-sequence.slide-exiting .experience-sequence-title {
+          animation: cinemaTextFadeOut 0.8s cubic-bezier(0.4,0,1,1) 0.04s both;
+        }
+
+        .experience-sequence.slide-exiting .experience-sequence-stage {
+          animation: cinemaStageFadeOut 1.1s cubic-bezier(0.4,0,1,1) 0s both;
+        }
+
+        .experience-sequence.slide-exiting .experience-sequence-caption {
+          animation: cinemaTextFadeOut 0.55s cubic-bezier(0.4,0,1,1) 0.16s both;
+        }
+
+        .experience-sequence.slide-exiting .experience-sequence-actions {
+          animation: cinemaTextFadeOut 0.45s cubic-bezier(0.4,0,1,1) 0s both;
+        }
+
+        /* --- IS-ENDING FINALE PHASE --- */
+
+        .experience-sequence.is-ending .experience-sequence-eyebrow {
+          animation: cinemaRevealUp 0.75s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+        }
+
+        .experience-sequence.is-ending .experience-sequence-title {
+          animation: cinemaRevealUp 0.95s cubic-bezier(0.16,1,0.3,1) 0.22s both;
+        }
+
+        .experience-sequence.is-ending .experience-sequence-caption {
+          animation: cinemaRevealUp 0.85s cubic-bezier(0.16,1,0.3,1) 0.42s both;
+        }
+
+        .experience-sequence.is-ending .experience-sequence-actions {
+          animation: cinemaRevealUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.55s both;
+        }
+
+        .experience-sequence.is-ending .experience-sequence-stage {
+          animation: cinemaStageFadeIn 1.1s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+        }
+
+        /* --- Text element styles --- */
 
         .experience-sequence-eyebrow {
           margin: 0 0 0.45rem;
@@ -1620,16 +1929,19 @@ export default function HomePage() {
           background: rgba(255,255,255,0.04);
         }
 
+        /* --- Stage --- */
+
         .experience-sequence-stage {
           position: relative;
           width: 100%;
           height: min(76vh, 760px);
           overflow: hidden;
           border-radius: 2rem;
-          border: 1px solid rgba(244,173,210,0.24);
+          border: 1px solid rgba(244,173,210,0.22);
           background: linear-gradient(160deg, rgba(18, 7, 16, 0.98), rgba(8, 3, 9, 1));
           box-shadow: 0 42px 90px rgba(0,0,0,0.64), 0 18px 40px rgba(247,85,144,0.16);
-          transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), box-shadow 0.7s ease, opacity 0.45s ease;
+          transition: box-shadow 0.7s ease;
+          transform-origin: center center;
         }
 
         .experience-sequence-stage::before {
@@ -1642,14 +1954,15 @@ export default function HomePage() {
         }
 
         .experience-sequence.active.is-loading .experience-sequence-stage {
-          transform: scale(0.985);
-          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(247,85,144,0.12);
+          /* No transform — entrance animation handles this */
+          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(247,85,144,0.1);
         }
 
         .experience-sequence.active.is-ending .experience-sequence-stage {
-          transform: scale(0.99);
-          box-shadow: 0 36px 82px rgba(0,0,0,0.62), 0 16px 34px rgba(247,85,144,0.2);
+          box-shadow: 0 36px 82px rgba(0,0,0,0.62), 0 16px 34px rgba(247,85,144,0.22);
         }
+
+        /* --- iframe --- */
 
         .experience-sequence-frame {
           width: 100%;
@@ -1657,7 +1970,10 @@ export default function HomePage() {
           border: 0;
           background: #05030a;
           pointer-events: none;
+          display: block;
         }
+
+        /* --- Loading overlay --- */
 
         .experience-sequence-loading {
           position: absolute;
@@ -1673,7 +1989,7 @@ export default function HomePage() {
           letter-spacing: 0.2em;
           text-transform: uppercase;
           color: rgba(255, 212, 233, 0.78);
-          background: radial-gradient(circle at 50% 30%, rgba(247,85,144,0.12), rgba(4,1,8,0.94) 65%);
+          background: radial-gradient(circle at 50% 30%, rgba(247,85,144,0.1), rgba(4,1,8,0.92) 65%);
           opacity: 0;
           transition: opacity 0.45s ease;
           pointer-events: none;
@@ -1682,6 +1998,34 @@ export default function HomePage() {
         .experience-sequence.active.is-loading .experience-sequence-loading {
           opacity: 1;
         }
+
+        /* --- Progress bar --- */
+
+        .slide-progress-track {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: rgba(255, 193, 219, 0.07);
+          z-index: 4;
+          overflow: hidden;
+          border-radius: 0 0 2rem 2rem;
+        }
+
+        .slide-progress-bar {
+          height: 100%;
+          width: 0%;
+          background: linear-gradient(
+            to right,
+            rgba(247,85,144,0.45),
+            rgba(255, 200, 232, 0.95) 50%,
+            rgba(247,85,144,0.45)
+          );
+          border-radius: 0 0 2rem 2rem;
+        }
+
+        /* --- Caption --- */
 
         .experience-sequence-caption {
           margin: 0;
