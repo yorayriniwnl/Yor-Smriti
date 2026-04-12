@@ -725,6 +725,18 @@ export default function HomePage() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=EB+Garamond:ital,wght@0,400;1,400&family=DM+Mono:wght@300;400&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+          width: 100%;
+          min-height: 100%;
+          overflow-x: hidden;
+          overflow-y: auto;
+        }
+
+        body {
+          margin: 0;
+          overscroll-behavior-y: contain;
+        }
         #cursor-ring {
           position: fixed;
           top: 0;
@@ -1275,7 +1287,7 @@ export default function HomePage() {
 
         .nav {
           position: fixed;
-          top: 1rem;
+          bottom: 1.2rem;
           left: 50%;
           transform: translateX(-50%);
           z-index: 100;
