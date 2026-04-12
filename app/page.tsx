@@ -716,11 +716,11 @@ export default function HomePage() {
         <button className="nav-btn active" id="nav-entry" data-scene-nav="true" type="button">
           Home
         </button>
-        <button className="nav-btn" id="nav-chat" data-scene-nav="true" type="button">
-          Chat
-        </button>
         <button className="nav-btn" id="nav-hub" data-scene-nav="true" type="button">
           Explore
+        </button>
+        <button className="nav-btn" id="nav-chat" data-scene-nav="true" type="button">
+          Chat
         </button>
       </nav>
 
