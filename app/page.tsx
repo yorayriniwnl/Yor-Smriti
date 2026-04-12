@@ -397,48 +397,68 @@ export default function HomePage() {
 
     const bind = (el: HTMLElement | null, id: string) => {
       if (!el) return;
-      el.addEventListener('click', () => {
+      el.onclick = () => {
         stopSequence();
         goScene(id);
-      });
+      };
     };
     bind(navEntry, 'scene-entry');
     bind(navChat, 'scene-chat');
     bind(navHub, 'scene-hub');
 
-    document.querySelectorAll<HTMLElement>('[data-go-scene]').forEach((el) => {
+    const sceneJumpButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-go-scene]'));
+    sceneJumpButtons.forEach((el) => {
       const id = el.dataset.goScene;
       if (id) {
-        el.addEventListener('click', () => {
+        el.onclick = () => {
           stopSequence();
           goScene(id);
-        });
+        };
       }
     });
 
-    openHeartBtn?.addEventListener('click', () => {
-      if (!sequenceEnabled) {
-        goScene('scene-chat');
-        return;
-      }
-      runExperienceSequence();
-    });
+    if (openHeartBtn) {
+      openHeartBtn.onclick = () => {
+        if (!sequenceEnabled) {
+          goScene('scene-chat');
+          return;
+        }
+        runExperienceSequence();
+      };
+    }
 
-    navPower?.addEventListener('click', () => {
-      sequenceEnabled = !sequenceEnabled;
-      applyPowerUi();
-      if (!sequenceEnabled && sequenceRunning) {
-        stopSequence();
-      }
-    });
+    if (navPower) {
+      navPower.onclick = () => {
+        sequenceEnabled = !sequenceEnabled;
+        applyPowerUi();
+        if (!sequenceEnabled && sequenceRunning) {
+          stopSequence();
+        }
+      };
+    }
 
     const sendBtn = document.querySelector<HTMLButtonElement>('.send-btn');
-    sendBtn?.addEventListener('click', sendMsg);
+    if (sendBtn) {
+      sendBtn.onclick = sendMsg;
+    }
 
     const hubCard = document.querySelector<HTMLElement>('[data-action="hearts"]');
-    hubCard?.addEventListener('click', spawnHearts);
+    if (hubCard) {
+      hubCard.onclick = spawnHearts;
+    }
 
     return () => {
+      sceneJumpButtons.forEach((el) => {
+        el.onclick = null;
+      });
+      if (navEntry) navEntry.onclick = null;
+      if (navChat) navChat.onclick = null;
+      if (navHub) navHub.onclick = null;
+      if (openHeartBtn) openHeartBtn.onclick = null;
+      if (navPower) navPower.onclick = null;
+      if (sendBtn) sendBtn.onclick = null;
+      if (hubCard) hubCard.onclick = null;
+
       stopSequence();
       if (cursorRafId) cancelAnimationFrame(cursorRafId);
       if (heartRafId) cancelAnimationFrame(heartRafId);
@@ -698,45 +718,6 @@ export default function HomePage() {
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=EB+Garamond:ital,wght@0,400;1,400&family=DM+Mono:wght@300;400&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; }
-
-        :root {
-          --rose: #f75590;
-          --blush: #ffc1db;
-          --velvet: #8b1a4a;
-          --night: #05030a;
-          --deep: #120818;
-          --mist: rgba(255,193,219,0.12);
-          --glow: rgba(247,85,144,0.35);
-          --serif: 'Cormorant Garamond', Georgia, serif;
-          --mono: 'DM Mono', monospace;
-          --body: 'EB Garamond', Georgia, serif;
-        }
-
-        html, body {
-          width: 100%;
-          height: 100%;
-          background: var(--night);
-          color: #fff;
-          font-family: var(--body);
-          overflow-x: hidden;
-          overflow-y: auto;
-          cursor: none;
-        }
-
-        #cursor {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background: var(--rose);
-          pointer-events: none;
-          z-index: 9999;
-          mix-blend-mode: screen;
-          box-shadow: 0 0 16px 4px rgba(247,85,144,0.6);
-        }
-
         #cursor-ring {
           position: fixed;
           top: 0;
