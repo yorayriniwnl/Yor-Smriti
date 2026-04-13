@@ -1,44 +1,122 @@
-## Yor Smriti
+# 🚀 Yor Smriti
 
-Cinematic, private web experiences for apology and reconciliation.
+> A cinematic, private apology experience built to turn a difficult message into something intimate, elegant, and memorable.
 
-Live demo: https://yor-smriti.vercel.app
+---
 
-Quick start
+## 📸 Preview
 
-1. Install dependencies and start the dev server:
+![Yor Smriti Preview](./preview.gif)
 
-```bash
-npm install && npm run dev
-```
+---
 
-2. Open `http://localhost:3000`
+## 🔗 Live Demo
 
-Configuration
+https://yor-smriti.vercel.app
 
-Set these server-side environment variables for production:
+---
 
-- `APP_USERNAME`
-- `APP_PASSWORD`
+## ⚙️ Tech Stack
 
-Development (local) credentials
-
-Use these demo credentials for local testing only:
-
-```
-Username: yorayrin
-Password: yorayrin
-```
-
-Tech
-
+**Frontend**
 - Next.js (App Router)
-- React + TypeScript
-- Framer Motion
+- React
+- TypeScript
+
+**Styling**
 - Tailwind CSS
 
-Deployment
+**Tools / Animation**
+- Framer Motion
+- Vercel
 
-Recommended: Vercel. Ensure `APP_USERNAME` and `APP_PASSWORD` are configured in project settings.
+**Backend / Access Control**
+- APP_USERNAME
+- APP_PASSWORD
 
-Other providers: set the same environment variables, build with `npm run build`, and run with `npm start`.
+---
+
+## ✨ Features
+
+- Immersive cinematic storytelling
+- Private access gate
+- Fast local setup
+- Responsive UI
+- Smooth motion design
+
+---
+
+## 🧠 Architecture & Design
+
+- Component-based architecture
+- App Router for routing
+- Server-side environment config
+- Motion-driven UX
+
+---
+
+## 📂 Project Structure
+
+src/
+├── app/
+├── components/
+├── hooks/
+├── lib/
+├── styles/
+└── public/
+
+---
+
+## ⚡ Getting Started
+
+### 1. Clone the repository
+
+git clone https://github.com/yorayriniwnl/Yor-Smriti
+cd Yor-Smriti
+
+### 2. Install dependencies
+
+npm install
+
+### 3. Run the development server
+
+npm run dev
+
+### 4. Open in browser
+
+http://localhost:3000
+
+---
+
+## 🔐 Environment Variables
+
+APP_USERNAME=your_username
+APP_PASSWORD=your_password
+
+---
+
+## 🚀 Deployment
+
+Deploy on Vercel and set environment variables.
+
+---
+
+## 🎯 Use Case
+
+A premium way to deliver emotional messages through web experience.
+
+---
+
+## 🔮 Future Improvements
+
+- Themes
+- Templates
+- Audio support
+- Shareable links
+- Analytics
+
+---
+
+## 👤 Author
+
+https://github.com/yorayriniwnl
