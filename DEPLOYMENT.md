@@ -37,6 +37,7 @@
 - Node.js version: **20.x**
 - Framework: **Next.js** (auto-detected)
 - Environment: **Production**
+- Required GitHub secret for the deploy workflow: `AUTH_SECRET`
 
 ---
 
@@ -78,7 +79,10 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push:
 3. `npm run type-check`
 4. `npm run build`
 
-Vercel auto-deploys `main` branch. Env vars set in Vercel dashboard.
+Production deploys are handled by `.github/workflows/vercel-env-sync.yml`.
+- It syncs the configured GitHub secrets/vars into Vercel before deploy.
+- It fails fast if `AUTH_SECRET` is missing or too short.
+- Leave `APP_USERNAME` and `APP_PASSWORD` both blank for open access, or set both for a gated experience.
 
 ---
 

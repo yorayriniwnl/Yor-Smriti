@@ -18,6 +18,7 @@ const PUBLIC_PREFIXES = [
   '/login',
   '/api/login',
   '/api/health',
+  '/api/metrics',
   '/_next',
   '/favicon.ico',
   '/manifest.json',

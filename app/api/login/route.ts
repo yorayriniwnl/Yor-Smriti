@@ -30,7 +30,10 @@ export async function POST(request: Request) {
 
     const rawUser = typeof body.username === 'string' ? body.username : '';
     const rawPass = typeof body.password === 'string' ? body.password : '';
-    const username = sanitizeString(rawUser, { maxLength: 128, allowNewlines: false }) || 'guest';
+    const requestedUsername = sanitizeString(rawUser, { maxLength: 128, allowNewlines: false });
+    // The login UI is password-first and does not expose a username field.
+    // When the client omits username, fall back to the configured one.
+    const username = requestedUsername || configuredUsername || 'guest';
     const password = sanitizeString(rawPass, { maxLength: 256, allowNewlines: false });
 
     // Rate-limit per IP + username

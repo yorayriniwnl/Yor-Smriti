@@ -45,8 +45,8 @@ function LoginInner() {
   const [error, setError]     = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Show password field only when APP_PASSWORD is configured
-  // We detect this by calling /api/session — if it returns 401 the experience is gated
+  // The experience is password-first. We try an empty-password login first;
+  // if the server returns 401, we reveal the password input.
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword]           = useState('');
   const [showPassInput, setShowPassInput] = useState(false);
@@ -61,7 +61,7 @@ function LoginInner() {
     try {
       setLoading(true);
       const result = await fetchApi<{ ok: boolean; error?: string; user?: string }>('/api/login', {
-        body: { username: process.env.NEXT_PUBLIC_APP_USERNAME ?? 'user', password: pw ?? '' },
+        body: { password: pw ?? '' },
       });
       const data = result.data ?? { ok: false, error: result.error };
       const res = { ok: result.ok, status: result.status };

@@ -940,7 +940,11 @@ export default function HomePage() {
       </nav>
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=EB+Garamond:ital,wght@0,400;1,400&family=DM+Mono:wght@300;400&display=swap');
+        :root {
+          --serif: var(--font-cormorant);
+          --body: var(--font-crimson);
+          --mono: var(--font-dm-mono);
+        }
 
         *, *::before, *::after { box-sizing: border-box; }
 
