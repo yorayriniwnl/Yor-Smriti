@@ -17,12 +17,7 @@ interface Experience {
   description: string;
   emoji: string;
   delay: number;
-  tech: string[];
-  metrics: {
-    performance: string;
-    scale: string;
-    results: string;
-  };
+  feeling: string; // one short line: what she will feel inside this experience
 }
 
 const EXPERIENCES: Experience[] = [
@@ -33,12 +28,7 @@ const EXPERIENCES: Experience[] = [
     description: 'Review key moments on a focused timeline.',
     emoji: '🌙',
     delay: 0.1,
-    tech: ['Next.js', 'React', 'Framer Motion'],
-    metrics: {
-      performance: 'Instant',
-      scale: 'Thousands of moments',
-      results: 'Reflective engagement',
-    },
+    feeling: 'Every moment that mattered, in order. It is all still here.',
   },
   {
     href: '/reasons',
@@ -47,12 +37,7 @@ const EXPERIENCES: Experience[] = [
     description: 'Short, shareable reasons presented as a concise deck.',
     emoji: '🌸',
     delay: 0.2,
-    tech: ['React', 'Tailwind', 'Accessible UI'],
-    metrics: {
-      performance: 'Fast',
-      scale: 'Dozens of items',
-      results: 'Clarified sentiment',
-    },
+    feeling: 'Fifteen reasons. Each one is about you specifically.',
   },
   {
     href: '/stars',
@@ -61,12 +46,7 @@ const EXPERIENCES: Experience[] = [
     description: 'Interactive starfield that surfaces memories.',
     emoji: '✨',
     delay: 0.3,
-    tech: ['Three.js', 'React', 'WebGL'],
-    metrics: {
-      performance: '60fps on modern devices',
-      scale: 'Hundreds of stars',
-      results: 'High immersion',
-    },
+    feeling: 'An interactive sky made of things I still think about.',
   },
   {
     href: '/promise',
@@ -75,12 +55,7 @@ const EXPERIENCES: Experience[] = [
     description: 'Simple, revisitable commitments to support accountability.',
     emoji: '🕯️',
     delay: 0.4,
-    tech: ['React', 'LocalStorage', 'Animations'],
-    metrics: {
-      performance: 'Local-first',
-      scale: 'Per-user commitments',
-      results: 'Improved accountability',
-    },
+    feeling: 'What I am committing to — not as performance, as record.',
   },
 ];
 
@@ -95,37 +70,48 @@ export default function HubPage() {
   const SAMPLE_MEMORIES: MemoryItem[] = [
     {
       id: 'm1',
-      date: '2024-09-12',
-      title: 'First Conversation',
-      excerpt: 'A small but meaningful conversation about expectations and care.',
+      date: '2024-02-14',
+      title: 'The Call That Did Not End',
+      excerpt: 'We ran out of things to say and stayed on the line anyway.',
       details:
-        'We talked about small, actionable gestures and why they matter. This memory helped us establish a pattern of checking in regularly.',
-      tags: ['talk', 'check-in'],
+        'It was late. The conversation had wound down naturally but neither of us hung up. We just stayed there in the quiet. I listened to you breathe and thought — this is enough. This is more than enough. You fell asleep before I did. I stayed on the line until the call dropped on its own.',
+      tags: ['closeness', 'quiet'],
     },
     {
       id: 'm2',
-      date: '2025-01-03',
-      title: 'Dinner on New Year',
-      excerpt: 'Celebratory dinner that turned into a deep conversation about the year ahead.',
+      date: '2024-05-09',
+      title: 'When You Talked About What You Loved',
+      excerpt: 'Your whole voice changed. I have thought about that moment many times since.',
       details:
-        'Shared hopes and vulnerabilities. We made a promise to make space for weekly check-ins, which lasted for months and helped clarify priorities.',
-      tags: ['celebration', 'promise'],
+        'You were talking about something that mattered to you — something you cared about deeply and rarely said out loud. Your voice went softer and more certain at the same time. I remember sitting very still, not wanting to interrupt, thinking: I have never felt this lucky to be listening to someone.',
+      tags: ['love', 'attention'],
     },
     {
       id: 'm3',
-      date: '2025-06-18',
-      title: 'Small Apology',
-      excerpt: 'A sincere apology that mended a misunderstanding quickly.',
-      details: 'We practiced short, clear apologies and immediate repair gestures. It reduced friction and increased trust.',
-      tags: ['apology', 'repair'],
+      date: '2024-08-22',
+      title: 'Nothing Happened and That Was Everything',
+      excerpt: 'A quiet evening with no agenda that somehow became one of the best.',
+      details:
+        'We were not doing anything in particular. No plan, no occasion. Just together. I remember thinking at some point — I do not need anything else right now. This is it. I did not say that. I should have said that.',
+      tags: ['ordinary', 'present'],
     },
     {
       id: 'm4',
-      date: '2025-11-02',
-      title: 'Quiet Support',
-      excerpt: 'A quiet night where listening mattered more than fixing.',
-      details: 'Being present and listening strengthened our emotional connection. This memory is a reference for holding space.',
-      tags: ['support', 'listening'],
+      date: '2024-11-03',
+      title: 'The Thing You Called Out',
+      excerpt: 'You said something true that I was not ready to hear. I got defensive.',
+      details:
+        'You told me — clearly, without cruelty — that I was pulling away. That you could feel it. That it was not okay. I deflected instead of listening. I have replayed that conversation a hundred times since. You were right about every word of it. I am sorry it took me this long to say that plainly.',
+      tags: ['honesty', 'regret'],
+    },
+    {
+      id: 'm5',
+      date: '2025-01-18',
+      title: 'The Last Good Night',
+      excerpt: 'The last time things felt the way they used to. I did not know it then.',
+      details:
+        'I did not know it was the last good night when it happened. It felt normal. It felt like us. I keep thinking — if I had known, I would have stayed in it longer. I would have said more. I would not have taken any of it for granted.',
+      tags: ['loss', 'memory'],
     },
   ];
 
@@ -287,42 +273,7 @@ export default function HubPage() {
                     {exp.description}
                   </p>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {exp.tech.map((t) => (
-                      <span
-                        key={t}
-                        style={{
-                          fontFamily: 'var(--font-dm-mono)',
-                          fontSize: '0.64rem',
-                          color: 'rgba(255, 200, 225, 0.7)',
-                          background: 'rgba(255,255,255,0.02)',
-                          padding: '6px 8px',
-                          borderRadius: '999px',
-                        }}
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div
-                    className="mt-2"
-                    style={{
-                      fontFamily: 'var(--font-dm-mono)',
-                      color: 'rgba(255, 200, 225, 0.62)',
-                      fontSize: '0.72rem',
-                      display: 'flex',
-                      gap: 8,
-                      alignItems: 'center',
-                      justifyContent: 'flex-start',
-                    }}
-                  >
-                    <span aria-hidden>{exp.metrics.performance}</span>
-                    <span aria-hidden className="opacity-50">•</span>
-                    <span aria-hidden>{exp.metrics.scale}</span>
-                    <span aria-hidden className="opacity-50">•</span>
-                    <span aria-hidden>{exp.metrics.results}</span>
-                  </div>
+                  <p style={{ fontFamily: 'var(--font-crimson)', fontSize: '0.88rem', color: 'rgba(255,200,225,0.65)', lineHeight: 1.4, marginTop: '0.5rem' }}>{exp.feeling}</p>
 
                   <motion.div
                     className="mt-5 flex items-center gap-2"
@@ -373,18 +324,7 @@ export default function HubPage() {
         </Link>
 
         <div className="mt-4 flex items-center gap-4">
-          <Link
-            href="/admin"
-            style={{
-              fontFamily: 'var(--font-dm-mono)',
-              fontSize: '0.6rem',
-              letterSpacing: '0.1em',
-              color: 'rgba(255,150,185,0.35)',
-              textTransform: 'uppercase',
-            }}
-          >
-            Analytics
-          </Link>
+          {/* Admin: navigate to /admin directly — not shown in UI */}
           <LogoutButton />
         </div>
       </motion.div>

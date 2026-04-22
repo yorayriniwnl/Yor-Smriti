@@ -61,7 +61,7 @@ function LoginInner() {
     try {
       setLoading(true);
       const result = await fetchApi<{ ok: boolean; error?: string; user?: string }>('/api/login', {
-        body: { username: 'keyrin', password: pw ?? '' },
+        body: { username: process.env.NEXT_PUBLIC_APP_USERNAME ?? 'user', password: pw ?? '' },
       });
       const data = result.data ?? { ok: false, error: result.error };
       const res = { ok: result.ok, status: result.status };
@@ -73,7 +73,7 @@ function LoginInner() {
         setNeedsPassword(true);
         setShowPassInput(true);
         setLoading(false);
-        if (pw) setError('Wrong password, baby 💔 Try again.');
+        if (pw) setError('That is not quite right ♡ Try again.');
       } else {
         setError(data.error ?? 'Something went wrong.');
         setLoading(false);

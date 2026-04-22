@@ -195,7 +195,7 @@ export default function FinalScreen({ spawnHearts, hearts, tapMsg, onExperienceA
             marginTop: '4px',
           }}
         >
-          Send him a reply 💌
+          Send a reply 💌
         </a>
       </div>
     </div>

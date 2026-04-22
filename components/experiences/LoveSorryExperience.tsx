@@ -15,23 +15,23 @@ const SORRY_CARDS = [
     id: 'c1',
     front: { emoji: '💔', title: 'Card 1', hint: 'Tap to open' },
     back: {
-      text: 'I chose my ego over you. That was the biggest mistake I have ever made.',
-      sub: 'I am truly, deeply sorry.',
+      text: 'I went quiet when you needed me to stay. Not once — it was a pattern. I told myself I was giving you space. I was not. I was protecting myself from the discomfort of being fully present, and I made you pay for that.',
+      sub: 'You deserved someone who stayed. I am sorry I kept leaving.',
     },
   },
   {
     id: 'c2',
     front: { emoji: '🌙', title: 'Card 2', hint: 'Tap to open' },
     back: {
-      text: 'I made you feel like you were too much. You were never too much. I was just not enough.',
-      sub: 'You deserved better than that.',
+      text: 'I made you feel like you were asking for too much when you were asking for the bare minimum. Consistency. Honesty. Presence. Those are not big asks. I made them feel like they were, and that was wrong.',
+      sub: 'You were never too much. I was not enough.',
     },
   },
   {
     id: 'c3',
     front: { emoji: '✨', title: 'Card 3', hint: 'Tap to open' },
     back: {
-      text: 'I still think about you every single day. That never stopped.',
+      text: 'I still think about the night we stayed on the call until it dropped on its own. I think about the quiet evenings that felt like everything. I think about your voice when you talked about the things you loved. None of that went away.',
       sub: 'It probably never will.',
     },
   },
@@ -40,48 +40,56 @@ const SORRY_CARDS = [
 const SONGS = [
   {
     id: 's1',
-    title: 'Tere Liye',
-    artist: 'Atif Aslam',
-    note: 'Because this is what I feel 💭',
+    title: 'Tum Se Hi',
+    artist: 'Mohit Chauhan',
+    note: 'Because this is what mornings felt like with you in them — quiet, unhurried, enough.',
     color: '#f472b6',
-    bar: 0.38,
+    bar: 0.44,
   },
   {
     id: 's2',
-    title: 'Pehli Nazar Mein',
-    artist: 'Atif Aslam',
-    note: 'The way I still see you 🌸',
+    title: 'Agar Tum Saath Ho',
+    artist: 'Arijit Singh & Alka Yagnik',
+    note: 'I could not get through this song for a long time after. Now I think it is the most honest thing I have.',
     color: '#fb7185',
-    bar: 0.61,
+    bar: 0.62,
   },
   {
     id: 's3',
-    title: 'Raabta',
+    title: 'Channa Mereya',
     artist: 'Arijit Singh',
-    note: 'We are connected, always 🔗',
+    note: 'Loving someone well means letting them go if that is what they need. This song taught me that.',
     color: '#c084fc',
-    bar: 0.5,
+    bar: 0.51,
   },
 ];
 
 const LETTER_PARAGRAPHS = [
-  { id: 0, salutation: true, text: 'My dearest,' },
+  { id: 0, salutation: true, text: 'Smriti,' },
   {
     id: 1,
-    text: "I don't know if you'll read this. But I needed to write it. For you, and honestly - for me.",
+    text: 'I have started this letter more times than I can count. I kept deleting it because it never sounded right. Then I realised — I was editing it into something careful, something that protected me. So this time I am not going to do that.',
   },
   {
     id: 2,
-    text: 'I hurt you. Not by accident. I made choices that pushed you away, and I watched it happen without doing enough to stop it. That is something I carry every day.',
+    text: 'I keep thinking about the night we stayed on the call after everything had already been said. Neither of us hung up. I fell quiet and you stayed there with me. I did not know how rare that was. I do now.',
   },
   {
     id: 3,
-    text: 'I love you. Still. Quietly. Without conditions or deadlines. And I am deeply, genuinely sorry.',
+    text: 'I pulled away when I should have stayed. I went quiet when you needed words. I called it needing space and it was not that — it was fear. You deserved someone who moved toward you when things got hard. I moved away. That is the thing I am most sorry for.',
   },
   {
     id: 4,
+    text: 'I love you. Still. I am not saying that to create pressure or to ask for anything. I am saying it because you deserve to hear it said plainly, without performance, without an agenda attached.',
+  },
+  {
+    id: 5,
+    text: 'I hope you are well. I hope the people around you are treating you the way you deserve to be treated. And if you ever want to talk — I am here. No conditions. No timeline. Just here.',
+  },
+  {
+    id: 6,
     signature: true,
-    text: 'Yours, always -\nAyrin',
+    text: 'Yours, always —\nAyrin',
   },
 ];
 

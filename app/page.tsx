@@ -75,6 +75,7 @@ export default function HomePage() {
     let cursorRafId: number | undefined;
     let typingTimerId: number | undefined;
     let sequenceEnabled = true;
+    const chatHistoryRef = { current: [] as Array<{ role: 'user' | 'assistant'; content: string }> };
     let sequenceRunning = false;
     let sequenceToken = 0;
     const sequenceTimeoutIds: number[] = [];
@@ -325,6 +326,8 @@ export default function HomePage() {
       const txt = chatInput.value.trim();
       if (!txt) return;
       addMessage(txt, 'user');
+      chatHistoryRef.current.push({ role: 'user', content: txt });
+      if (chatHistoryRef.current.length > 12) chatHistoryRef.current = chatHistoryRef.current.slice(-12);
       chatInput.value = '';
 
       if (!typing) return;
@@ -353,7 +356,11 @@ export default function HomePage() {
       fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-yor-csrf': '1' },
-        body: JSON.stringify({ message: txt, memory: { mood: moodValue } }),
+        body: JSON.stringify({
+          message: txt,
+          memory: { mood: moodValue },
+          history: chatHistoryRef.current.slice(0, -1),
+        }),
       })
         .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
         .then((data: { reply: string; emotion: string }) => {
@@ -362,6 +369,7 @@ export default function HomePage() {
           typingTimerId = window.setTimeout(() => {
             typing?.classList.remove('visible');
             addMessage(data.reply, 'ayrin', data.emotion);
+            chatHistoryRef.current.push({ role: 'assistant', content: data.reply });
             spawnHeart();
           }, wait);
         })

@@ -40,7 +40,7 @@ export default function WhySmritiPage() {
             fontWeight: 500,
           }}
         >
-          WHy Smriti ?
+          Why Smriti?
         </h1>
 
         <div

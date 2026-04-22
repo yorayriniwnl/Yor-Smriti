@@ -9,11 +9,11 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 type Mood = 'yes' | 'maybe' | 'needTime' | 'no';
 
-const MOOD_OPTIONS: { value: Mood; label: string; emoji: string; color: string }[] = [
-  { value: 'yes',      label: 'Yes, I forgive you',      emoji: '💗', color: 'rgba(247,85,144,0.9)' },
-  { value: 'maybe',   label: 'I need to think',          emoji: '🌙', color: 'rgba(140,100,200,0.9)' },
-  { value: 'needTime', label: 'Give me some time',       emoji: '🕯️', color: 'rgba(200,160,80,0.9)' },
-  { value: 'no',       label: 'Not right now',           emoji: '🌧️', color: 'rgba(80,120,160,0.9)' },
+const MOOD_OPTIONS: { value: Mood; label: string }[] = [
+  { value: 'yes',       label: "Yes, I want to."       },
+  { value: 'maybe',    label: "I'm not sure yet."      },
+  { value: 'needTime', label: "I need more time."      },
+  { value: 'no',        label: "No, not right now."    },
 ];
 
 type Step = 'mood' | 'message' | 'sent';
@@ -85,17 +85,16 @@ export default function ReplyPage() {
                   <motion.button
                     key={opt.value}
                     type="button"
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.015, x: 3 }}
+                    whileTap={{ scale: 0.985 }}
                     onClick={() => handleMoodSelect(opt.value)}
-                    className="flex items-center gap-4 rounded-2xl border px-5 py-4 text-left"
+                    className="rounded-2xl border px-5 py-4 text-left"
                     style={{
                       borderColor: 'rgba(244,173,210,0.22)',
                       background: 'linear-gradient(135deg,rgba(35,11,28,0.85),rgba(20,8,19,0.9))',
                       cursor: 'pointer',
                     }}
                   >
-                    <span style={{ fontSize: '1.5rem' }}>{opt.emoji}</span>
                     <span style={{ fontFamily: 'var(--font-crimson)', fontSize: '1.05rem', color: 'rgba(255,220,240,0.9)' }}>
                       {opt.label}
                     </span>
@@ -122,9 +121,8 @@ export default function ReplyPage() {
                 ← Change
               </button>
 
-              <div className="mb-5 flex items-center gap-3">
-                <span style={{ fontSize: '1.6rem' }}>{MOOD_OPTIONS.find(m => m.value === mood)?.emoji}</span>
-                <span style={{ fontFamily: 'var(--font-crimson)', fontSize: '1.1rem', color: 'rgba(255,220,240,0.85)' }}>
+              <div className="mb-5">
+                <span style={{ fontFamily: 'var(--font-crimson)', fontSize: '1.05rem', color: 'rgba(255,220,240,0.75)', fontStyle: 'italic' }}>
                   {MOOD_OPTIONS.find(m => m.value === mood)?.label}
                 </span>
               </div>
@@ -203,10 +201,10 @@ export default function ReplyPage() {
                 💌
               </motion.div>
               <h2 style={{ fontFamily: 'var(--font-cormorant)', fontSize: 'clamp(2rem,5vw,2.8rem)', color: 'rgba(255,236,246,0.97)', fontWeight: 400, lineHeight: 1.1, marginBottom: '0.75rem' }}>
-                He will know.
+                Thank you for reading all of it.
               </h2>
               <p style={{ fontFamily: 'var(--font-crimson)', fontSize: '1.05rem', color: 'rgba(255,200,225,0.7)', lineHeight: 1.65, marginBottom: '2.5rem', maxWidth: '36ch', margin: '0 auto 2.5rem' }}>
-                Your reply has been received. Whatever you chose, it took courage to say it.
+                Whatever you decide — I respect it.
               </p>
               <Link
                 href="/message"

@@ -104,3 +104,33 @@ export async function notifyReplyReceived(entry: {
       </div>`,
   });
 }
+
+export async function notifyFirstVisit({ ip, timestamp }: { ip: string; timestamp: string }): Promise<void> {
+  const notifyTo = getNotificationEmail();
+  if (!notifyTo) {
+    logger.info('[email] No NOTIFICATION_EMAIL set — skipping first-visit notification');
+    return;
+  }
+
+  const recipientName = process.env.RECIPIENT_NAME ?? 'Smriti';
+
+  await sendEmail({
+    to: notifyTo,
+    subject: `${recipientName} just opened the experience 💌`,
+    text: `${recipientName} just visited Yor Smriti for the first time.\n\nTime: ${timestamp}\nIP: ${ip}\n\nCheck your admin dashboard for live analytics.`,
+    html: `
+      <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px;background:#05030a;color:#ffe8f4;border-radius:16px">
+        <h2 style="font-weight:400;color:#f75590;margin-bottom:8px">${recipientName} just opened the experience 💌</h2>
+        <p style="font-family:sans-serif;font-size:16px;color:#ffe8f4;">
+          <strong>${recipientName}</strong> just visited Yor Smriti for the first time.
+        </p>
+        <p style="font-family:monospace;font-size:12px;color:#c07090;">
+          Time: ${timestamp}<br/>
+          IP: ${ip}
+        </p>
+        <p style="font-family:sans-serif;font-size:14px;color:#a06080;">
+          Check your admin dashboard for live analytics.
+        </p>
+      </div>`,
+  });
+}

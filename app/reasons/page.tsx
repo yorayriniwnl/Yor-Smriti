@@ -18,21 +18,21 @@ interface ReasonCard {
 
 // ─── Replace these with your real reasons ─────────────────────────────────────
 const REASONS: ReasonCard[] = [
-  { id: 'r1',  number: 1,  reason: 'The way you laugh when something really catches you off guard.', shade: 'rose' },
-  { id: 'r2',  number: 2,  reason: 'How you care about people quietly, without needing credit for it.', shade: 'blush' },
-  { id: 'r3',  number: 3,  reason: 'The face you make when you are thinking hard about something.', shade: 'mauve' },
-  { id: 'r4',  number: 4,  reason: 'The way silence with you never feels like an absence.', shade: 'gold' },
-  { id: 'r5',  number: 5,  reason: 'How you notice small things other people walk right past.', shade: 'lavender' },
-  { id: 'r6',  number: 6,  reason: 'The way your voice changes when you talk about something you love.', shade: 'rose' },
-  { id: 'r7',  number: 7,  reason: 'Your stubbornness. Even when it drives me crazy — it is you.', shade: 'blush' },
-  { id: 'r8',  number: 8,  reason: 'The way you make ordinary moments feel like they matter.', shade: 'mauve' },
-  { id: 'r9',  number: 9,  reason: 'How honest you are, even when it would be easier not to be.', shade: 'gold' },
-  { id: 'r10', number: 10, reason: 'The fact that you are still here, reading this.', sub: 'That alone says everything.', shade: 'lavender' },
-  { id: 'r11', number: 11, reason: 'The warmth you bring into every room without even trying.', shade: 'rose' },
-  { id: 'r12', number: 12, reason: 'The way you hold onto things that matter — people, memories, feelings.', shade: 'blush' },
-  { id: 'r13', number: 13, reason: 'Your kindness. It is not small. It is one of the biggest things about you.', shade: 'mauve' },
-  { id: 'r14', number: 14, reason: 'The version of me I become around you. That version is better.', shade: 'gold' },
-  { id: 'r15', number: 15, reason: 'Simply you. All of it. Every single part.', sub: 'Always.', shade: 'lavender' },
+  { id: 'r1',  number: 1,  reason: 'The way you laughed and then immediately tried to hide it — like you were embarrassed to find something that funny. That split second before you gave in. I replayed it more than I should admit.', shade: 'rose' },
+  { id: 'r2',  number: 2,  reason: 'How you check on people without announcing it. No post, no credit, no audience. You just quietly make sure the people you love are okay. I noticed every single time.', shade: 'blush' },
+  { id: 'r3',  number: 3,  reason: 'The way you go still when you are actually listening — not performing attention, but fully in it. Most people are already forming their reply. You were never doing that.', shade: 'mauve' },
+  { id: 'r4',  number: 4,  reason: 'That you say what you mean, even when it is uncomfortable. You never made me guess. That kind of honesty is rarer than people think, and I did not value it the way I should have.', shade: 'gold' },
+  { id: 'r5',  number: 5,  reason: 'How you talk about the things you love — your whole face changes. Your voice shifts. It is like watching someone become completely themselves. I could have listened for hours.', shade: 'lavender' },
+  { id: 'r6',  number: 6,  reason: 'The fact that you remember the small things people tell you and bring them back weeks later. Not because you were keeping notes — just because you actually cared.', shade: 'rose' },
+  { id: 'r7',  number: 7,  reason: 'Your stubbornness. I know it frustrated me sometimes. But it also meant that when you chose something — or someone — you did not take it lightly. I understand that now.', shade: 'blush' },
+  { id: 'r8',  number: 8,  reason: 'The way you make a quiet evening feel like it is enough. No agenda, no performance. Just being somewhere with you had a weight to it that I have not found anywhere else.', shade: 'mauve' },
+  { id: 'r9',  number: 9,  reason: 'That you hold yourself to a standard most people would quietly lower. You notice when you have fallen short before anyone else does. That kind of self-awareness is not easy to carry.', shade: 'gold' },
+  { id: 'r10', number: 10, reason: 'The night you stayed on the call even when there was nothing left to say — just so neither of us had to hang up first.', sub: 'I have thought about that more times than I can count.', shade: 'lavender' },
+  { id: 'r11', number: 11, reason: 'How you get indignant on behalf of other people. When something is unfair to someone you care about, it bothers you more than if it had happened to you. That is not common. That is you.', shade: 'rose' },
+  { id: 'r12', number: 12, reason: 'The way you give people the benefit of the doubt — not naively, but generously. You assume the better version of people until they prove otherwise. I want to be more like that.', shade: 'blush' },
+  { id: 'r13', number: 13, reason: 'Your laugh when something genuinely surprises you — unguarded, a little unhinged, completely real. Every other version is fine. That one was my favourite.', shade: 'mauve' },
+  { id: 'r14', number: 14, reason: 'Who I was around you. More careful with words. More present. Less in my own head. I did not always live up to that version of myself — but you are the reason it existed at all.', shade: 'gold' },
+  { id: 'r15', number: 15, reason: 'You, Smriti. Not a curated version, not the highlights — all of it. The warmth and the hard edges and the silences and the way you love people. All of it.', sub: 'Always.', shade: 'lavender' },
 ];
 
 const SEQUENCE_REASONS: ReasonCard[] = [REASONS[0], REASONS[3], REASONS[8], REASONS[14]];

@@ -8,12 +8,12 @@ import { TextReveal } from '@/components/transitions/TextReveal';
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
 const LETTER_PARAGRAPHS = [
-  'Anya,',
-  'I have been carrying this for a while. And I think it is time I stopped hiding it in late-night overthinking and actually gave it to you.',
-  'You are one of the most important people in my life. I ruined something beautiful and rare, and I know that.',
-  'I was wrong. Specifically. Repeatedly. I chose myself when I should have chosen us.',
-  'If you ever let me try again, I will do it quietly and consistently. Not with promises, but with presence.',
-  'With all the love I still carry,\n- Ayrin',
+  'Smriti,',
+  'I have been sitting with this for a long time. Not because I did not know what I wanted to say — but because I kept waiting for the right moment. There is no right moment. So here it is.',
+  'I pulled away. Not all at once — gradually, in the small ways that are harder to name but easier to feel. I stopped reaching out first. I got quieter. I convinced myself you were fine, that you did not need me to show up. I was not giving you space. I was retreating. And you deserved someone who moved closer.',
+  'I imagine that felt like indifference. Maybe even like I had already decided something about us without telling you. You were not wrong to read it that way. What I was doing looked exactly like not caring — and that is the part I cannot stop thinking about.',
+  'I want to be with you. Not someday, not in theory. Clearly, and without conditions. If you give me another chance, I will not make you wonder where I am. I will show up. Consistently. That is not a promise made from guilt. It is what I actually want.',
+  'With all the love I still carry,\n— Ayrin',
 ];
 
 export function Screen07ALetter() {

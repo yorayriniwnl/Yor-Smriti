@@ -247,7 +247,7 @@ export function Screen08ComeBack() {
               paddingBottom: '1px',
             }}
           >
-            Send him a reply 💌
+            Send a reply 💌
           </Link>
         </motion.div>
       </div>

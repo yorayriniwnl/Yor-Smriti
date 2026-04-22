@@ -24,7 +24,7 @@ const dmMono = DM_Mono({
   display: 'swap',
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://yor-smriti.vercel.app';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://yorayriniwnl.in';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

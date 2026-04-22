@@ -23,21 +23,21 @@ interface Star {
 
 // ─── Map each star to a real memory ──────────────────────────────────────────
 const STARS: Star[] = [
-  { id: 's1',  x: 20, y: 18, size: 7,  brightness: 0.95, pulseDelay: 0,   isSpecial: true,  memory: 'The first time I knew I liked you.', date: 'The beginning' },
-  { id: 's2',  x: 48, y: 12, size: 5,  brightness: 0.7,  pulseDelay: 0.8, memory: 'The sound of your laugh from across the room.' },
-  { id: 's3',  x: 72, y: 22, size: 8,  brightness: 1.0,  pulseDelay: 1.2, isSpecial: true,  memory: 'Our first real conversation that went on too long.', date: 'Early days' },
-  { id: 's4',  x: 14, y: 42, size: 4,  brightness: 0.55, pulseDelay: 2.1, memory: 'You mentioning something small that I never forgot.' },
-  { id: 's5',  x: 33, y: 38, size: 6,  brightness: 0.8,  pulseDelay: 0.4, memory: 'A moment of silence that did not need to be filled.' },
-  { id: 's6',  x: 60, y: 35, size: 5,  brightness: 0.65, pulseDelay: 1.7, memory: 'When you were kind to someone who was not even watching.' },
-  { id: 's7',  x: 82, y: 44, size: 4,  brightness: 0.5,  pulseDelay: 0.9, memory: 'The way your voice changed when you talked about something you loved.' },
-  { id: 's8',  x: 10, y: 62, size: 5,  brightness: 0.72, pulseDelay: 1.4, memory: 'When you made me feel like I was the only person in the room.' },
-  { id: 's9',  x: 42, y: 58, size: 9,  brightness: 1.0,  pulseDelay: 0.2, isSpecial: true,  memory: 'The moment I stopped pretending I was not falling for you.', date: 'The turning point' },
-  { id: 's10', x: 66, y: 62, size: 5,  brightness: 0.68, pulseDelay: 2.4, memory: 'How easy it was to be quiet with you.' },
-  { id: 's11', x: 88, y: 58, size: 4,  brightness: 0.5,  pulseDelay: 1.1, memory: 'Something you said that I still think about.' },
-  { id: 's12', x: 25, y: 76, size: 6,  brightness: 0.78, pulseDelay: 0.6, memory: 'When you noticed I was not okay before I said anything.' },
-  { id: 's13', x: 52, y: 80, size: 4,  brightness: 0.55, pulseDelay: 1.9, memory: 'A small moment that meant more than either of us admitted.' },
-  { id: 's14', x: 74, y: 78, size: 5,  brightness: 0.7,  pulseDelay: 0.3, memory: 'Laughing at something that made no sense to anyone else.' },
-  { id: 's15', x: 38, y: 88, size: 8,  brightness: 0.9,  pulseDelay: 1.5, isSpecial: true,  memory: 'You. Right now. Still here.', date: 'Now' },
+  { id: 's1',  x: 20, y: 18, size: 7,  brightness: 0.95, pulseDelay: 0,   isSpecial: true,  memory: 'The first moment I saw you and felt something I did not have a name for yet. I still do not think there is a word for it.', date: 'The beginning' },
+  { id: 's2',  x: 48, y: 12, size: 5,  brightness: 0.7,  pulseDelay: 0.8, memory: 'The way you laughed at something I said — like you actually meant it. I kept trying to be funny after that just to hear it again.' },
+  { id: 's3',  x: 72, y: 22, size: 8,  brightness: 1.0,  pulseDelay: 1.2, isSpecial: true,  memory: 'The first real conversation we had that went on longer than either of us planned. I did not want it to end. I pretended I was fine when it did.', date: 'Early days' },
+  { id: 's4',  x: 14, y: 42, size: 4,  brightness: 0.55, pulseDelay: 2.1, memory: 'Something small you did for someone else when you thought no one was paying attention. I was paying attention.' },
+  { id: 's5',  x: 33, y: 38, size: 6,  brightness: 0.8,  pulseDelay: 0.4, memory: 'A silence between us that did not need to be filled. I remember thinking — this is rare. This is really rare.' },
+  { id: 's6',  x: 60, y: 35, size: 5,  brightness: 0.65, pulseDelay: 1.7, memory: 'The way you described something you loved — your whole face changed. I wanted to be someone you talked about like that.' },
+  { id: 's7',  x: 82, y: 44, size: 4,  brightness: 0.5,  pulseDelay: 0.9, memory: 'When you checked on me before I said anything was wrong. I do not know how you knew. I am glad you did.' },
+  { id: 's8',  x: 10, y: 62, size: 5,  brightness: 0.72, pulseDelay: 1.4, memory: 'You made me feel like I was worth paying attention to. I am not sure I believed that before you.' },
+  { id: 's9',  x: 42, y: 58, size: 9,  brightness: 1.0,  pulseDelay: 0.2, isSpecial: true,  memory: 'The exact moment I stopped pretending I was not falling for you. I remember where I was. I remember what I was doing. I remember thinking — this is going to change everything.', date: 'The turning point' },
+  { id: 's10', x: 66, y: 62, size: 5,  brightness: 0.68, pulseDelay: 2.4, memory: 'How easy it was to just exist near you. No performance. No armour. Just easy.' },
+  { id: 's11', x: 88, y: 58, size: 4,  brightness: 0.5,  pulseDelay: 1.1, memory: 'Something you said offhand that you probably forgot immediately. I have not forgotten it. I do not think I ever will.' },
+  { id: 's12', x: 25, y: 76, size: 6,  brightness: 0.78, pulseDelay: 0.6, memory: 'When I pulled away and you still did not give up on me right away. You gave me more patience than I deserved. I know that now.' },
+  { id: 's13', x: 52, y: 80, size: 4,  brightness: 0.55, pulseDelay: 1.9, memory: 'Laughing together at something that would not be funny to anyone else. That specific kind of laugh — I miss it.' },
+  { id: 's14', x: 74, y: 78, size: 5,  brightness: 0.7,  pulseDelay: 0.3, memory: 'A moment I wish I had handled differently. I have replayed it enough times to know exactly what I should have said. I am saying it now, just late.' },
+  { id: 's15', x: 38, y: 88, size: 8,  brightness: 0.9,  pulseDelay: 1.5, isSpecial: true,  memory: 'You. Still. After everything. I am still here too — whenever you are ready.', date: 'Now' },
 ];
 
 // Constellation lines (pairs of star IDs to connect)

@@ -47,7 +47,7 @@ export default async function LandingWelcomePage({
             fontSize: '0.62rem',
           }}
         >
-          landing page
+          for smriti
         </p>
 
         <h1
@@ -59,7 +59,7 @@ export default async function LandingWelcomePage({
             fontWeight: 500,
           }}
         >
-          Are you ready for the good part sweety ?
+          I made this for you, Smriti.
         </h1>
 
         <p
@@ -71,7 +71,7 @@ export default async function LandingWelcomePage({
             lineHeight: 1.58,
           }}
         >
-          Tap continue and I will show you all the cards, apology, and everything from my heart.
+          I want to show you something I made. No expectations — just everything I have been carrying, laid out honestly.
         </p>
 
         <div className="mt-7 flex items-center justify-center gap-3">

@@ -67,5 +67,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   const ip = getClientIp(request);
   logger.info(`[event] ${eventName}${screen ? ` screen=${screen}` : ''} ip=${ip}`);
 
+  if (body.event === 'experience_opened') {
+    // Fire-and-forget first-visit notification
+    import('@/lib/email').then(({ notifyFirstVisit }) => {
+      notifyFirstVisit({ ip, timestamp: new Date().toISOString() }).catch((e: unknown) =>
+        logger.error('[events] first-visit email error:', e)
+      );
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ ok: true });
 }

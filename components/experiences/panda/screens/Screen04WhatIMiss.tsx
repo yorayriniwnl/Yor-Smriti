@@ -10,32 +10,32 @@ const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 const MISS_ITEMS = [
   {
     id: 'miss-1',
-    title: 'Your late-night check-ins.',
-    detail: 'The small "did you eat?" messages that felt like home.',
+    title: 'Your check-ins that asked nothing in return.',
+    detail: 'Just a quiet "are you okay" that felt like someone had their hand on my shoulder.',
     glow: 'rgba(200, 160, 220, 0.2)',
   },
   {
     id: 'miss-2',
-    title: 'The way you say my name.',
-    detail: 'No one else sounds like safety when they say it.',
+    title: 'The way you laughed before you could stop yourself.',
+    detail: 'That half-second before you composed yourself. That was my favourite version of you.',
     glow: 'rgba(255, 186, 142, 0.19)',
   },
   {
     id: 'miss-3',
-    title: 'Our music and our pauses.',
-    detail: 'Even silence was warm when it was with you.',
+    title: 'Talking about nothing and it mattering completely.',
+    detail: 'The kind of conversation that has no point except that we were in it together.',
     glow: 'rgba(144, 202, 255, 0.19)',
   },
   {
     id: 'miss-4',
-    title: 'Your stubborn little smile.',
-    detail: 'Especially when you try to hide it and fail.',
+    title: 'The way you made me want to be better.',
+    detail: 'Without asking me to. Just by being the way you are.',
     glow: 'rgba(255, 168, 196, 0.21)',
   },
   {
     id: 'miss-5',
-    title: 'You, near me, being you.',
-    detail: 'That is still my favorite feeling in this world.',
+    title: 'You. All of it. You.',
+    detail: 'That is still my favourite feeling in this whole world.',
     glow: 'rgba(255, 214, 152, 0.18)',
   },
 ];

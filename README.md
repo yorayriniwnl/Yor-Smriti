@@ -6,7 +6,7 @@
 
 ## 🔗 Live
 
-https://yor-smriti.vercel.app
+https://yorayriniwnl.in
 
 ---
 

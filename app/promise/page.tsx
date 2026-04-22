@@ -17,56 +17,49 @@ interface Promise {
   weight: 'light' | 'medium' | 'heavy';
 }
 
-// ─── Replace with your real promises ─────────────────────────────────────────
+// ─── Real promises — specific, not decorative ────────────────────────────────
 const PROMISES: Promise[] = [
   {
     id: 'p1',
     number: 1,
-    title: 'I will listen.',
-    body: 'Not wait to speak. Not plan my reply while you are still talking. Actually listen — to what you say, and to what you do not say.',
-    weight: 'light',
+    title: 'I will not go quiet.',
+    body: 'When things get hard, I used to disappear into myself and call it giving you space. It was not that. It was avoidance. I will stay present — especially when staying present is uncomfortable. If I need time, I will say so. I will not just vanish.',
+    weight: 'heavy',
   },
   {
     id: 'p2',
     number: 2,
-    title: 'I will be honest.',
-    body: 'Even when honesty is uncomfortable. Even when silence would be easier. You deserve the truth from me, always.',
+    title: 'I will say what is actually true.',
+    body: 'Not the version that makes things easier. Not "I am fine" when I am not. You always said exactly what you meant — I never matched that. I am going to try. The real answer, even when it is messy, even when I do not have it fully formed yet.',
     weight: 'medium',
   },
   {
     id: 'p3',
     number: 3,
-    title: 'I will show up.',
-    body: 'Not just when it is easy. On the difficult days, the quiet days, the days when nothing needs to be said. I will be there.',
+    title: 'I will listen without waiting for my turn.',
+    body: 'I have caught myself forming replies while you were still talking. That is not listening — that is waiting. When you speak, I am going to be fully in it. Not solving, not planning my response. Just there, with you, in what you are saying.',
     weight: 'medium',
   },
   {
     id: 'p4',
     number: 4,
-    title: 'I will choose you — intentionally.',
-    body: 'Not out of habit. Not by default. Every day, as a decision. You will not have to wonder if I want to be here.',
+    title: 'I will choose you — as a decision, not a default.',
+    body: 'Every day. Not because it is familiar, not because change is hard. Because you are the person I want. That is a choice I will make deliberately, and I will make sure you can feel that it is a choice — not just inertia.',
     weight: 'heavy',
   },
   {
     id: 'p5',
     number: 5,
-    title: 'I will earn back trust.',
-    body: 'Not ask for it. Not expect it. Earn it — slowly, with actions, over time. I understand trust is rebuilt, not restored instantly.',
+    title: 'I will earn trust — not ask for it.',
+    body: 'I know "trust me" means nothing right now. I am not saying it. I am saying I understand that trust comes back through months of consistency, not through a conversation. I will be consistent. You will not have to wonder.',
     weight: 'heavy',
   },
   {
     id: 'p6',
     number: 6,
-    title: 'I will not take you for granted.',
-    body: 'I know what I lost when distance grew between us. I am not willing to forget that lesson. You matter. You will feel that.',
-    weight: 'heavy',
-  },
-  {
-    id: 'p7',
-    number: 7,
-    title: 'I promise.',
-    body: 'Not just today, not just because I want things to be okay right now — but as something I will hold myself to, every day.',
-    weight: 'heavy',
+    title: 'I will notice — and I will say it.',
+    body: 'I noticed everything. I just kept it to myself. The small things you did for people, the moments you were quietly extraordinary, the times you were more generous than you needed to be. I am going to say those things out loud, every time.',
+    weight: 'light',
   },
 ];
 
