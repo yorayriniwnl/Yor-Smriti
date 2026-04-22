@@ -1,0 +1,7 @@
+# Yor Smriti - robots.txt
+
+# Private experience - keep out of search engines
+User-agent: *
+Disallow: /
+
+Sitemap: https://yor-smriti.vercel.app/sitemap.xml

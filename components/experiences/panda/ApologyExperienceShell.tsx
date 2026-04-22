@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { RainLayer } from '@/components/background/RainLayer';
+import { useEventTracking } from '@/hooks/useEventTracking';
 
 interface ApologyExperienceShellProps {
   children: ReactNode;
@@ -44,6 +46,11 @@ export function ApologyExperienceShell({
   showDecorativePill = true,
   showRainLayer = false,
 }: ApologyExperienceShellProps) {
+  const { track } = useEventTracking();
+  useEffect(() => {
+    track('apology_opened');
+  }, [track]);
+
   return (
     <main
       id="main-content"

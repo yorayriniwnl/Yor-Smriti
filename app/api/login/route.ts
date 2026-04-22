@@ -5,6 +5,8 @@ import { getOptionalServerEnv } from '@/lib/serverEnv';
 import { incMetric } from '@/lib/metrics';
 import { logger } from '@/lib/logger';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
+import { signSession, sessionCookieHeader } from '@/lib/auth';
+import { getClientIp, verifyCsrfHeader } from '@/lib/request';
 
 interface LoginRequestBody {
   username?: string;
@@ -16,11 +18,8 @@ export async function POST(request: Request) {
     const configuredUsername = getOptionalServerEnv('APP_USERNAME') ?? '';
     const configuredPassword = getOptionalServerEnv('APP_PASSWORD') ?? '';
 
-    if (!configuredUsername || !configuredPassword) {
-      // Server is not configured to accept logins safely.
-      logger.error('Login API misconfigured: APP_USERNAME and APP_PASSWORD must be set.');
-      return NextResponse.json({ ok: false, error: 'Server misconfiguration.' }, { status: 500 });
-    }
+    // If no credentials are configured, auto-login as guest (open experience)
+    const openAccess = !configuredUsername && !configuredPassword;
 
     let body: LoginRequestBody;
     try {
@@ -31,37 +30,60 @@ export async function POST(request: Request) {
 
     const rawUser = typeof body.username === 'string' ? body.username : '';
     const rawPass = typeof body.password === 'string' ? body.password : '';
-
-    const username = sanitizeString(rawUser, { maxLength: 128, allowNewlines: false });
+    const username = sanitizeString(rawUser, { maxLength: 128, allowNewlines: false }) || 'guest';
     const password = sanitizeString(rawPass, { maxLength: 256, allowNewlines: false });
 
-    if (!username || !password) {
-      return NextResponse.json({ ok: false, error: 'Missing username or password.' }, { status: 400 });
+    // Rate-limit per IP + username
+    // CSRF check
+    if (!verifyCsrfHeader(request)) {
+      return NextResponse.json({ ok: false, error: 'Forbidden.' }, { status: 403 });
     }
 
-    // Rate-limit login attempts per IP+username to mitigate brute-force attacks.
-    const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0].trim();
-    const realIp = request.headers.get('x-real-ip');
-    const ip = forwardedFor ?? realIp ?? 'unknown';
-    const rateKey = `${ip}:${username}`;
-    const limit = Number(getOptionalServerEnv('LOGIN_RATE_LIMIT') ?? '5');
+    const ip = getClientIp(request);
+    const rateKey = `login:${ip}:${username}`;
+    const limit = Number(getOptionalServerEnv('LOGIN_RATE_LIMIT') ?? '10');
     const windowMs = Number(getOptionalServerEnv('LOGIN_RATE_WINDOW_MS') ?? '60000');
+
     const rl = await checkAndRecordRateLimit(rateKey, limit, windowMs);
     if (!rl.allowed) {
       incMetric('rate_limit_blocked_total', { endpoint: 'login' });
       const retryAfter = Math.max(0, Math.ceil((rl.resetMs - Date.now()) / 1000));
-      return NextResponse.json({ ok: false, error: 'Too many login attempts. Try again later.' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
+      return NextResponse.json(
+        { ok: false, error: 'Too many login attempts. Try again later.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      );
     }
     incMetric('rate_limit_allowed_total', { endpoint: 'login' });
 
-    // Use constant-time compare to avoid timing attacks
-    const isValid = secureCompare(username, configuredUsername) && secureCompare(password, configuredPassword);
-
-    if (!isValid) {
-      return NextResponse.json({ ok: false, error: 'Invalid credentials.' }, { status: 401 });
+    // Verify credentials (skip if open access)
+    if (!openAccess) {
+      if (!configuredUsername || !configuredPassword) {
+        logger.error('Login API misconfigured: APP_USERNAME and APP_PASSWORD must both be set.');
+        return NextResponse.json({ ok: false, error: 'Server misconfiguration.' }, { status: 500 });
+      }
+      const valid =
+        secureCompare(username, configuredUsername) &&
+        secureCompare(password, configuredPassword);
+      if (!valid) {
+        incMetric('login_failed_total');
+        return NextResponse.json({ ok: false, error: 'Invalid credentials.' }, { status: 401 });
+      }
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    // Issue JWT session
+    const sub = openAccess ? 'guest' : username;
+    const token = signSession(sub);
+
+    incMetric('login_success_total');
+    logger.info(`Login success: ${sub} from ${ip}`);
+
+    return NextResponse.json(
+      { ok: true, user: sub },
+      {
+        status: 200,
+        headers: { 'Set-Cookie': sessionCookieHeader(token) },
+      }
+    );
   } catch (err) {
     logger.error('Login API error:', err);
     return NextResponse.json({ ok: false, error: 'Internal server error.' }, { status: 500 });

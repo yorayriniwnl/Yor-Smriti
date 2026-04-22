@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { motion } from 'framer-motion';
 import type { ExperienceScreenProps } from '@/hooks/useExperienceFlow';
 
@@ -90,6 +92,18 @@ export function EndingHopefulScreen({
         >
           Revisit choice
         </motion.button>
+        <Link
+          href="/reply"
+          className="text-[0.62rem] uppercase tracking-[0.1em]"
+          style={{
+            fontFamily: 'var(--font-dm-mono)',
+            color: 'rgba(255,171,210,0.6)',
+            borderBottom: '1px solid rgba(255,171,210,0.22)',
+            paddingBottom: '1px',
+          }}
+        >
+          Send a reply 💌
+        </Link>
       </motion.div>
     </section>
   );
@@ -181,6 +195,18 @@ export function EndingClosureScreen({
         >
           Revisit choice
         </motion.button>
+        <Link
+          href="/reply"
+          className="text-[0.62rem] uppercase tracking-[0.1em]"
+          style={{
+            fontFamily: 'var(--font-dm-mono)',
+            color: 'rgba(255,171,210,0.6)',
+            borderBottom: '1px solid rgba(255,171,210,0.22)',
+            paddingBottom: '1px',
+          }}
+        >
+          Send a reply 💌
+        </Link>
       </motion.div>
     </section>
   );

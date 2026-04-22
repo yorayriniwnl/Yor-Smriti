@@ -1,21 +1,38 @@
 "use client";
 
-import React from 'react';
-
 export function CanvasModelPlaceholder() {
-  // Simple low-poly placeholder to render inside a <Canvas> while the real model loads.
-  // Keeps the canvas from going blank and feels minimal.
   return (
-    <group>
-      <mesh position={[0, 0.9, 0]}>
-        <sphereGeometry args={[0.9, 20, 16]} />
-        <meshStandardMaterial color="#ff9ab8" roughness={0.6} metalness={0.05} />
-      </mesh>
-      <mesh position={[0, -0.4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[6, 6]} />
-        <meshStandardMaterial color="#0b0610" opacity={0.18} transparent />
-      </mesh>
-    </group>
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        minHeight: '240px',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: '12% 24% auto',
+          aspectRatio: '1 / 1',
+          borderRadius: '999px',
+          background: 'radial-gradient(circle at 35% 30%, #ffc1d6 0%, #ff9ab8 45%, rgba(255, 154, 184, 0.08) 100%)',
+          filter: 'blur(0.5px)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: '12%',
+          right: '12%',
+          bottom: '14%',
+          height: '22%',
+          borderRadius: '999px',
+          background: 'radial-gradient(circle, rgba(11,6,16,0.28) 0%, rgba(11,6,16,0.02) 72%)',
+        }}
+      />
+    </div>
   );
 }
 

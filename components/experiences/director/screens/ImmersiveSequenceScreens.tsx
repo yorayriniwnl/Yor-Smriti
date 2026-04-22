@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { RefObject } from 'react';
 import { motion } from 'framer-motion';
 import { TextReveal } from '@/components/transitions/TextReveal';
 import type { ExperienceScreenProps } from '@/hooks/useExperienceFlow';
 
 import { LETTER_PARAGRAPHS, TIMELINE_CARDS, FRAGMENT_WORDS, SMALL_THINGS, LETTER_PAGE_LINES, STORY_HINT_FRAGMENTS } from './immersive/constants';
 
-import { clampNumber, resolveLetterGhostLines, toPublicScreenNumber } from './immersive/utils';
+import { toPublicScreenNumber } from './immersive/utils';
 
 import { useEmotionalScrollResistance } from './immersive/hooks';
 

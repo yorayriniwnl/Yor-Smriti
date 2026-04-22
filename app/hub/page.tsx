@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import MemoryTimeline, { MemoryItem } from '@/components/ui/MemoryTimeline';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
+import { LogoutButton } from '@/components/ui/LogoutButton';
+import { useEventTracking } from '@/hooks/useEventTracking';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -84,6 +86,11 @@ const EXPERIENCES: Experience[] = [
 
 export default function HubPage() {
   const [hovered, setHovered] = useState<string | null>(null);
+  const { track } = useEventTracking();
+
+  useEffect(() => {
+    track('experience_opened');
+  }, [track]);
 
   const SAMPLE_MEMORIES: MemoryItem[] = [
     {
@@ -228,8 +235,7 @@ export default function HubPage() {
                 transition={{ duration: 0.4, ease: EASE_SOFT }}
                 className="hub-card micro-hover relative overflow-hidden rounded-[1.6rem] border px-6 py-7"
                 style={{
-                  background:
-                    'linear-gradient(160deg, rgba(40, 14, 32, 0.92) 0%, rgba(18, 7, 16, 0.96) 100%)',
+                  background: 'linear-gradient(160deg, rgba(40, 14, 32, 0.92) 0%, rgba(18, 7, 16, 0.96) 100%)',
                 }}
               >
                 <motion.div
@@ -237,8 +243,7 @@ export default function HubPage() {
                   animate={{ opacity: hovered === exp.href ? 1 : 0 }}
                   transition={{ duration: 0.4 }}
                   style={{
-                    background:
-                      'radial-gradient(circle at 20% 20%, rgba(255, 200, 230, 0.1), transparent 60%)',
+                    background: 'radial-gradient(circle at 20% 20%, rgba(255, 200, 230, 0.1), transparent 60%)',
                   }}
                 />
 
@@ -366,6 +371,22 @@ export default function HubPage() {
         >
           ← Back to message
         </Link>
+
+        <div className="mt-4 flex items-center gap-4">
+          <Link
+            href="/admin"
+            style={{
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '0.6rem',
+              letterSpacing: '0.1em',
+              color: 'rgba(255,150,185,0.35)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Analytics
+          </Link>
+          <LogoutButton />
+        </div>
       </motion.div>
     </main>
   );

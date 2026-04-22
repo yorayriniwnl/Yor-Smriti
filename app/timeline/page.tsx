@@ -6,6 +6,7 @@ import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { useCinematicScenePhase } from '@/hooks/useCinematicScenePhase';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
+import { useEventTracking } from '@/hooks/useEventTracking';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -604,6 +605,11 @@ function TimelinePageContent() {
 }
 
 export default function TimelinePage() {
+  const { track } = useEventTracking();
+  useEffect(() => {
+    track('timeline_viewed');
+  }, [track]);
+
   return (
     <Suspense fallback={null}>
       <TimelinePageContent />

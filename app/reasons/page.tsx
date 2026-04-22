@@ -117,7 +117,7 @@ function ReasonsPageContent() {
     return () => {
       timeoutIds.forEach((id) => window.clearTimeout(id));
     };
-  }, [isSequenceMode, visibleReasons.length]);
+  }, [isSequenceMode, visibleReasons]);
 
   const goNext = useCallback(() => {
     if (current < total - 1) {

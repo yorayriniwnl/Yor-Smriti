@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { MutableRefObject } from 'react';
 import type { Emotion } from '@/lib/emotionThemes';
-import { useAppStore } from '@/hooks/useStageController';
+
 
 interface BackgroundMusicOptions {
   enabled?: boolean;
@@ -134,8 +134,7 @@ export function useEmotionBackgroundMusic(
   });
 }
 
-export function useAmbientSound() {
-  const soundEnabled = useAppStore((s) => s.soundEnabled);
+export function useAmbientSound(soundEnabled = false) {
   const nodesRef = useRef<SoundNodes | null>(null);
   const isStartedRef = useRef(false);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

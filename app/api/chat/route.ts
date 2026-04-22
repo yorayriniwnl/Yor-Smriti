@@ -4,6 +4,8 @@ import { getOptionalServerEnv, getOpenAiModel } from '@/lib/serverEnv';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger';
 import { incMetric } from '@/lib/metrics';
+import { getTokenFromRequest, verifySession } from '@/lib/auth';
+import { getClientIp } from '@/lib/request';
 
 type CharacterEmotion =
   | 'calm'
@@ -30,10 +32,23 @@ interface ChatPayload {
   emotion: CharacterEmotion;
 }
 
+interface OpenAIContentPart {
+  type?: string;
+  text?: string;
+  parts?: string[];
+}
+
+function extractTextFromContentPart(part: OpenAIContentPart | string): string {
+  if (typeof part === 'string') return part;
+  if (typeof part.text === 'string') return part.text;
+  if (Array.isArray(part.parts)) return part.parts.join('');
+  return '';
+}
+
 interface OpenAIChoiceResponse {
   choices?: Array<{
     message?: {
-      content?: string | Array<{ text?: string; type?: string }>;
+      content?: string | OpenAIContentPart | OpenAIContentPart[];
     };
   }>;
 }
@@ -265,7 +280,7 @@ async function requestOpenAIReply(
       const errBody = await response.text();
       logger.error('OpenAI API error', response.status, errBody);
       incMetric('openai_request_failed_total', { model, status: String(response.status) });
-    } catch (e) {
+    } catch {
       logger.error('OpenAI API error, status:', response.status);
       incMetric('openai_request_failed_total', { model, status: String(response.status) });
     }
@@ -281,17 +296,11 @@ async function requestOpenAIReply(
     if (typeof content === 'string') {
       text = content;
     } else if (Array.isArray(content)) {
-      text = content
-        .map((part) => {
-          if (!part) return '';
-          if (typeof (part as any) === 'string') return part as any;
-          return (part as any).text ?? (Array.isArray((part as any).parts) ? (part as any).parts.join('') : '');
-        })
-        .join('');
+      text = content.map(extractTextFromContentPart).join('');
     } else if (content && typeof content === 'object') {
-      text = Array.isArray((content as any).parts) ? (content as any).parts.join('') : JSON.stringify(content);
+      text = extractTextFromContentPart(content as OpenAIContentPart);
     }
-  } catch (err) {
+  } catch {
     try {
       text = await response.text();
     } catch {
@@ -324,6 +333,12 @@ async function requestOpenAIReply(
 }
 
 export async function POST(request: Request) {
+  // Verify session before processing
+  const token = getTokenFromRequest(request);
+  if (!token || !verifySession(token)) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   let body: ChatRequestBody;
 
   try {
@@ -339,9 +354,7 @@ export async function POST(request: Request) {
 
   // Rate-limit chat requests per IP to protect API usage.
   try {
-    const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0].trim();
-    const realIp = request.headers.get('x-real-ip');
-    const ip = forwardedFor ?? realIp ?? 'unknown';
+    const ip = getClientIp(request);
     const rateKey = `chat:${ip}`;
     const limit = Number(getOptionalServerEnv('CHAT_RATE_LIMIT') ?? '20');
     const windowMs = Number(getOptionalServerEnv('CHAT_RATE_WINDOW_MS') ?? '60000');

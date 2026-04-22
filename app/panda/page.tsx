@@ -1,6 +1,18 @@
 import Link from 'next/link';
 import { PANDA_SCREEN_REGISTRY } from '@/lib/pandaScreenRegistry';
 
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Apology Journey',
+  description: 'Eight screens. One honest apology.',
+  openGraph: {
+    title: 'Apology Journey — Yor Smriti',
+    description: 'Eight screens. One honest apology.',
+  },
+};
+
+
 export default function PandaIndexPage() {
   return (
     <main

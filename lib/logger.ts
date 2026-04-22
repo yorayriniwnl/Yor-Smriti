@@ -25,22 +25,18 @@ function formatPrefix(level: LogLevel) {
 export const logger = {
   error: (...args: unknown[]) => {
     if (!shouldLog('error')) return;
-    // eslint-disable-next-line no-console
     console.error(formatPrefix('error'), ...args);
   },
   warn: (...args: unknown[]) => {
     if (!shouldLog('warn')) return;
-    // eslint-disable-next-line no-console
     console.warn(formatPrefix('warn'), ...args);
   },
   info: (...args: unknown[]) => {
     if (!shouldLog('info')) return;
-    // eslint-disable-next-line no-console
     console.info(formatPrefix('info'), ...args);
   },
   debug: (...args: unknown[]) => {
     if (!shouldLog('debug')) return;
-    // eslint-disable-next-line no-console
     console.log(formatPrefix('debug'), ...args);
   },
 };

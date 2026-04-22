@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
+import { useEventTracking } from '@/hooks/useEventTracking';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -277,7 +278,7 @@ function PromisePageContent() {
     return () => {
       timeoutIds.forEach((id) => window.clearTimeout(id));
     };
-  }, [isSequenceMode, visiblePromises.length]);
+  }, [isSequenceMode, visiblePromises]);
 
   const handleNext = useCallback(() => {
     if (isLast) {
@@ -586,6 +587,11 @@ function PromisePageContent() {
 }
 
 export default function PromisePage() {
+  const { track } = useEventTracking();
+  useEffect(() => {
+    track('promise_viewed');
+  }, [track]);
+
   return (
     <Suspense fallback={null}>
       <PromisePageContent />

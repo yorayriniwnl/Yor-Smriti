@@ -27,11 +27,7 @@ const RainLayer = dynamic(
   { ssr: false, loading: () => <LoadingFallback compact /> },
 );
 
-// Lazy-load CharacterOverlay (three.js + drei) to avoid loading 3D stack on initial bundle.
-const CharacterOverlay = dynamic(
-  () => import('@/components/character/CharacterOverlay').then((m) => m.CharacterOverlay),
-  { ssr: false, loading: () => <LoadingFallback compact /> },
-);
+
 import { PageTransition } from '@/components/transitions/PageTransition';
 import { useRouter } from 'next/navigation';
 import { useImmersiveNavigation } from '@/components/experiences/panda/hooks/useImmersiveNavigation';
@@ -61,7 +57,11 @@ import {
 import { useSubconsciousSoundDesign } from '@/hooks/useSubconsciousSoundDesign';
 import { resolveEndingFromEmotionPath } from '@/lib/experienceEndings';
 import { resolveEmotionTiming } from '@/lib/timeDistortion';
-import { resolveEmotionalPhysics } from '@/lib/emotionalPhysics';
+import {
+  resolveEmotionalPhysics,
+  type EmotionalPhysicsState,
+} from '@/lib/emotionalPhysics';
+import type { SceneAudioProfile } from '@/components/experiences/panda/audio/sceneAudioProfile';
 
 interface ExperienceControllerProps {
   screens: Screen[];
@@ -298,14 +298,14 @@ function buildScreenSequence(
 
 // Compute evolved audio profile (extracted for reuse)
 function computeEvolvedAudioProfile(
-  audioProfile: any,
+  audioProfile: SceneAudioProfile,
   opts: {
     currentScreenId: number;
     finalScreenId: number;
     isAudioGraceWindow: boolean;
     isSilentMode: boolean;
     lastAudibleVolume: number;
-    physics: any;
+    physics: Pick<EmotionalPhysicsState, 'audioGain' | 'silenceWeight'>;
     journeyProgress: number;
   }
 ) {
@@ -336,25 +336,6 @@ function computeEvolvedAudioProfile(
       * (0.92 + journeyProgress * 0.18)
       * muteFadeTuning,
     ),
-  };
-}
-
-// Create a cursor hide scheduler function that holds its own timer ref
-function createCursorScheduler(
-  setCursorHidden: (v: boolean) => void,
-  cursorInactivityTimerRef: { current: number | null },
-) {
-  return function scheduleCursorHide() {
-    if (cursorInactivityTimerRef.current !== null) {
-      window.clearTimeout(cursorInactivityTimerRef.current);
-    }
-
-    setCursorHidden(false);
-
-    cursorInactivityTimerRef.current = window.setTimeout(() => {
-      setCursorHidden(true);
-      cursorInactivityTimerRef.current = null;
-    }, 1700) as unknown as number;
   };
 }
 
@@ -513,8 +494,7 @@ export function ExperienceController({
     isAudioGraceWindow,
     isSilentMode,
     lastAudibleVolume,
-    physics.audioGain,
-    physics.silenceWeight,
+    physics,
     journeyProgress,
   ]);
 
@@ -577,10 +557,18 @@ export function ExperienceController({
     };
   }, []);
 
-  const scheduleCursorHide = useMemo(
-    () => createCursorScheduler(setCursorHidden, cursorInactivityTimerRef),
-    [setCursorHidden, cursorInactivityTimerRef],
-  );
+  const scheduleCursorHide = useCallback(() => {
+    if (cursorInactivityTimerRef.current !== null) {
+      window.clearTimeout(cursorInactivityTimerRef.current);
+    }
+
+    setCursorHidden(false);
+
+    cursorInactivityTimerRef.current = window.setTimeout(() => {
+      setCursorHidden(true);
+      cursorInactivityTimerRef.current = null;
+    }, 1700);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isPrivateMode) {
@@ -999,7 +987,7 @@ export function ExperienceController({
       {showDecorativeLayers ? <FloatingParticles emotion={activeEmotion} /> : null}
       {showDecorativeLayers ? <LightGlow emotion={activeEmotion} /> : null}
       {showRainLayer ? <RainLayer count={72} /> : null}
-      <CharacterOverlay screenId={currentScreenId} />
+
 
       <div
         className="pointer-events-none absolute inset-0 blur-2xl"

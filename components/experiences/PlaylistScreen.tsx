@@ -1,196 +1,217 @@
 'use client';
 
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 type Song = { id: string; title: string; artist: string; note: string; color: string; bar: number };
 
 type Props = {
   songs: Song[];
-  activeSong: number;
+  activeSong: string | null;
   playing: boolean;
   progress: number;
-  onTogglePlay: () => void;
-  onSelectSong: (index: number) => void;
+  onTogglePlay: (id: string) => void;
+  onSelectSong: (id: string) => void;
   onContinue: () => void;
 };
 
-export default function PlaylistScreen({ songs, activeSong, playing, progress, onTogglePlay, onSelectSong, onContinue }: Props) {
+// YouTube search URL for a song (opens in new tab)
+function buildYouTubeUrl(title: string, artist: string): string {
+  return `https://music.youtube.com/search?q=${encodeURIComponent(`${title} ${artist}`)}`;
+}
+
+export default function PlaylistScreen({
+  songs, activeSong, onSelectSong, onContinue,
+}: Props) {
+  const [openedExternal, setOpenedExternal] = useState<string | null>(null);
+
+  const handleSongClick = (song: Song) => {
+    onSelectSong(song.id);
+  };
+
+  const handleOpenYouTube = (e: React.MouseEvent, song: Song) => {
+    e.stopPropagation();
+    setOpenedExternal(song.id);
+    window.open(buildYouTubeUrl(song.title, song.artist), '_blank', 'noopener,noreferrer');
+  };
+
   return (
-    <div>
-      <div
-        style={{
-          background: 'linear-gradient(160deg,#ffd6e8,#ffc4d4)',
-          borderRadius: '24px 24px 0 0',
-          padding: '14px 20px 10px',
-          textAlign: 'center',
-        }}
-      >
-        <p style={{ margin: '0 0 2px', color: '#c83c82', fontWeight: 700, fontSize: '17px' }}>
-          Birthday Vibes Playlist 🎵
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem',
+        padding: '0.25rem 0',
+      }}
+    >
+      <div>
+        <p
+          style={{
+            fontFamily: 'var(--font-dm-mono)',
+            fontSize: '0.58rem',
+            letterSpacing: '0.16em',
+            color: 'rgba(255,180,210,0.5)',
+            textTransform: 'uppercase',
+            marginBottom: '0.6rem',
+          }}
+        >
+          Songs that feel like us
         </p>
-        <p style={{ margin: 0, color: '#d4548a', fontSize: '13px', fontStyle: 'italic' }}>
-          Songs that carry what words cannot
+        <p
+          style={{
+            fontFamily: 'var(--font-crimson)',
+            fontSize: '0.88rem',
+            color: 'rgba(255,190,220,0.5)',
+            lineHeight: 1.5,
+            marginBottom: '1rem',
+          }}
+        >
+          Tap a song to open it in YouTube Music. Each one was chosen for a reason.
         </p>
       </div>
 
-      <div
-        style={{
-          background: '#fff0f6',
-          border: '1px solid rgba(232,80,154,0.15)',
-          borderTop: 'none',
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}
-      >
-        <div
-          style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
-            background: `linear-gradient(135deg,${songs[activeSong].color},#c83c82)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '20px',
-            flexShrink: 0,
-          }}
-        >
-          🎵
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            style={{
-              margin: '0 0 1px',
-              fontWeight: 600,
-              fontSize: '14px',
-              color: '#7a2255',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {songs[activeSong].title}
-          </p>
-          <p
-            style={{
-              margin: '0 0 6px',
-              fontSize: '11px',
-              color: '#a07080',
-              fontFamily: "'Courier New', monospace",
-            }}
-          >
-            {songs[activeSong].artist}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '10px', color: '#aaa', fontFamily: "'Courier New', monospace" }}>
-              0:{Math.floor(progress * 0.36)
-                .toString()
-                .padStart(2, '0')}
-            </span>
-            <div
-              style={{
-                flex: 1,
-                height: '5px',
-                background: 'rgba(232,80,154,0.15)',
-                borderRadius: '10px',
-                overflow: 'hidden',
-              }}
-            >
-              <div className="progress-bar" style={{ width: `${progress}%` }} />
-            </div>
-            <span style={{ fontSize: '10px', color: '#aaa', fontFamily: "'Courier New', monospace" }}>
-              0:36
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={onTogglePlay}
-          aria-label={playing ? 'Pause song preview' : 'Play song preview'}
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg,#e8509a,#c83c82)',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#fff',
-            fontSize: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 4px 14px rgba(232,80,154,0.4)',
-          }}
-        >
-          {playing ? '⏸' : '▶'}
-        </button>
-      </div>
+      {songs.map((song) => {
+        const isActive = activeSong === song.id;
+        const wasOpened = openedExternal === song.id;
 
-      <div
-        style={{
-          background: '#fff9fc',
-          border: '1px solid rgba(232,80,154,0.12)',
-          borderTop: 'none',
-          borderBottom: 'none',
-          padding: '16px 8px',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
-          {songs.map((song, i) => (
-            <button
-              type="button"
-              key={song.id}
-              onClick={() => onSelectSong(i)}
-              aria-label={`Select song: ${song.title} by ${song.artist}`}
-              style={{
-                flexShrink: 0,
-                width: '200px',
-                borderRadius: '16px',
-                border: `2px solid ${activeSong === i ? song.color : 'rgba(232,80,154,0.12)'}`,
-                background: activeSong === i ? `linear-gradient(135deg,${song.color}18,#fff5fa)` : '#fff',
-                padding: '12px',
-                cursor: 'pointer',
-                transition: 'border-color 0.25s,background 0.25s',
-                textAlign: 'left',
-              }}
-            >
-              <div
+        return (
+          <motion.div
+            key={song.id}
+            layout
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.015 }}
+            onClick={() => handleSongClick(song)}
+            style={{
+              border: `1px solid ${isActive ? song.color.replace('0.9', '0.45') : 'rgba(244,173,210,0.15)'}`,
+              borderRadius: '1.1rem',
+              padding: '0.9rem 1.1rem',
+              background: isActive
+                ? `linear-gradient(135deg, ${song.color.replace('0.9', '0.12')}, rgba(20,8,19,0.9))`
+                : 'linear-gradient(135deg, rgba(28,9,22,0.8), rgba(18,6,17,0.9))',
+              cursor: 'pointer',
+              transition: 'border-color 300ms, background 300ms',
+              position: 'relative',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-crimson)',
+                    fontSize: '1.05rem',
+                    color: isActive ? 'rgba(255,232,245,0.97)' : 'rgba(255,210,235,0.85)',
+                    fontWeight: isActive ? 500 : 400,
+                    lineHeight: 1.2,
+                    marginBottom: '0.2rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {song.title}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-dm-mono)',
+                    fontSize: '0.6rem',
+                    color: 'rgba(255,170,205,0.5)',
+                    letterSpacing: '0.06em',
+                  }}
+                >
+                  {song.artist}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-crimson)',
+                    fontSize: '0.82rem',
+                    color: 'rgba(255,185,218,0.55)',
+                    fontStyle: 'italic',
+                    marginTop: '0.4rem',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {song.note}
+                </p>
+              </div>
+
+              {/* Open in YouTube Music button */}
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => handleOpenYouTube(e, song)}
+                title={`Open "${song.title}" in YouTube Music`}
                 style={{
-                  height: '110px',
-                  borderRadius: '10px',
-                  background: `linear-gradient(135deg,${song.color}55,#ffd6e8)`,
+                  flexShrink: 0,
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  border: `1px solid ${wasOpened ? song.color.replace('0.9', '0.6') : 'rgba(244,173,210,0.25)'}`,
+                  background: wasOpened ? song.color.replace('0.9', '0.18') : 'rgba(255,255,255,0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '40px',
-                  marginBottom: '10px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  marginTop: '2px',
+                  transition: 'border-color 200ms, background 200ms',
                 }}
               >
-                🎶
-              </div>
-              <p style={{ margin: '0 0 2px', fontWeight: 600, fontSize: '13px', color: '#7a2255' }}>{song.title}</p>
-              <p style={{ margin: '0 0 6px', fontSize: '11px', color: '#a07080', fontFamily: "'Courier New', monospace" }}>
-                {song.artist}
-              </p>
-              <p style={{ margin: 0, fontSize: '11px', color: '#c83c82', fontStyle: 'italic' }}>{song.note}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+                {wasOpened ? '✓' : '▶'}
+              </motion.button>
+            </div>
 
-      <div
+            {/* Color bar indicator */}
+            <AnimatePresence>
+              {isActive && (
+                <motion.div
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
+                  exit={{ scaleX: 0, opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: '1.1rem',
+                    right: '1.1rem',
+                    height: '2px',
+                    background: song.color,
+                    borderRadius: '999px',
+                    transformOrigin: 'left',
+                  }}
+                />
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
+
+      {/* Continue button */}
+      <motion.button
+        type="button"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={onContinue}
         style={{
-          background: '#fff9fc',
-          border: '1px solid rgba(232,80,154,0.12)',
-          borderTop: 'none',
-          borderRadius: '0 0 24px 24px',
-          padding: '14px 16px',
+          marginTop: '0.5rem',
+          background: 'linear-gradient(90deg, rgba(255,133,179,0.95), rgba(247,85,144,0.95))',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '999px',
+          padding: '0.75rem',
+          fontFamily: 'var(--font-dm-mono)',
+          fontSize: '0.72rem',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          boxShadow: '0 10px 24px rgba(247,85,144,0.25)',
         }}
       >
-        <button className="btn-primary" style={{ width: '100%' }} onClick={onContinue}>
-          Continue → The Last Thing ✨
-        </button>
-      </div>
+        Continue
+      </motion.button>
     </div>
   );
 }

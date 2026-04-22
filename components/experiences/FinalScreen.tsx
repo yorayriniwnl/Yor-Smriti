@@ -174,9 +174,29 @@ export default function FinalScreen({ spawnHearts, hearts, tapMsg, onExperienceA
         <button className="btn-primary" style={{ width: '100%', marginBottom: '10px' }} onClick={onExperienceAgainReset}>
           Experience Again ✨
         </button>
-        <button className="btn-secondary" style={{ width: '100%' }} onClick={onSendKiss}>
+        <button className="btn-secondary" style={{ width: '100%', marginBottom: '10px' }} onClick={onSendKiss}>
           Send a Kiss 💋
         </button>
+        <a
+          href="/reply"
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '0.65rem',
+            border: '1px solid rgba(244,173,210,0.28)',
+            borderRadius: '999px',
+            textAlign: 'center',
+            fontFamily: 'var(--font-dm-mono)',
+            fontSize: '0.68rem',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,200,230,0.75)',
+            textDecoration: 'none',
+            marginTop: '4px',
+          }}
+        >
+          Send him a reply 💌
+        </a>
       </div>
     </div>
   );

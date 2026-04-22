@@ -1,0 +1,38 @@
+{
+  "name": "Yor Smriti",
+  "short_name": "Smriti",
+  "description": "A cinematic, private apology experience.",
+  "start_url": "/message",
+  "display": "standalone",
+  "background_color": "#05030a",
+  "theme_color": "#05030a",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "entertainment"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "The Experience",
+      "url": "/message",
+      "description": "Open the cinematic experience"
+    },
+    {
+      "name": "Apology Journey",
+      "url": "/panda",
+      "description": "The 8-screen apology sequence"
+    }
+  ]
+}

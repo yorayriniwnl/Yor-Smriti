@@ -1,33 +1,94 @@
-# Deployment & Environment
+# Deployment Guide
 
-This project requires a few environment variables for production. Create a `.env.local` or set environment variables in your hosting provider.
+## Pre-Deploy Checklist
 
-Required / recommended variables
+### Security (required)
+- [ ] `AUTH_SECRET` — random string ≥32 chars (`node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`)
+- [ ] `APP_USERNAME` + `APP_PASSWORD` set (or leave blank for open access)
+- [ ] `NEXT_PUBLIC_BASE_URL` set to production domain
 
-- `OPENAI_API_KEY` — API key for OpenAI (if chat features are used).
-- `APP_USERNAME` / `APP_PASSWORD` — Optional simple credentials for `/api/login` (use a strong password in prod).
-- `REDIS_URL` — Optional but recommended: a Redis connection string (e.g. `redis://:password@host:6379/0`). When set, the rate limiter will use Redis for counters; otherwise an in-memory fallback is used (not suitable for multi-instance production).
-- `LOGIN_RATE_LIMIT`, `LOGIN_RATE_WINDOW_MS` — Numeric overrides for login rate limiting (defaults: `5`, `60000`).
-- `CHAT_RATE_LIMIT`, `CHAT_RATE_WINDOW_MS` — Numeric overrides for chat rate limiting (defaults: `20`, `60000`).
+### AI Chat (recommended)
+- [ ] `OPENAI_API_KEY` from https://platform.openai.com/api-keys
+- [ ] Test: `GET /api/health` → `"openai": true`
 
-Notes
+### Email Notifications (recommended)
+- [ ] Sign up at https://resend.com (free: 3,000 emails/month)
+- [ ] Add domain or use `@resend.dev` sandbox
+- [ ] Set `RESEND_API_KEY=re_...`
+- [ ] Set `SENDER_EMAIL=Yor Smriti <noreply@your-domain.com>`
+- [ ] Set `NOTIFICATION_EMAIL=your@email.com`
 
-- If you deploy multiple instances (Vercel, Cloud Run, etc.), configure `REDIS_URL` so rate-limiting is shared across instances.
-- The in-memory fallback is only safe for single-instance setups or development.
-- For Redis, use a managed provider (e.g., Upstash for serverless, Redis Cloud, AWS Elasticache) and set `REDIS_URL` securely in your deployment environment.
+### Redis Rate Limiting (recommended for production)
+#### Option A — Upstash (serverless, best for Vercel):
+1. https://console.upstash.com → Create Redis database
+2. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+3. Test: `GET /api/health` → `"redis": { "available": true, "type": "upstash" }`
 
-Quick start (local)
+#### Option B — Standard Redis:
+1. Set `REDIS_URL=redis://:password@host:6379/0`
 
-1. Copy `.env.example` to `.env.local` and fill values.
-2. Install dependencies and build:
+### Personalization
+- [ ] `RECIPIENT_NAME`, `SENDER_NAME` set
+- [ ] `RECIPIENT_MEMORY`, `SENDER_MESSAGE` customized
 
-```bash
-npm install
-npm run build
-npm run start
+---
+
+## Vercel Settings
+- Node.js version: **20.x**
+- Framework: **Next.js** (auto-detected)
+- Environment: **Production**
+
+---
+
+## Health Check
+```
+GET https://your-domain.vercel.app/api/health
+```
+Expected healthy response:
+```json
+{
+  "ok": true,
+  "uptimeSec": 42,
+  "version": "1.0.0",
+  "config": {
+    "authSecret": true,
+    "openai": true,
+    "appCredentials": true,
+    "recipientConfigured": true,
+    "email": true,
+    "redis": true
+  },
+  "redis": { "available": true, "pong": "PONG", "type": "upstash" }
+}
 ```
 
-Monitoring & Troubleshooting
+---
 
-- The rate limiter logs minimal connection state and errors to server logs (`[rateLimiter] Redis connected`, `Redis error`).
-- If you see `Redis error` messages, ensure your `REDIS_URL` is correct and accessible from your deployment environment.
+## Analytics
+- Dashboard: `/admin` (login required)
+- Prometheus metrics: `GET /api/metrics`
+- JSON metrics: `GET /api/metrics` with `Accept: application/json` + session cookie
+
+---
+
+## CI/CD
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push:
+1. `npm ci`
+2. `npm run lint`
+3. `npm run type-check`
+4. `npm run build`
+
+Vercel auto-deploys `main` branch. Env vars set in Vercel dashboard.
+
+---
+
+## Notes on npm dependencies
+
+The following packages are deliberately **not** in `package.json`:
+
+| Package | Reason |
+|---|---|
+| `resend` | `lib/email.ts` uses the Resend REST API via `fetch()` directly — no SDK needed |
+| `@upstash/redis` | `lib/db.ts` and `lib/rateLimiter.ts` use the Upstash REST API via `fetch()` directly |
+
+This keeps the install lean and compatible with all Next.js runtimes (Edge, Node.js, Serverless).

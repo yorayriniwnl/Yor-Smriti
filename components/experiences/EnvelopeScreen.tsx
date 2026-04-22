@@ -1,5 +1,7 @@
 'use client';
 
+import type React from 'react';
+
 type Props = {
   envelopeOpen: boolean;
   openEnvelope: () => void;
@@ -129,12 +131,11 @@ export default function EnvelopeScreen({ envelopeOpen, openEnvelope }: Props) {
           />
         </div>
 
-        {[{ top: '-10px', right: '-10px' }, { bottom: '20px', left: '-14px' }].map((pos, i) => (
+        {([{ top: '-10px', right: '-10px' }, { bottom: '20px', left: '-14px' }] as React.CSSProperties[]).map((pos, i) => (
           <div
             key={`heart-${i}`}
             style={{
               position: 'absolute',
-              // @ts-ignore - dynamic spread for position
               ...pos,
               fontSize: '18px',
               animation: 'shimmer 2.4s ease-in-out infinite',

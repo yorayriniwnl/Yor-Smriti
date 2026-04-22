@@ -8,7 +8,7 @@ import LetterScreen from './LetterScreen';
 import PlaylistScreen from './PlaylistScreen';
 import FinalScreen from './FinalScreen';
 
-const SCREENS = ['envelope', 'cards', 'letter', 'sealing', 'playlist', 'final'] as const;
+const SCREENS = ['envelope', 'cards', 'letter', 'playlist', 'final'] as const;
 
 const SORRY_CARDS = [
   {
@@ -101,7 +101,7 @@ export default function LoveSorryExperience() {
   const [allFlipped, setAllFlipped] = useState(false);
   const [sealed, setSealed] = useState(false);
   const [sealAnim, setSealAnim] = useState(false);
-  const [activeSong, setActiveSong] = useState(0);
+  const [activeSong, setActiveSong] = useState<string | null>(SONGS[0]?.id ?? null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [hearts, setHearts] = useState<HeartParticle[]>([]);
@@ -194,8 +194,8 @@ export default function LoveSorryExperience() {
 
   const readLetter = () => setScreen('letter');
 
-  const selectSong = (i: number) => {
-    setActiveSong(i);
+  const selectSong = (id: string) => {
+    setActiveSong(id);
     setPlaying(true);
     setProgress(0);
   };

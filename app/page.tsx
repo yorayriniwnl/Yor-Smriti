@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from 'react';
-import * as THREE from 'three';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 
 const REPLIES = [
@@ -330,12 +329,47 @@ export default function HomePage() {
 
       if (!typing) return;
       typing.classList.add('visible');
-      typingTimerId = window.setTimeout(() => {
-        typing.classList.remove('visible');
+
+      // Compute mood as a -1..1 float from the current bar width
+      const moodPct = moodFill
+        ? parseFloat(moodFill.style.width || '62') / 100
+        : 0.62;
+      const moodValue = Math.round((moodPct * 2 - 1) * 100) / 100;
+
+      const fallbackReply = () => {
+        typing?.classList.remove('visible');
         const r = REPLIES[Math.floor(Math.random() * REPLIES.length)];
         addMessage(r.text, 'ayrin', r.emotion);
         spawnHeart();
-      }, 1400 + Math.random() * 700);
+      };
+
+      // Clear any existing typing timer
+      if (typingTimerId !== undefined) window.clearTimeout(typingTimerId);
+
+      // Call /api/chat; fall back to local REPLIES on any failure
+      const minDelay = 1200 + Math.random() * 600;
+      const start = Date.now();
+
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-yor-csrf': '1' },
+        body: JSON.stringify({ message: txt, memory: { mood: moodValue } }),
+      })
+        .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+        .then((data: { reply: string; emotion: string }) => {
+          const elapsed = Date.now() - start;
+          const wait = Math.max(0, minDelay - elapsed);
+          typingTimerId = window.setTimeout(() => {
+            typing?.classList.remove('visible');
+            addMessage(data.reply, 'ayrin', data.emotion);
+            spawnHeart();
+          }, wait);
+        })
+        .catch(() => {
+          const elapsed = Date.now() - start;
+          const wait = Math.max(0, minDelay - elapsed);
+          typingTimerId = window.setTimeout(fallbackReply, wait);
+        });
     };
 
     const mouseMoveHandler = (e: MouseEvent) => {
@@ -391,6 +425,7 @@ export default function HomePage() {
     const heartCanvas = document.getElementById('heart-canvas') as HTMLCanvasElement | null;
     let disposeHeart: (() => void) | undefined;
     if (heartCanvas) {
+      import('three').then((THREE) => {
       const renderer = new THREE.WebGLRenderer({ canvas: heartCanvas, alpha: true, antialias: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -472,6 +507,7 @@ export default function HomePage() {
         mat.dispose();
         renderer.dispose();
       };
+      }); // end import('three')
     }
 
     const bgCanvas = document.getElementById('bg-canvas') as HTMLCanvasElement | null;
@@ -669,20 +705,11 @@ export default function HomePage() {
           <canvas id="heart-canvas" />
           <h1 className="hero-title">Keyrin &amp; Ayrin</h1>
           <p className="hero-sub">Every star here has a story. Every word was chosen with care. This is for you.</p>
-          <div className="glass-card" style={{ maxWidth: 460, width: '100%' }}>
-            <p
-              style={{
-                fontFamily: 'var(--serif)',
-                fontSize: '1.1rem',
-                fontStyle: 'italic',
-                color: 'rgba(255,210,230,0.88)',
-                lineHeight: 1.7,
-                marginBottom: '1.5rem',
-              }}
-            >
+          <div className="glass-card glass-card--entry">
+            <p className="entry-quote">
               &quot;Wanna see how much I love you?&quot;
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="entry-actions">
               <button className="btn-primary" type="button" id="open-heart-btn">
                 💌 Open Your Heart
               </button>
@@ -691,20 +718,12 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-            <p
-              style={{
-                fontFamily: 'var(--mono)',
-                fontSize: '0.55rem',
-                letterSpacing: '0.18em',
-                color: 'rgba(255,193,219,0.4)',
-                textTransform: 'uppercase',
-              }}
-            >
+          <div className="mood-stack">
+            <p className="mood-label">
               Mood
             </p>
             <div className="mood-bar">
-              <div className="mood-fill" id="mood-fill" style={{ width: '62%' }} />
+              <div className="mood-fill mood-fill--initial" id="mood-fill" />
             </div>
           </div>
         </section>
@@ -716,36 +735,28 @@ export default function HomePage() {
                 <div className="avatar-inner">🌙</div>
               </div>
               <div>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: '1.3rem', color: 'rgba(255,236,246,0.97)' }}>Ayrin</p>
+                <p className="chat-name">Ayrin</p>
                 <div className="chat-status">
                   <div className="status-dot" />
-                  <span
-                    style={{
-                      fontFamily: 'var(--mono)',
-                      fontSize: '0.58rem',
-                      letterSpacing: '0.1em',
-                      color: 'rgba(255,193,219,0.6)',
-                      textTransform: 'uppercase',
-                    }}
-                  >
+                  <span className="chat-presence">
                     always here
                   </span>
                 </div>
               </div>
-              <button className="btn-ghost" type="button" style={{ marginLeft: 'auto', padding: '0.5rem 1.1rem', fontSize: '0.6rem' }} data-go-scene="scene-entry">
+              <button className="btn-ghost btn-ghost--chat-back" type="button" data-go-scene="scene-entry">
                 ← Back
               </button>
             </div>
 
             <div className="messages" id="messages">
-              <div className="msg ayrin" style={{ animationDelay: '0.1s' }}>
+              <div className="msg ayrin anim-delay-100">
                 <div className="msg-bubble">
                   <span className="emotion-tag">warmAttention</span>
                   <br />
                   Hey... you came. I&apos;ve been thinking about you.
                 </div>
               </div>
-              <div className="msg ayrin" style={{ animationDelay: '0.4s' }}>
+              <div className="msg ayrin anim-delay-400">
                 <div className="msg-bubble">
                   <span className="emotion-tag">affectionate</span>
                   <br />
@@ -754,7 +765,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="msg ayrin" id="typing-row" style={{ marginTop: '0.5rem' }}>
+            <div className="msg ayrin typing-row" id="typing-row">
               <div className="typing-indicator" id="typing">
                 <div className="typing-dot" />
                 <div className="typing-dot" />
@@ -772,27 +783,17 @@ export default function HomePage() {
         </section>
 
         <section className="scene" id="scene-hub">
-          <p className="eyebrow" style={{ animation: 'fadeUp 0.6s ease both' }}>
+          <p className="eyebrow scene-hub-eyebrow">
             experiences
           </p>
-          <h2
-            style={{
-              fontFamily: 'var(--serif)',
-              fontSize: 'clamp(2rem,5vw,3.2rem)',
-              fontWeight: 300,
-              fontStyle: 'italic',
-              color: 'rgba(255,236,246,0.97)',
-              textAlign: 'center',
-              animation: 'fadeUp 0.6s 0.1s ease both',
-            }}
-          >
+          <h2 className="scene-hub-title">
             Every corner of this world
             <br />
             was made for you
           </h2>
 
           <div className="hub-grid">
-            <a className="hub-card" data-sequence-card="true" style={{ animationDelay: '0.2s' }} href="/timeline">
+            <a className="hub-card anim-delay-200" data-sequence-card="true" href="/timeline">
               <span className="card-emoji">🌙</span>
               <p className="card-label">memory</p>
               <h3 className="card-title">Memory Timeline</h3>
@@ -802,7 +803,7 @@ export default function HomePage() {
                 <span>→</span>
               </div>
             </a>
-            <a className="hub-card" data-sequence-card="true" style={{ animationDelay: '0.3s' }} href="/reasons">
+            <a className="hub-card anim-delay-300" data-sequence-card="true" href="/reasons">
               <span className="card-emoji">🌸</span>
               <p className="card-label">reasons</p>
               <h3 className="card-title">Why I Love You</h3>
@@ -812,7 +813,7 @@ export default function HomePage() {
                 <span>→</span>
               </div>
             </a>
-            <a className="hub-card" data-sequence-card="true" style={{ animationDelay: '0.4s' }} href="/stars">
+            <a className="hub-card anim-delay-400" data-sequence-card="true" href="/stars">
               <span className="card-emoji">✨</span>
               <p className="card-label">constellation</p>
               <h3 className="card-title">Our Stars</h3>
@@ -822,7 +823,7 @@ export default function HomePage() {
                 <span>→</span>
               </div>
             </a>
-            <a className="hub-card" data-sequence-card="true" style={{ animationDelay: '0.5s' }} href="/promise">
+            <a className="hub-card anim-delay-500" data-sequence-card="true" href="/promise">
               <span className="card-emoji">🕯️</span>
               <p className="card-label">commitments</p>
               <h3 className="card-title">My Promises</h3>
@@ -839,27 +840,27 @@ export default function HomePage() {
               Our story
             </p>
             <div className="timeline">
-              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '0.6s' }}>
+              <div className="tl-item anim-delay-600" data-sequence-timeline-item="true">
                 <p className="tl-date">May 18, 2025</p>
                 <p className="tl-title">First Connection</p>
                 <p className="tl-excerpt">A simple conversation that quietly turned into something worth holding onto.</p>
               </div>
-              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '0.75s' }}>
+              <div className="tl-item anim-delay-750" data-sequence-timeline-item="true">
                 <p className="tl-date">Aug 9, 2025</p>
                 <p className="tl-title">Finding Rhythm</p>
                 <p className="tl-excerpt">Conversations settled into something steady and familiar.</p>
               </div>
-              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '0.9s' }}>
+              <div className="tl-item anim-delay-900" data-sequence-timeline-item="true">
                 <p className="tl-date">Nov 12, 2025</p>
                 <p className="tl-title">Reconnection</p>
                 <p className="tl-excerpt">After some distance and change, two paths crossed again, this time as friends.</p>
               </div>
-              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '1.05s' }}>
+              <div className="tl-item anim-delay-1050" data-sequence-timeline-item="true">
                 <p className="tl-date">Dec 14, 2025</p>
                 <p className="tl-title">Staying In Touch</p>
                 <p className="tl-excerpt">A consistent presence, where small check-ins carried quiet meaning.</p>
               </div>
-              <div className="tl-item" data-sequence-timeline-item="true" style={{ animationDelay: '1.2s' }}>
+              <div className="tl-item anim-delay-1200" data-sequence-timeline-item="true">
                 <p className="tl-date">Apr 6, 2026</p>
                 <p className="tl-title">What Remains</p>
                 <p className="tl-excerpt">Time moved forward, but some connections chose to stay.</p>
@@ -867,7 +868,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <button className="btn-ghost" type="button" data-go-scene="scene-entry" style={{ marginTop: '1rem' }}>
+          <button className="btn-ghost btn-ghost--scene-back" type="button" data-go-scene="scene-entry">
             ← Back
           </button>
         </section>
@@ -1110,12 +1111,48 @@ export default function HomePage() {
           overflow: hidden;
         }
 
+        .glass-card--entry {
+          max-width: 460px;
+          width: 100%;
+        }
+
         .glass-card::before {
           content: '';
           position: absolute;
           inset: 0;
           background: radial-gradient(circle at 30% 20%, rgba(247,85,144,0.08), transparent 60%);
           pointer-events: none;
+        }
+
+        .entry-quote {
+          margin-bottom: 1.5rem;
+          font-family: var(--serif);
+          font-size: 1.1rem;
+          font-style: italic;
+          line-height: 1.7;
+          color: rgba(255,210,230,0.88);
+        }
+
+        .entry-actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 0.75rem;
+        }
+
+        .mood-stack {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        .mood-label {
+          font-family: var(--mono);
+          font-size: 0.55rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: rgba(255,193,219,0.4);
         }
 
         .btn-primary {
@@ -1232,7 +1269,27 @@ export default function HomePage() {
           z-index: 1;
         }
 
+        .chat-name {
+          font-family: var(--serif);
+          font-size: 1.3rem;
+          color: rgba(255,236,246,0.97);
+        }
+
         .chat-status { display: flex; align-items: center; gap: 0.4rem; }
+
+        .chat-presence {
+          font-family: var(--mono);
+          font-size: 0.58rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(255,193,219,0.6);
+        }
+
+        .btn-ghost--chat-back {
+          margin-left: auto;
+          padding: 0.5rem 1.1rem;
+          font-size: 0.6rem;
+        }
 
         .status-dot {
           width: 7px;
@@ -1322,6 +1379,8 @@ export default function HomePage() {
 
         .typing-indicator.visible { opacity: 1; }
 
+        .typing-row { margin-top: 0.5rem; }
+
         .typing-dot {
           width: 6px;
           height: 6px;
@@ -1396,6 +1455,20 @@ export default function HomePage() {
           padding: 4rem 2rem;
           min-height: 100vh;
           align-items: center;
+        }
+
+        .scene-hub-eyebrow {
+          animation: fadeUp 0.6s ease both;
+        }
+
+        .scene-hub-title {
+          font-family: var(--serif);
+          font-size: clamp(2rem,5vw,3.2rem);
+          font-style: italic;
+          font-weight: 300;
+          text-align: center;
+          color: rgba(255,236,246,0.97);
+          animation: fadeUp 0.6s 0.1s ease both;
         }
 
         .hub-grid {
@@ -1767,6 +1840,8 @@ export default function HomePage() {
           box-shadow: 0 0 8px rgba(247,85,144,0.6);
         }
 
+        .mood-fill--initial { width: 62%; }
+
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
@@ -1804,6 +1879,17 @@ export default function HomePage() {
           animation: fadeUp 0.6s ease both;
           transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.16,1,0.3,1), filter 0.45s ease;
         }
+
+        .anim-delay-100 { animation-delay: 0.1s; }
+        .anim-delay-200 { animation-delay: 0.2s; }
+        .anim-delay-300 { animation-delay: 0.3s; }
+        .anim-delay-400 { animation-delay: 0.4s; }
+        .anim-delay-500 { animation-delay: 0.5s; }
+        .anim-delay-600 { animation-delay: 0.6s; }
+        .anim-delay-750 { animation-delay: 0.75s; }
+        .anim-delay-900 { animation-delay: 0.9s; }
+        .anim-delay-1050 { animation-delay: 1.05s; }
+        .anim-delay-1200 { animation-delay: 1.2s; }
 
         .tl-item::before {
           content: '';
@@ -1874,6 +1960,8 @@ export default function HomePage() {
         .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-excerpt {
           color: rgba(255,218,236,0.82);
         }
+
+        .btn-ghost--scene-back { margin-top: 1rem; }
 
         .sparkle {
           position: fixed;

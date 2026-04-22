@@ -2,6 +2,18 @@ import { Suspense } from 'react';
 import DirectorExperienceClientWrapper from '@/components/experiences/director/DirectorExperienceClientWrapper';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'The Experience',
+  description: 'A cinematic experience built from love, regret, and hope.',
+  openGraph: {
+    title: 'The Experience — Yor Smriti',
+    description: 'A cinematic experience built from love, regret, and hope.',
+  },
+};
+
+
 interface MessagePageProps {
   searchParams: Promise<{
     start?: string | string[];

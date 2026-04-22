@@ -16,7 +16,7 @@ import {
   directorInteractionScreen,
 } from '@/lib/experienceScreens';
 
-interface DirectorExperienceClientProps {
+export interface DirectorExperienceClientProps {
   startParam?: string | null;
   pathParam?: string | null;
   endingParam?: string | null;

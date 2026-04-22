@@ -26,7 +26,7 @@ export default function RippleButton({ children, className = '', loading = false
       span.style.top = `${y}px`;
       el.appendChild(span);
       span.addEventListener('animationend', () => span.remove());
-    } catch (err) {
+    } catch {
       // ignore
     }
 

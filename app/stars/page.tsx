@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
+import { useEventTracking } from '@/hooks/useEventTracking';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -483,6 +484,11 @@ function StarsPageContent() {
 }
 
 export default function StarsPage() {
+  const { track } = useEventTracking();
+  useEffect(() => {
+    track('stars_viewed');
+  }, [track]);
+
   return (
     <Suspense fallback={null}>
       <StarsPageContent />

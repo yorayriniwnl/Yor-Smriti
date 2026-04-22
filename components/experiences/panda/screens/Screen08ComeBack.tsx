@@ -234,6 +234,21 @@ export function Screen08ComeBack() {
           >
             Read from the beginning
           </Link>
+          <Link
+            href="/reply"
+            style={{
+              fontFamily: 'var(--font-dm-mono)',
+              fontSize: '0.6rem',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'rgba(255, 171, 210, 0.65)',
+              textDecoration: 'none',
+              borderBottom: '1px solid rgba(255,171,210,0.25)',
+              paddingBottom: '1px',
+            }}
+          >
+            Send him a reply 💌
+          </Link>
         </motion.div>
       </div>
     </ApologyExperienceShell>
