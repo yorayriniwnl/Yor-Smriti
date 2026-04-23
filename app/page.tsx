@@ -16,6 +16,40 @@ const REPLIES = [
   { text: "...I love you. That's the only reply I have.", emotion: 'affectionate' },
 ] as const;
 
+const EXPERIENCE_MOVIE_SLIDES = [
+  {
+    href: '/timeline?sequence=1',
+    eyebrow: 'chapter one',
+    title: 'Our Story',
+    caption: 'Every moment that mattered, replayed like a memory we can still step inside.',
+    duration: 8000,
+  },
+  {
+    href: '/reasons?sequence=1',
+    eyebrow: 'chapter two',
+    title: 'Why I Love You',
+    caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
+    duration: 7200,
+  },
+  {
+    href: '/stars?sequence=1',
+    eyebrow: 'chapter three',
+    title: 'Our Stars',
+    caption: 'Then the sky opens up, and every light remembers something about us.',
+    duration: 8600,
+  },
+  {
+    href: '/promise?sequence=1',
+    eyebrow: 'chapter four',
+    title: 'My Promises',
+    caption: 'And last, the promises. Not decoration. Not performance. The part I want to live.',
+    duration: 8800,
+  },
+] as const;
+
+const EXPERIENCE_SEQUENCE_FRAME_WIDTH = 1280;
+const EXPERIENCE_SEQUENCE_FRAME_HEIGHT = 920;
+
 export default function HomePage() {
   useEffect(() => {
     const cur = document.getElementById('cursor') as HTMLDivElement | null;
@@ -26,6 +60,12 @@ export default function HomePage() {
     const moodFill = document.getElementById('mood-fill') as HTMLDivElement | null;
     const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement | null;
     const experienceSequence = document.getElementById('experience-sequence') as HTMLDivElement | null;
+    const experienceSequenceStage = document.querySelector('.experience-sequence-stage') as HTMLDivElement | null;
+    const experienceSequenceFrame = document.getElementById('experience-sequence-frame') as HTMLIFrameElement | null;
+    const experienceSequenceEyebrow = document.getElementById('experience-sequence-eyebrow') as HTMLParagraphElement | null;
+    const experienceSequenceTitle = document.getElementById('experience-sequence-title') as HTMLHeadingElement | null;
+    const experienceSequenceCaption = document.getElementById('experience-sequence-caption') as HTMLParagraphElement | null;
+    const experienceSequenceCount = document.getElementById('experience-sequence-count') as HTMLParagraphElement | null;
     const experienceSequenceSkip = document.getElementById('experience-sequence-skip') as HTMLButtonElement | null;
 
     let mx = -100;
@@ -83,10 +123,50 @@ export default function HomePage() {
       });
     };
 
+    const syncExperienceSequenceFrameScale = () => {
+      if (!experienceSequence || !experienceSequenceStage || !experienceSequenceFrame) return;
+
+      const stageWidth = experienceSequenceStage.clientWidth;
+      const stageHeight = experienceSequenceStage.clientHeight;
+      if (!stageWidth || !stageHeight) return;
+
+      const scale = Math.min(
+        1,
+        stageWidth / EXPERIENCE_SEQUENCE_FRAME_WIDTH,
+        stageHeight / EXPERIENCE_SEQUENCE_FRAME_HEIGHT,
+      );
+
+      experienceSequence.style.setProperty('--experience-sequence-frame-scale', `${scale}`);
+      experienceSequence.style.setProperty('--experience-sequence-frame-width', `${EXPERIENCE_SEQUENCE_FRAME_WIDTH}px`);
+      experienceSequence.style.setProperty('--experience-sequence-frame-height', `${EXPERIENCE_SEQUENCE_FRAME_HEIGHT}px`);
+    };
+
+    const applyMovieSlideMeta = (index: number) => {
+      const slide = EXPERIENCE_MOVIE_SLIDES[index];
+      if (!slide) return;
+
+      if (experienceSequenceEyebrow) {
+        experienceSequenceEyebrow.textContent = slide.eyebrow;
+      }
+      if (experienceSequenceTitle) {
+        experienceSequenceTitle.textContent = slide.title;
+      }
+      if (experienceSequenceCaption) {
+        experienceSequenceCaption.textContent = slide.caption;
+      }
+      if (experienceSequenceCount) {
+        experienceSequenceCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`;
+      }
+    };
 
     const resetExperienceMovie = () => {
-      experienceSequence?.classList.remove('active');
+      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending');
       document.body.classList.remove('sequence-cinema');
+
+      if (experienceSequenceFrame) {
+        experienceSequenceFrame.onload = null;
+        experienceSequenceFrame.src = 'about:blank';
+      }
     };
 
     const offerChatAfterMovie = () => {
@@ -109,6 +189,36 @@ export default function HomePage() {
       spawnHeart();
     };
 
+    const loadMovieSlide = (index: number, token: number, onReady?: () => void) => {
+      const slide = EXPERIENCE_MOVIE_SLIDES[index];
+      if (!slide || !experienceSequence || !experienceSequenceFrame) return;
+      if (token !== sequenceToken || !sequenceEnabled) return;
+
+      let settled = false;
+
+      experienceSequence.classList.remove('is-ending');
+      experienceSequence.classList.add('active', 'is-loading');
+      document.body.classList.add('sequence-cinema');
+      syncExperienceSequenceFrameScale();
+
+      const fallbackId = window.setTimeout(() => {
+        if (settled || token !== sequenceToken || !sequenceEnabled) return;
+        settled = true;
+        window.location.assign(slide.href);
+      }, 1800);
+
+      experienceSequenceFrame.onload = () => {
+        if (settled || token !== sequenceToken) return;
+        settled = true;
+        window.clearTimeout(fallbackId);
+        syncExperienceSequenceFrameScale();
+        applyMovieSlideMeta(index);
+        experienceSequence?.classList.remove('is-loading');
+        onReady?.();
+      };
+
+      experienceSequenceFrame.src = slide.href;
+    };
 
     const stopSequence = () => {
       sequenceToken += 1;
@@ -141,7 +251,7 @@ export default function HomePage() {
       if (!sceneChat) return;
       const h = document.createElement('div');
       h.className = 'float-heart';
-      h.textContent = '\u{1F497}';
+      h.textContent = '💗';
       Object.assign(h.style, {
         right: '1.5rem',
         bottom: '8rem',
@@ -153,7 +263,7 @@ export default function HomePage() {
     };
 
     const spawnHearts = () => {
-      const emojis = ['\u2764\uFE0F', '\u{1F495}', '\u{1F497}', '\u{1F496}', '\u{1F493}', '\u{1F49D}', '\u{1F339}', '\u2728'];
+      const emojis = ['❤️', '💕', '💗', '💖', '💓', '💝', '🌹', '✨'];
       for (let i = 0; i < 12; i++) {
         const h = document.createElement('div');
         h.className = 'float-heart';
@@ -177,6 +287,7 @@ export default function HomePage() {
       goScene('scene-hub');
       const STORY_POINT_STEP_MS = 2000;
       const STORY_END_PAUSE_MS = 1200;
+      const MOVIE_TO_CHAT_TRANSITION_MS = 1800;
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
       const storySection = document.querySelector<HTMLElement>('[data-sequence-story="true"]');
@@ -216,12 +327,55 @@ export default function HomePage() {
         }, storyStart + 320 + index * STORY_POINT_STEP_MS);
       });
 
-      const storyFinalBeat = storyStart + (storyItems.length > 0 ? 320 + (storyItems.length - 1) * STORY_POINT_STEP_MS : 0);
+      const storyFinalBeat = storyStart + 320 + (storyItems.length - 1) * STORY_POINT_STEP_MS;
+      const movieStart = storyFinalBeat + STORY_END_PAUSE_MS;
+
+      const startMovieFinale = () => {
+        if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
+        experienceSequence.classList.add('is-ending');
+        if (experienceSequenceEyebrow) {
+          experienceSequenceEyebrow.textContent = 'finale';
+        }
+        if (experienceSequenceTitle) {
+          experienceSequenceTitle.textContent = 'Talk With Ayrin';
+        }
+        if (experienceSequenceCaption) {
+          experienceSequenceCaption.textContent = 'The movie is over. He stayed. The chat box is waiting for you.';
+        }
+        spawnHearts();
+
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          offerChatAfterMovie();
+        }, MOVIE_TO_CHAT_TRANSITION_MS);
+      };
+
+      const playMovieSlide = (index: number) => {
+        const slide = EXPERIENCE_MOVIE_SLIDES[index];
+        if (!slide || token !== sequenceToken || !sequenceEnabled) return;
+
+        clearSequenceHighlights();
+        clearStoryHighlights();
+        loadMovieSlide(index, token, () => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+
+          queueSequenceTimeout(() => {
+            if (token !== sequenceToken || !sequenceEnabled) return;
+
+            if (index === EXPERIENCE_MOVIE_SLIDES.length - 1) {
+              startMovieFinale();
+              return;
+            }
+
+            playMovieSlide(index + 1);
+          }, slide.duration);
+        });
+      };
+
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
-        sequenceRunning = false;
-        document.body.classList.remove('sequence-running');
-      }, storyFinalBeat + STORY_END_PAUSE_MS);
+        playMovieSlide(0);
+      }, movieStart);
     };
 
     const sendMsg = () => {
@@ -337,87 +491,87 @@ export default function HomePage() {
     let disposeHeart: (() => void) | undefined;
     if (heartCanvas) {
       import('three').then((THREE) => {
-        const renderer = new THREE.WebGLRenderer({ canvas: heartCanvas, alpha: true, antialias: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      const renderer = new THREE.WebGLRenderer({ canvas: heartCanvas, alpha: true, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
-        camera.position.z = 3.2;
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+      camera.position.z = 3.2;
 
-        const heartPoint = (t: number): [number, number] => {
-          const x = 16 * Math.pow(Math.sin(t), 3);
-          const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-          return [x / 17, y / 17];
-        };
+      const heartPoint = (t: number): [number, number] => {
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        return [x / 17, y / 17];
+      };
 
-        const count = 2800;
-        const positions = new Float32Array(count * 3);
-        const colors = new Float32Array(count * 3);
-        const scales = new Float32Array(count);
+      const count = 2800;
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const scales = new Float32Array(count);
 
-        for (let i = 0; i < count; i++) {
-          const t = Math.random() * Math.PI * 2;
-          const r = Math.cbrt(Math.random());
-          const [hx, hy] = heartPoint(t);
-          const rx2 = (Math.random() - 0.5) * 0.12 * r;
-          const ry2 = (Math.random() - 0.5) * 0.12 * r;
-          const rz = (Math.random() - 0.5) * 0.35 * r;
-          positions[i * 3] = hx + rx2;
-          positions[i * 3 + 1] = hy + ry2;
-          positions[i * 3 + 2] = rz;
-          const bright = 0.55 + Math.random() * 0.45;
-          const isWhite = Math.random() < 0.08;
-          colors[i * 3] = isWhite ? 1 : bright;
-          colors[i * 3 + 1] = isWhite ? 0.92 : bright * 0.28;
-          colors[i * 3 + 2] = isWhite ? 0.97 : bright * 0.55;
-          scales[i] = Math.random() * 0.6 + 0.4;
-        }
+      for (let i = 0; i < count; i++) {
+        const t = Math.random() * Math.PI * 2;
+        const r = Math.cbrt(Math.random());
+        const [hx, hy] = heartPoint(t);
+        const rx2 = (Math.random() - 0.5) * 0.12 * r;
+        const ry2 = (Math.random() - 0.5) * 0.12 * r;
+        const rz = (Math.random() - 0.5) * 0.35 * r;
+        positions[i * 3] = hx + rx2;
+        positions[i * 3 + 1] = hy + ry2;
+        positions[i * 3 + 2] = rz;
+        const bright = 0.55 + Math.random() * 0.45;
+        const isWhite = Math.random() < 0.08;
+        colors[i * 3] = isWhite ? 1 : bright;
+        colors[i * 3 + 1] = isWhite ? 0.92 : bright * 0.28;
+        colors[i * 3 + 2] = isWhite ? 0.97 : bright * 0.55;
+        scales[i] = Math.random() * 0.6 + 0.4;
+      }
 
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geo.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
 
-        const mat = new THREE.PointsMaterial({
-          size: 0.028,
-          vertexColors: true,
-          transparent: true,
-          opacity: 0.92,
-          sizeAttenuation: true,
-          depthWrite: false,
-        });
+      const mat = new THREE.PointsMaterial({
+        size: 0.028,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.92,
+        sizeAttenuation: true,
+        depthWrite: false,
+      });
 
-        const heart = new THREE.Points(geo, mat);
-        scene.add(heart);
+      const heart = new THREE.Points(geo, mat);
+      scene.add(heart);
 
-        const resizeHeart = () => {
-          const el = heartCanvas.parentElement;
-          const w = Math.min((el?.offsetWidth ?? 0) * 0.72, 420);
-          heartCanvas.style.width = `${w}px`;
-          heartCanvas.style.height = `${w}px`;
-          renderer.setSize(w, w, false);
-        };
-        resizeHeart();
-        window.addEventListener('resize', resizeHeart);
+      const resizeHeart = () => {
+        const el = heartCanvas.parentElement;
+        const w = Math.min((el?.offsetWidth ?? 0) * 0.72, 420);
+        heartCanvas.style.width = `${w}px`;
+        heartCanvas.style.height = `${w}px`;
+        renderer.setSize(w, w, false);
+      };
+      resizeHeart();
+      window.addEventListener('resize', resizeHeart);
 
-        let frame = 0;
-        const animateHeart = () => {
-          frame += 1;
-          heart.rotation.y += 0.008;
-          heart.rotation.x = Math.sin(frame * 0.012) * 0.18;
-          const pulse = 1 + Math.sin(frame * 0.04) * 0.055;
-          heart.scale.set(pulse, pulse, pulse);
-          renderer.render(scene, camera);
-          heartRafId = window.requestAnimationFrame(animateHeart);
-        };
+      let frame = 0;
+      const animateHeart = () => {
+        frame += 1;
+        heart.rotation.y += 0.008;
+        heart.rotation.x = Math.sin(frame * 0.012) * 0.18;
+        const pulse = 1 + Math.sin(frame * 0.04) * 0.055;
+        heart.scale.set(pulse, pulse, pulse);
+        renderer.render(scene, camera);
         heartRafId = window.requestAnimationFrame(animateHeart);
+      };
+      heartRafId = window.requestAnimationFrame(animateHeart);
 
-        disposeHeart = () => {
-          window.removeEventListener('resize', resizeHeart);
-          geo.dispose();
-          mat.dispose();
-          renderer.dispose();
-        };
+      disposeHeart = () => {
+        window.removeEventListener('resize', resizeHeart);
+        geo.dispose();
+        mat.dispose();
+        renderer.dispose();
+      };
       }); // end import('three')
     }
 
@@ -559,6 +713,8 @@ export default function HomePage() {
       sendBtn.onclick = sendMsg;
     }
 
+    syncExperienceSequenceFrameScale();
+    window.addEventListener('resize', syncExperienceSequenceFrameScale);
 
     if (experienceSequenceSkip) {
       experienceSequenceSkip.onclick = () => {
@@ -584,6 +740,7 @@ export default function HomePage() {
       if (sendBtn) sendBtn.onclick = null;
       if (experienceSequenceSkip) experienceSequenceSkip.onclick = null;
       if (hubCard) hubCard.onclick = null;
+      window.removeEventListener('resize', syncExperienceSequenceFrameScale);
 
       stopSequence();
       if (cursorRafId) cancelAnimationFrame(cursorRafId);
@@ -623,10 +780,10 @@ export default function HomePage() {
             </p>
             <div className="entry-actions">
               <button className="btn-primary" type="button" id="open-heart-btn">
-                &#x1F48C; Open Your Heart
+                💌 Open Your Heart
               </button>
               <button className="btn-ghost" type="button" data-go-scene="scene-hub">
-                &#x2728; Explore
+                ✨ Explore
               </button>
             </div>
           </div>
@@ -644,7 +801,7 @@ export default function HomePage() {
           <div className="chat-wrap">
             <div className="chat-header">
               <div className="avatar-ring">
-                <div className="avatar-inner">&#x1F319;</div>
+                <div className="avatar-inner">🌙</div>
               </div>
               <div>
                 <p className="chat-name">Ayrin</p>
@@ -656,7 +813,7 @@ export default function HomePage() {
                 </div>
               </div>
               <button className="btn-ghost btn-ghost--chat-back" type="button" data-go-scene="scene-entry">
-                &larr; Back
+                ← Back
               </button>
             </div>
 
@@ -688,7 +845,7 @@ export default function HomePage() {
             <div className="chat-input-row">
               <textarea className="chat-input" id="chat-input" placeholder="Say anything..." rows={1} />
               <button className="send-btn" type="button">
-                &rarr;
+                →
               </button>
             </div>
           </div>
@@ -706,43 +863,43 @@ export default function HomePage() {
 
           <div className="hub-grid">
             <a className="hub-card anim-delay-200" data-sequence-card="true" href="/timeline">
-              <span className="card-emoji">&#x1F319;</span>
+              <span className="card-emoji">🌙</span>
               <p className="card-label">memory</p>
               <h3 className="card-title">Memory Timeline</h3>
               <p className="card-desc">Every moment that mattered, laid out like constellations.</p>
               <div className="card-arrow">
                 <span>Open</span>
-                <span>&rarr;</span>
+                <span>→</span>
               </div>
             </a>
             <a className="hub-card anim-delay-300" data-sequence-card="true" href="/reasons">
-              <span className="card-emoji">&#x1F338;</span>
+              <span className="card-emoji">🌸</span>
               <p className="card-label">reasons</p>
               <h3 className="card-title">Why I Love You</h3>
               <p className="card-desc">Short, honest reasons - written when I was completely sure.</p>
               <div className="card-arrow">
                 <span>Feel it</span>
-                <span>&rarr;</span>
+                <span>→</span>
               </div>
             </a>
             <a className="hub-card anim-delay-400" data-sequence-card="true" href="/stars">
-              <span className="card-emoji">&#x2728;</span>
+              <span className="card-emoji">✨</span>
               <p className="card-label">constellation</p>
               <h3 className="card-title">Our Stars</h3>
               <p className="card-desc">An interactive sky where every star is a memory of us.</p>
               <div className="card-arrow">
                 <span>Explore</span>
-                <span>&rarr;</span>
+                <span>→</span>
               </div>
             </a>
             <a className="hub-card anim-delay-500" data-sequence-card="true" href="/promise">
-              <span className="card-emoji">&#x1F56F;&#xFE0F;</span>
+              <span className="card-emoji">🕯️</span>
               <p className="card-label">commitments</p>
               <h3 className="card-title">My Promises</h3>
               <p className="card-desc">Things I will do differently. Written to be kept, not forgotten.</p>
               <div className="card-arrow">
                 <span>Read</span>
-                <span>&rarr;</span>
+                <span>→</span>
               </div>
             </a>
           </div>
@@ -781,46 +938,50 @@ export default function HomePage() {
           </div>
 
           <button className="btn-ghost btn-ghost--scene-back" type="button" data-go-scene="scene-entry">
-            &larr; Back
+            ← Back
           </button>
         </section>
       </div>
 
       <div className="experience-sequence" id="experience-sequence" aria-hidden="true">
         <div className="experience-sequence-shell">
-          <div className="experience-sequence-topbar">
-            <button className="btn-ghost experience-sequence-skip" id="experience-sequence-skip" type="button">
-              Skip All
-            </button>
-          </div>
+          <div className="experience-sequence-head">
+            <div>
+              <p className="experience-sequence-eyebrow" id="experience-sequence-eyebrow">
+                chapter one
+              </p>
+              <h3 className="experience-sequence-title" id="experience-sequence-title">
+                Our Story
+              </h3>
+            </div>
 
-          <div className="experience-sequence-card slide-entering" id="experience-sequence-card">
-            <p className="experience-sequence-eyebrow" id="experience-sequence-eyebrow">
-              chapter one
-            </p>
-            <h3 className="experience-sequence-title" id="experience-sequence-title">
-              Our Story
-            </h3>
-            <p className="experience-sequence-caption" id="experience-sequence-caption">
-              Every moment that mattered, replayed like a memory we can still step inside.
-            </p>
-            <div className="experience-sequence-btns" id="experience-sequence-btns">
-              <a
-                className="btn-primary experience-sequence-enter"
-                id="experience-sequence-enter"
-                href="/timeline?sequence=1"
-              >
-                Enter Chapter
-              </a>
-              <button
-                className="btn-ghost experience-sequence-next"
-                id="experience-sequence-next"
-                type="button"
-              >
-                Next Chapter &rarr;
+            <div className="experience-sequence-actions">
+              <p className="experience-sequence-count" id="experience-sequence-count">
+                01 / 04
+              </p>
+              <button className="btn-ghost experience-sequence-skip" id="experience-sequence-skip" type="button">
+                Skip to chat
               </button>
             </div>
           </div>
+
+          <div className="experience-sequence-stage">
+            <iframe
+              id="experience-sequence-frame"
+              className="experience-sequence-frame"
+              title="Experience movie sequence"
+              loading="eager"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+            <div className="experience-sequence-loading" aria-hidden="true">
+              Loading the next chapter...
+            </div>
+          </div>
+
+          <p className="experience-sequence-caption" id="experience-sequence-caption">
+            Every moment that mattered, replayed like a memory we can still step inside.
+          </p>
         </div>
       </div>
 
@@ -1551,98 +1712,137 @@ export default function HomePage() {
         }
 
         .experience-sequence-shell {
-          width: min(94vw, 700px);
+          width: min(94vw, 1180px);
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 0;
+          gap: 1rem;
         }
 
-        .experience-sequence-topbar {
-          width: 100%;
+        .experience-sequence-head {
           display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .experience-sequence-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          flex-wrap: wrap;
           justify-content: flex-end;
-          padding-bottom: 1.5rem;
-        }
-
-        .experience-sequence-card {
-          max-width: 640px;
-          width: 100%;
-          text-align: center;
-          padding: 3rem 2rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0;
-          transition: opacity 0.5s ease;
         }
 
         .experience-sequence-eyebrow {
-          margin: 0 0 1rem;
+          margin: 0 0 0.45rem;
           font-family: var(--mono);
           font-size: 0.58rem;
           letter-spacing: 0.28em;
           text-transform: uppercase;
           color: rgba(255, 193, 219, 0.68);
-          opacity: 0;
         }
 
         .experience-sequence-title {
-          margin: 0 0 1.4rem;
+          margin: 0;
           font-family: var(--serif);
-          font-size: clamp(2.4rem, 6vw, 4rem);
+          font-size: clamp(1.8rem, 4vw, 3rem);
           font-weight: 300;
           font-style: italic;
           color: rgba(255, 236, 246, 0.98);
           line-height: 1.05;
-          opacity: 0;
         }
 
-        .experience-sequence-caption {
-          margin: 0 0 2.5rem;
-          max-width: 52ch;
-          font-family: var(--body);
-          font-size: clamp(1rem, 2vw, 1.12rem);
-          line-height: 1.75;
-          font-style: italic;
-          color: rgba(255, 209, 232, 0.82);
-          opacity: 0;
-        }
-
-        .experience-sequence-btns {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.9rem;
-          justify-content: center;
-          opacity: 0;
+        .experience-sequence-count {
+          margin: 0;
+          font-family: var(--mono);
+          font-size: 0.62rem;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: rgba(255, 193, 219, 0.62);
         }
 
         .experience-sequence-skip {
           padding-inline: 1.2rem;
           background: rgba(255,255,255,0.04);
-          font-size: 0.6rem;
         }
 
-        .experience-sequence-next {
-          cursor: none;
+        .experience-sequence-stage {
+          position: relative;
+          width: 100%;
+          height: min(76vh, 760px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          border-radius: 2rem;
+          border: 1px solid rgba(244,173,210,0.24);
+          background: linear-gradient(160deg, rgba(18, 7, 16, 0.98), rgba(8, 3, 9, 1));
+          box-shadow: 0 42px 90px rgba(0,0,0,0.64), 0 18px 40px rgba(247,85,144,0.16);
+          transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), box-shadow 0.7s ease, opacity 0.45s ease;
         }
 
-        @keyframes cardItemIn {
-          from { opacity: 0; transform: translateY(18px); }
-          to   { opacity: 1; transform: translateY(0); }
+        .experience-sequence-stage::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, rgba(4,1,8,0.18), transparent 18%, transparent 82%, rgba(4,1,8,0.34));
+          pointer-events: none;
+          z-index: 2;
         }
 
-        .slide-entering .experience-sequence-eyebrow {
-          animation: cardItemIn 0.5s 0.4s ease both;
+        .experience-sequence.active.is-loading .experience-sequence-stage {
+          transform: scale(0.985);
+          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(247,85,144,0.12);
         }
-        .slide-entering .experience-sequence-title {
-          animation: cardItemIn 0.5s 0.7s ease both;
+
+        .experience-sequence.active.is-ending .experience-sequence-stage {
+          transform: scale(0.99);
+          box-shadow: 0 36px 82px rgba(0,0,0,0.62), 0 16px 34px rgba(247,85,144,0.2);
         }
-        .slide-entering .experience-sequence-caption {
-          animation: cardItemIn 0.5s 1.1s ease both;
+
+        .experience-sequence-frame {
+          width: var(--experience-sequence-frame-width, 1280px);
+          height: var(--experience-sequence-frame-height, 920px);
+          flex: none;
+          border: 0;
+          background: #05030a;
+          pointer-events: none;
+          transform: scale(var(--experience-sequence-frame-scale, 1));
+          transform-origin: center center;
+          will-change: transform;
         }
-        .slide-entering .experience-sequence-btns {
-          animation: cardItemIn 0.5s 1.6s ease both;
+
+        .experience-sequence-loading {
+          position: absolute;
+          inset: 0;
+          z-index: 3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+          text-align: center;
+          font-family: var(--mono);
+          font-size: 0.66rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: rgba(255, 212, 233, 0.78);
+          background: radial-gradient(circle at 50% 30%, rgba(247,85,144,0.12), rgba(4,1,8,0.94) 65%);
+          opacity: 0;
+          transition: opacity 0.45s ease;
+          pointer-events: none;
+        }
+
+        .experience-sequence.active.is-loading .experience-sequence-loading {
+          opacity: 1;
+        }
+
+        .experience-sequence-caption {
+          margin: 0;
+          max-width: 60ch;
+          font-family: var(--body);
+          font-size: clamp(0.95rem, 2vw, 1.08rem);
+          line-height: 1.7;
+          color: rgba(255, 209, 232, 0.8);
         }
 
         body.sequence-cinema .nav {
@@ -1861,11 +2061,11 @@ export default function HomePage() {
           .hero-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
           .story-section { padding: 1.2rem 1.1rem 1rem; }
           .experience-sequence { padding: 1rem; }
-          .experience-sequence-topbar { flex-direction: column; }
-          .experience-sequence-btns { width: 100%; justify-content: space-between; }
+          .experience-sequence-head { flex-direction: column; }
+          .experience-sequence-actions { width: 100%; justify-content: space-between; }
+          .experience-sequence-stage { height: min(64vh, 560px); border-radius: 1.4rem; }
         }
       `}</style>
     </>
   );
 }
-
