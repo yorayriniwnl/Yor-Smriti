@@ -18,7 +18,7 @@ const AyrinCharacter = dynamic(
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
-const HIDDEN_ON: string[] = ['/'];
+const HIDDEN_ON: string[] = ['/', '/her', '/questions', '/small-things', '/before-after', '/gratitude'];
 
 const SUBTLE_ON: string[] = ['/login', '/message'];
 

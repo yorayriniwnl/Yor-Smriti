@@ -24,7 +24,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/reasons',   label: 'Reasons',       icon: '🌸', description: 'Why I love you' },
   { href: '/stars',     label: 'Stars',         icon: '✨', description: 'Our constellation' },
   { href: '/promise',   label: 'Promises',      icon: '🕯️', description: 'My commitments' },
+  { href: '/her',       label: 'Who She Is',    icon: '🌙', description: 'A page entirely about her' },
+  { href: '/questions', label: 'Questions',     icon: '❓', description: 'Things he still sits with' },
+  { href: '/small-things', label: 'Noticed',    icon: '👁️', description: 'The small things he saw' },
+  { href: '/before-after', label: 'Then & Now', icon: '🔄', description: 'A before-and-after of him' },
+  { href: '/gratitude', label: 'Gratitude',     icon: '🙏', description: 'What she changed in him' },
   { href: '/love-sorry',label: 'Love & Sorry',  icon: '💔', description: 'Letters and cards' },
+  { href: '/letter',    label: 'Letter',        icon: '✉️', description: 'A standalone letter for you' },
   { href: '/reply',     label: 'Your Reply',    icon: '💌', description: 'Send a response' },
 ];
 
@@ -299,7 +305,7 @@ export function AppSidebar() {
               }}>
                 Experience
               </p>
-              {NAV_ITEMS.slice(0, 8).map((item) => (
+              {NAV_ITEMS.slice(0, 14).map((item) => (
                 <NavLink
                   key={item.href}
                   item={item}
@@ -320,7 +326,7 @@ export function AppSidebar() {
               }}>
                 Future Plans
               </p>
-              {NAV_ITEMS.slice(8).map((item) => (
+              {NAV_ITEMS.slice(14).map((item) => (
                 <NavLink
                   key={item.href}
                   item={item}

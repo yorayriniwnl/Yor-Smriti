@@ -71,13 +71,13 @@ export default function ReplyPage() {
               transition={{ duration: 0.55, ease: EASE }}
             >
               <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '0.6rem', letterSpacing: '0.18em', color: 'rgba(255,180,210,0.55)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                Your reply
+                just between us
               </p>
               <h1 style={{ fontFamily: 'var(--font-cormorant)', fontSize: 'clamp(2rem,6vw,3rem)', color: 'rgba(255,236,246,0.97)', fontWeight: 400, lineHeight: 1.1, marginBottom: '0.6rem' }}>
                 How do you feel right now?
               </h1>
               <p style={{ fontFamily: 'var(--font-crimson)', fontSize: '1.05rem', color: 'rgba(255,200,225,0.7)', lineHeight: 1.6, marginBottom: '2.5rem' }}>
-                There is no wrong answer. Just what is true for you.
+                Whatever is honest. Whatever is real. That is enough.
               </p>
 
               <div className="flex flex-col gap-3">
@@ -128,16 +128,20 @@ export default function ReplyPage() {
               </div>
 
               <h2 style={{ fontFamily: 'var(--font-cormorant)', fontSize: 'clamp(1.6rem,5vw,2.4rem)', color: 'rgba(255,236,246,0.97)', fontWeight: 400, lineHeight: 1.12, marginBottom: '0.6rem' }}>
-                Anything you want to add?
+                Say it here. I&apos;m listening.
               </h2>
               <p style={{ fontFamily: 'var(--font-crimson)', fontSize: '0.95rem', color: 'rgba(255,190,220,0.6)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                Optional. You can send without writing anything.
+                You don&apos;t have to write anything. But if you want to leave something for him, this is the place.
+              </p>
+
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '0.58rem', letterSpacing: '0.16em', color: 'rgba(255,180,210,0.38)', textAlign: 'center', marginBottom: '0.85rem', textTransform: 'lowercase' }}>
+                Only he will see this.
               </p>
 
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write anything here…"
+                placeholder="leave this for him…"
                 rows={5}
                 maxLength={2000}
                 className="w-full resize-none rounded-2xl border bg-transparent px-5 py-4 outline-none"
@@ -178,7 +182,7 @@ export default function ReplyPage() {
                   transition: 'opacity 180ms ease',
                 }}
               >
-                {sending ? 'Sending…' : 'Send my reply'}
+                {sending ? 'leaving it for him…' : 'leave this for him'}
               </motion.button>
             </motion.div>
           )}
