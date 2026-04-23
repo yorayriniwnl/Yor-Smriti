@@ -47,6 +47,9 @@ const EXPERIENCE_MOVIE_SLIDES = [
   },
 ] as const;
 
+const EXPERIENCE_SEQUENCE_FRAME_WIDTH = 1280;
+const EXPERIENCE_SEQUENCE_FRAME_HEIGHT = 920;
+
 export default function HomePage() {
   useEffect(() => {
     const cur = document.getElementById('cursor') as HTMLDivElement | null;
@@ -57,6 +60,7 @@ export default function HomePage() {
     const moodFill = document.getElementById('mood-fill') as HTMLDivElement | null;
     const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement | null;
     const experienceSequence = document.getElementById('experience-sequence') as HTMLDivElement | null;
+    const experienceSequenceStage = document.querySelector('.experience-sequence-stage') as HTMLDivElement | null;
     const experienceSequenceFrame = document.getElementById('experience-sequence-frame') as HTMLIFrameElement | null;
     const experienceSequenceEyebrow = document.getElementById('experience-sequence-eyebrow') as HTMLParagraphElement | null;
     const experienceSequenceTitle = document.getElementById('experience-sequence-title') as HTMLHeadingElement | null;
@@ -119,6 +123,42 @@ export default function HomePage() {
       });
     };
 
+    const syncExperienceSequenceFrameScale = () => {
+      if (!experienceSequence || !experienceSequenceStage || !experienceSequenceFrame) return;
+
+      const stageWidth = experienceSequenceStage.clientWidth;
+      const stageHeight = experienceSequenceStage.clientHeight;
+      if (!stageWidth || !stageHeight) return;
+
+      const scale = Math.min(
+        1,
+        stageWidth / EXPERIENCE_SEQUENCE_FRAME_WIDTH,
+        stageHeight / EXPERIENCE_SEQUENCE_FRAME_HEIGHT,
+      );
+
+      experienceSequence.style.setProperty('--experience-sequence-frame-scale', `${scale}`);
+      experienceSequence.style.setProperty('--experience-sequence-frame-width', `${EXPERIENCE_SEQUENCE_FRAME_WIDTH}px`);
+      experienceSequence.style.setProperty('--experience-sequence-frame-height', `${EXPERIENCE_SEQUENCE_FRAME_HEIGHT}px`);
+    };
+
+    const applyMovieSlideMeta = (index: number) => {
+      const slide = EXPERIENCE_MOVIE_SLIDES[index];
+      if (!slide) return;
+
+      if (experienceSequenceEyebrow) {
+        experienceSequenceEyebrow.textContent = slide.eyebrow;
+      }
+      if (experienceSequenceTitle) {
+        experienceSequenceTitle.textContent = slide.title;
+      }
+      if (experienceSequenceCaption) {
+        experienceSequenceCaption.textContent = slide.caption;
+      }
+      if (experienceSequenceCount) {
+        experienceSequenceCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`;
+      }
+    };
+
     const resetExperienceMovie = () => {
       experienceSequence?.classList.remove('active', 'is-loading', 'is-ending');
       document.body.classList.remove('sequence-cinema');
@@ -149,30 +189,22 @@ export default function HomePage() {
       spawnHeart();
     };
 
-    const loadMovieSlide = (index: number, token: number) => {
+    const loadMovieSlide = (index: number, token: number, onReady?: () => void) => {
       const slide = EXPERIENCE_MOVIE_SLIDES[index];
       if (!slide || !experienceSequence || !experienceSequenceFrame) return;
       if (token !== sequenceToken || !sequenceEnabled) return;
 
-      if (experienceSequenceEyebrow) {
-        experienceSequenceEyebrow.textContent = slide.eyebrow;
-      }
-      if (experienceSequenceTitle) {
-        experienceSequenceTitle.textContent = slide.title;
-      }
-      if (experienceSequenceCaption) {
-        experienceSequenceCaption.textContent = slide.caption;
-      }
-      if (experienceSequenceCount) {
-        experienceSequenceCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`;
-      }
-
+      experienceSequence.classList.remove('is-ending');
       experienceSequence.classList.add('active', 'is-loading');
       document.body.classList.add('sequence-cinema');
+      syncExperienceSequenceFrameScale();
 
       experienceSequenceFrame.onload = () => {
         if (token !== sequenceToken) return;
+        syncExperienceSequenceFrameScale();
+        applyMovieSlideMeta(index);
         experienceSequence?.classList.remove('is-loading');
+        onReady?.();
       };
 
       experienceSequenceFrame.src = slide.href;
@@ -288,19 +320,7 @@ export default function HomePage() {
       const storyFinalBeat = storyStart + 320 + (storyItems.length - 1) * STORY_POINT_STEP_MS;
       const movieStart = storyFinalBeat + STORY_END_PAUSE_MS;
 
-      let movieCursor = movieStart;
-      EXPERIENCE_MOVIE_SLIDES.forEach((slide, index) => {
-        const slideStart = movieCursor;
-        queueSequenceTimeout(() => {
-          if (token !== sequenceToken || !sequenceEnabled) return;
-          clearSequenceHighlights();
-          clearStoryHighlights();
-          loadMovieSlide(index, token);
-        }, slideStart);
-        movieCursor += slide.duration;
-      });
-
-      queueSequenceTimeout(() => {
+      const startMovieFinale = () => {
         if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
         experienceSequence.classList.add('is-ending');
         if (experienceSequenceEyebrow) {
@@ -313,12 +333,39 @@ export default function HomePage() {
           experienceSequenceCaption.textContent = 'The movie is over. He stayed. The chat box is waiting for you.';
         }
         spawnHearts();
-      }, movieCursor);
+
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          offerChatAfterMovie();
+        }, MOVIE_TO_CHAT_TRANSITION_MS);
+      };
+
+      const playMovieSlide = (index: number) => {
+        const slide = EXPERIENCE_MOVIE_SLIDES[index];
+        if (!slide || token !== sequenceToken || !sequenceEnabled) return;
+
+        clearSequenceHighlights();
+        clearStoryHighlights();
+        loadMovieSlide(index, token, () => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+
+          queueSequenceTimeout(() => {
+            if (token !== sequenceToken || !sequenceEnabled) return;
+
+            if (index === EXPERIENCE_MOVIE_SLIDES.length - 1) {
+              startMovieFinale();
+              return;
+            }
+
+            playMovieSlide(index + 1);
+          }, slide.duration);
+        });
+      };
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
-        offerChatAfterMovie();
-      }, movieCursor + MOVIE_TO_CHAT_TRANSITION_MS);
+        playMovieSlide(0);
+      }, movieStart);
     };
 
     const sendMsg = () => {
@@ -656,6 +703,9 @@ export default function HomePage() {
       sendBtn.onclick = sendMsg;
     }
 
+    syncExperienceSequenceFrameScale();
+    window.addEventListener('resize', syncExperienceSequenceFrameScale);
+
     if (experienceSequenceSkip) {
       experienceSequenceSkip.onclick = () => {
         stopSequence();
@@ -680,6 +730,7 @@ export default function HomePage() {
       if (sendBtn) sendBtn.onclick = null;
       if (experienceSequenceSkip) experienceSequenceSkip.onclick = null;
       if (hubCard) hubCard.onclick = null;
+      window.removeEventListener('resize', syncExperienceSequenceFrameScale);
 
       stopSequence();
       if (cursorRafId) cancelAnimationFrame(cursorRafId);
@@ -1709,6 +1760,9 @@ export default function HomePage() {
           position: relative;
           width: 100%;
           height: min(76vh, 760px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           overflow: hidden;
           border-radius: 2rem;
           border: 1px solid rgba(244,173,210,0.24);
@@ -1737,11 +1791,15 @@ export default function HomePage() {
         }
 
         .experience-sequence-frame {
-          width: 100%;
-          height: 100%;
+          width: var(--experience-sequence-frame-width, 1280px);
+          height: var(--experience-sequence-frame-height, 920px);
+          flex: none;
           border: 0;
           background: #05030a;
           pointer-events: none;
+          transform: scale(var(--experience-sequence-frame-scale, 1));
+          transform-origin: center center;
+          will-change: transform;
         }
 
         .experience-sequence-loading {

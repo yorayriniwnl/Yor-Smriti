@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Crimson_Pro, DM_Mono } from 'next/font/google';
 import './globals.css';
 import { AppSidebar } from '@/components/ui/AppSidebar';
+import StyledJsxRegistry from './registry';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -94,14 +95,16 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
       </head>
       <body className="antialiased">
-        <a
-          href="#main-content"
-          className="sr-only bg-white text-[#111] font-mono text-xs uppercase tracking-[0.06em] focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-md focus:px-3 focus:py-2"
-        >
-          Skip to content
-        </a>
-        <AppSidebar />
-        {children}
+        <StyledJsxRegistry>
+          <a
+            href="#main-content"
+            className="sr-only bg-white text-[#111] font-mono text-xs uppercase tracking-[0.06em] focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-md focus:px-3 focus:py-2"
+          >
+            Skip to content
+          </a>
+          <AppSidebar />
+          {children}
+        </StyledJsxRegistry>
       </body>
     </html>
   );

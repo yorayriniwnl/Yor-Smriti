@@ -40,3 +40,5 @@ _imports/
 .env*.local
 .webpack-dev*.log
 revert-backups/
+
+.vercel
