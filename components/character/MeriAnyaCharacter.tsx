@@ -65,7 +65,7 @@ function Flower({
   );
 }
 
-export function KeyrinCharacter() {
+export function MeriAnyaCharacter() {
   const [blink, setBlink] = useState(false);
   const blinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -93,7 +93,7 @@ export function KeyrinCharacter() {
       viewBox="0 0 260 720"
       xmlns="http://www.w3.org/2000/svg"
       style={{ width: '100%', height: '100%', overflow: 'visible' }}
-      aria-label="Keyrin character illustration"
+      aria-label="Meri Anya <3 character illustration"
       role="img"
     >
       <defs>
