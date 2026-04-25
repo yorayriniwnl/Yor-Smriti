@@ -54,7 +54,7 @@ https://yorayriniwnl.in
 | `/small-things` | Small things he noticed |
 | `/before-after` | Then-and-now reflection |
 | `/gratitude` | Gratitude notes |
-| `/reply` | Keyrin's response form 💌 |
+| `/reply` | Meri Anya <3's response form 💌 |
 | `/admin` | Analytics dashboard (auth required) |
 
 ---
@@ -68,7 +68,7 @@ https://yorayriniwnl.in
 | `GET` | `/api/session` | Cookie | Current session info |
 | `POST` | `/api/chat` | Cookie + CSRF | AI chat reply |
 | `POST` | `/api/events` | Cookie + CSRF | Experience event tracking |
-| `POST` | `/api/reply` | Cookie + CSRF | Keyrin sends a response |
+| `POST` | `/api/reply` | Cookie + CSRF | Meri Anya <3 sends a response |
 | `GET` | `/api/config` | Cookie | Personalization config |
 | `GET` | `/api/health` | — | Health + config check |
 | `GET` | `/api/metrics` | — / Cookie+JSON | Prometheus / JSON metrics |

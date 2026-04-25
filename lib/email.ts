@@ -105,7 +105,7 @@ export async function notifyReplyReceived(entry: {
   await sendEmail({
     to: notifyTo,
     subject: `💌 She replied - ${moodEmoji[entry.mood] ?? ''} ${entry.mood}`,
-    text: `Keyrin replied!\n\nMood: ${entry.mood}\n\n${entry.message}`,
+    text: `Meri Anya <3 replied!\n\nMood: ${entry.mood}\n\n${entry.message}`,
     html: `
       <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px;background:#05030a;color:#ffe8f4;border-radius:16px">
         <h2 style="font-weight:400;color:#f75590;margin-bottom:8px">She replied ${moodEmoji[entry.mood] ?? ''}</h2>

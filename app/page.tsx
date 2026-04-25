@@ -928,7 +928,7 @@ export default function HomePage() {
         <section className="scene active" id="scene-entry">
           <p className="eyebrow">for smriti - with love</p>
           <canvas id="heart-canvas" />
-          <h1 className="hero-title">Keyrin &amp; Ayrin</h1>
+          <h1 className="hero-title">Meri Anya &lt;3 &amp; Ayrin</h1>
           <p className="hero-sub">Every star here has a story. Every word was chosen with care. This is for you.</p>
           <div className="glass-card glass-card--entry">
             <p className="entry-quote">

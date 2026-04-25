@@ -127,7 +127,7 @@ function LoginInner() {
         </p>
 
         <h1 className="login-title mb-4">
-          Keyrin are you mad at Ayrin?
+          Meri Anya &lt;3 are you mad at Ayrin?
         </h1>
 
         <p className="login-copy mx-auto mb-8 max-w-[46ch]">
@@ -230,7 +230,7 @@ function LoginInner() {
                   : { duration: 0.2 }}
                 className="login-heart-copy"
               >
-                👸💃Keyrin ❤️ Ayrin 🕺🤴
+                👸💃Meri Anya &lt;3 ❤️ Ayrin 🕺🤴
               </motion.span>
             </div>
           </div>
