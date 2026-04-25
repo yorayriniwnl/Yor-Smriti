@@ -33,14 +33,28 @@ https://yorayriniwnl.in
 |---|---|
 | `/` | Home — cinematic hero, 3D heart, AI chat |
 | `/message` | Director narrative sequence |
+| `/hub` | Full experience index |
 | `/panda` | Apology journey — 8 interactive screens |
 | `/love-sorry` | Envelope → cards → letter → playlist → finale |
 | `/timeline` | Memory timeline |
 | `/reasons` | Why I love you — card deck |
 | `/stars` | Our constellation — interactive starfield |
 | `/promise` | Promises — commitment cards |
+| `/unsaid` | Things never said out loud |
+| `/miss` | What he misses |
+| `/letter` | Standalone letter |
+| `/moments` | Three memory scenes |
+| `/one-day` | One ordinary imagined day |
+| `/apology-map` | Accountability map |
+| `/the-good` | What was genuinely good |
+| `/for-her-alone` | Private page for her |
+| `/words-she-said` | Things she said that stayed |
+| `/her` | Portrait page about her |
+| `/questions` | Honest questions |
+| `/small-things` | Small things he noticed |
+| `/before-after` | Then-and-now reflection |
+| `/gratitude` | Gratitude notes |
 | `/reply` | Keyrin's response form 💌 |
-| `/hub` | Experience index |
 | `/admin` | Analytics dashboard (auth required) |
 
 ---

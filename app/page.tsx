@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
+import { EXPERIENCE_CATALOG, EXPERIENCE_MOVIE_SLIDES } from '@/lib/experienceCatalog';
 
 const SINCE_DATE = '2025-05-18';
 
@@ -22,37 +23,6 @@ const REPLIES = [
   { text: "There is sadness in that - and I don't want to look away.", emotion: 'quietSadness' },
   { text: 'That caught me softly, in a good way.', emotion: 'subtleSurprise' },
   { text: "...I love you. That's the only reply I have.", emotion: 'affectionate' },
-] as const;
-
-const EXPERIENCE_MOVIE_SLIDES = [
-  {
-    href: '/timeline?sequence=1',
-    eyebrow: 'chapter one',
-    title: 'Our Story',
-    caption: 'Every moment that mattered, replayed like a memory we can still step inside.',
-    duration: 8000,
-  },
-  {
-    href: '/reasons?sequence=1',
-    eyebrow: 'chapter two',
-    title: 'Why I Love You',
-    caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
-    duration: 6000,
-  },
-  {
-    href: '/stars?sequence=1',
-    eyebrow: 'chapter three',
-    title: 'Our Stars',
-    caption: 'Then the sky opens up, and every light remembers something about us.',
-    duration: 8600,
-  },
-  {
-    href: '/promise?sequence=1',
-    eyebrow: 'chapter four',
-    title: 'My Promises',
-    caption: 'And last, the promises. Not decoration. Not performance. The part I want to live.',
-    duration: 8800,
-  },
 ] as const;
 
 // 640×480 gives ~0.59x scale on iPhone SE vs the previous 0.27x at 1280×920.
@@ -396,6 +366,7 @@ export default function HomePage() {
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
       goScene('scene-hub');
+      const CARD_FOCUS_STEP_MS = 650;
       const STORY_POINT_STEP_MS = 2000;
       const STORY_END_PAUSE_MS = 1200;
       // Fix 10: let the scene transition CSS animation (~480ms) finish before
@@ -416,10 +387,10 @@ export default function HomePage() {
           card.classList.add('sequence-focus');
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
           spawnHearts();
-        }, SCENE_SETTLE_MS + 700 + index * 1200);  // Fix 10: offset by settle delay
+        }, SCENE_SETTLE_MS + 700 + index * CARD_FOCUS_STEP_MS);  // Fix 10: offset by settle delay
       });
 
-      const storyStart = SCENE_SETTLE_MS + 700 + cards.length * 1200;
+      const storyStart = SCENE_SETTLE_MS + 700 + cards.length * CARD_FOCUS_STEP_MS;
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
@@ -1069,46 +1040,25 @@ export default function HomePage() {
           </h2>
 
           <div className="hub-grid">
-            <a className="hub-card anim-delay-200" data-sequence-card="true" href="/timeline">
-              <span className="card-emoji">🌙</span>
-              <p className="card-label">memory</p>
-              <h3 className="card-title">Memory Timeline</h3>
-              <p className="card-desc">Every moment that mattered, laid out like constellations.</p>
-              <div className="card-arrow">
-                <span>Open</span>
-                <span>→</span>
-              </div>
-            </a>
-            <a className="hub-card anim-delay-300" data-sequence-card="true" href="/reasons">
-              <span className="card-emoji">🌸</span>
-              <p className="card-label">reasons</p>
-              <h3 className="card-title">Why I Love You</h3>
-              <p className="card-desc">Short, honest reasons - written when I was completely sure.</p>
-              <div className="card-arrow">
-                <span>Feel it</span>
-                <span>→</span>
-              </div>
-            </a>
-            <a className="hub-card anim-delay-400" data-sequence-card="true" href="/stars">
-              <span className="card-emoji">✨</span>
-              <p className="card-label">constellation</p>
-              <h3 className="card-title">Our Stars</h3>
-              <p className="card-desc">An interactive sky where every star is a memory of us.</p>
-              <div className="card-arrow">
-                <span>Explore</span>
-                <span>→</span>
-              </div>
-            </a>
-            <a className="hub-card anim-delay-500" data-sequence-card="true" href="/promise">
-              <span className="card-emoji">🕯️</span>
-              <p className="card-label">commitments</p>
-              <h3 className="card-title">My Promises</h3>
-              <p className="card-desc">Things I will do differently. Written to be kept, not forgotten.</p>
-              <div className="card-arrow">
-                <span>Read</span>
-                <span>→</span>
-              </div>
-            </a>
+            {EXPERIENCE_CATALOG.map((experience, index) => (
+              <a
+                key={experience.href}
+                className="hub-card"
+                data-sequence-card="true"
+                href={experience.href}
+                aria-label={`Open ${experience.title}`}
+                style={{ animationDelay: `${Math.min(1.2, 0.2 + index * 0.045)}s` }}
+              >
+                <span className="card-emoji">{experience.emoji}</span>
+                <p className="card-label">{experience.eyebrow}</p>
+                <h3 className="card-title">{experience.title}</h3>
+                <p className="card-desc">{experience.description}</p>
+                <div className="card-arrow">
+                  <span>{experience.action}</span>
+                  <span>→</span>
+                </div>
+              </a>
+            ))}
           </div>
 
           <div className="story-section" data-sequence-story="true">
@@ -1167,7 +1117,7 @@ export default function HomePage() {
                 ← prev
               </button>
               <p className="experience-sequence-count" id="experience-sequence-count">
-                01 / 04
+                {`01 / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`}
               </p>
               <button className="btn-ghost experience-sequence-next" id="experience-sequence-next" type="button" aria-label="Next chapter">
                 next →
@@ -1757,7 +1707,7 @@ export default function HomePage() {
         .send-btn:active { transform: scale(0.93); }
 
         #scene-hub {
-          gap: 2.5rem;
+          gap: 2rem;
           padding: 4rem 2rem;
           min-height: 100vh;
           align-items: center;
@@ -1779,22 +1729,23 @@ export default function HomePage() {
 
         .hub-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 1.2rem;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+          gap: 1rem;
           width: 100%;
-          max-width: 860px;
+          max-width: 1100px;
         }
 
         .hub-card {
           background: linear-gradient(160deg, rgba(38,10,28,0.92) 0%, rgba(16,5,14,0.96) 100%);
           border: 1px solid rgba(244,173,210,0.2);
-          border-radius: 1.8rem;
-          padding: 1.8rem 2rem;
+          border-radius: 1.2rem;
+          padding: 1.35rem 1.45rem;
           cursor: none;
           transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s, border-color 0.4s;
           position: relative;
           overflow: hidden;
           box-shadow: 0 20px 48px rgba(0,0,0,0.5), 0 8px 20px rgba(247,85,144,0.1);
+          animation: fadeUp 0.6s ease both;
         }
 
         .hub-card::before {
@@ -1821,8 +1772,8 @@ export default function HomePage() {
         .hub-card:hover::before { opacity: 1; }
 
         .card-emoji {
-          font-size: 2.2rem;
-          margin-bottom: 1rem;
+          font-size: 1.8rem;
+          margin-bottom: 0.8rem;
           display: block;
           filter: drop-shadow(0 0 12px rgba(247,85,144,0.5));
           animation: floatEmoji 4s ease-in-out infinite;
@@ -1844,7 +1795,7 @@ export default function HomePage() {
 
         .card-title {
           font-family: var(--serif);
-          font-size: 1.6rem;
+          font-size: 1.35rem;
           font-weight: 300;
           color: rgba(255,236,246,0.97);
           margin-bottom: 0.5rem;
@@ -1853,13 +1804,13 @@ export default function HomePage() {
 
         .card-desc {
           font-family: var(--body);
-          font-size: 0.9rem;
+          font-size: 0.86rem;
           color: rgba(255,200,225,0.68);
           line-height: 1.55;
         }
 
         .card-arrow {
-          margin-top: 1.2rem;
+          margin-top: 1rem;
           font-family: var(--mono);
           font-size: 0.6rem;
           letter-spacing: 0.12em;

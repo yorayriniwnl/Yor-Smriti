@@ -9,6 +9,7 @@ import { LogoutButton } from '@/components/ui/LogoutButton';
 import { useEventTracking } from '@/hooks/useEventTracking';
 import { ScrollReset } from '@/components/ui/ScrollReset';
 import { type BookmarkData } from '@/components/ui/BookmarkButton';
+import { EXPERIENCE_CATALOG } from '@/lib/experienceCatalog';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -36,32 +37,6 @@ function getBookmark(): BookmarkData | null {
     return raw ? (JSON.parse(raw) as BookmarkData) : null;
   } catch { return null; }
 }
-
-interface Experience {
-  href: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  emoji: string;
-  delay: number;
-  feeling: string;
-}
-
-const EXPERIENCES: Experience[] = [
-  { href: '/timeline',      eyebrow: 'timeline',       title: 'Memory Timeline',          description: 'Review key moments on a focused timeline.',                                          emoji: '🌙',  delay: 0.1,  feeling: 'Every moment that mattered, in order. It is all still here.' },
-  { href: '/reasons',       eyebrow: 'reasons',        title: 'Why I Love You',            description: 'Short, shareable reasons presented as a concise deck.',                             emoji: '🌸',  delay: 0.2,  feeling: 'Fifteen reasons. Each one is about you specifically.' },
-  { href: '/stars',         eyebrow: 'visual',         title: 'Our Constellation',         description: 'Interactive starfield that surfaces memories.',                                     emoji: '✨',  delay: 0.3,  feeling: 'An interactive sky made of things I still think about.' },
-  { href: '/promise',       eyebrow: 'commitments',    title: 'My Promises',               description: 'Simple, revisitable commitments to support accountability.',                        emoji: '🕯️', delay: 0.4,  feeling: 'What I am committing to — not as performance, as record.' },
-  { href: '/unsaid',        eyebrow: 'confessions',    title: 'Things I Never Said',       description: 'A quiet scroll of things he felt but never said out loud.',                        emoji: '🤍',  delay: 0.5,  feeling: 'The things that stayed in his throat. All of them, finally out.' },
-  { href: '/miss',          eyebrow: 'missing',        title: 'What I Miss About You',     description: 'A soft grid of specific things — not generic, just true.',                         emoji: '🌷',  delay: 0.6,  feeling: 'Specific. Not sentimental. Just true.' },
-  { href: '/letter',        eyebrow: 'letter',         title: 'The Letter',                description: 'A full-screen, distraction-free letter. Just his words, waiting to be read.',     emoji: '💌',  delay: 0.7,  feeling: 'No animations. No characters. Just his words, waiting.' },
-  { href: '/moments',       eyebrow: 'moments',        title: 'Three Moments',             description: 'Three full-screen scenes, written as present-tense memory.',                       emoji: '🕰️', delay: 0.8,  feeling: 'Three scenes. The kind you keep replaying.' },
-  { href: '/one-day',       eyebrow: 'fantasy',        title: 'One Day With You',          description: 'A written fantasy of one ordinary day together — morning to night.',               emoji: '☁️', delay: 0.9,  feeling: 'Not a grand gesture. Just a day. The kind we had.' },
-  { href: '/apology-map',   eyebrow: 'accountability', title: 'Where I Went Wrong',        description: 'A chronological map of specific failures, with dates and impact.',                 emoji: '🗺️', delay: 1.0,  feeling: 'Harder to read. More honest for it.' },
-  { href: '/the-good',      eyebrow: 'just the good',  title: 'What Was Actually Good',    description: 'No agenda, no apology. Just what was genuinely beautiful between us.',             emoji: '🌿',  delay: 1.1,  feeling: 'It was real. I want you to know I know that.' },
-  { href: '/for-her-alone', eyebrow: 'private',        title: 'For Her Alone',             description: 'A password-protected page. Only she gets here.',                                   emoji: '🔒',  delay: 1.2,  feeling: 'This one is just for you.' },
-  { href: '/words-she-said',eyebrow: 'I was listening',title: 'Things You Said',           description: 'Specific phrases she said — and why they stayed with him.',                        emoji: '🪶',  delay: 1.3,  feeling: 'Proof that he was paying attention.' },
-];
 
 const SAMPLE_MEMORIES: MemoryItem[] = [
   { id: 'm1', date: '2024-02-14', title: 'The Call That Did Not End',            excerpt: 'We ran out of things to say and stayed on the line anyway.',                         details: 'It was late. The conversation had wound down naturally but neither of us hung up. We just stayed there in the quiet. I listened to you breathe and thought — this is enough. This is more than enough. You fell asleep before I did. I stayed on the line until the call dropped on its own.', tags: ['closeness', 'quiet'] },
@@ -154,7 +129,7 @@ export default function HubPage() {
 
       {/* Cards grid */}
       <div className="relative z-10 grid w-full max-w-2xl gap-4 sm:grid-cols-2">
-        {EXPERIENCES.map((exp) => {
+        {EXPERIENCE_CATALOG.map((exp, index) => {
           const isVisited = visited.has(exp.href);
           const isHovered = hovered === exp.href;
 
@@ -163,7 +138,7 @@ export default function HubPage() {
               key={exp.href}
               initial={{ opacity: 0, y: 32, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.8, delay: exp.delay, ease: EASE_SOFT }}
+              transition={{ duration: 0.8, delay: 0.1 + index * 0.06, ease: EASE_SOFT }}
               onHoverStart={() => setHovered(exp.href)}
               onHoverEnd={() => setHovered(null)}
             >

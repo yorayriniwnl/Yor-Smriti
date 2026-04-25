@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutButton } from '@/components/ui/LogoutButton';
+import { EXPERIENCE_CATALOG } from '@/lib/experienceCatalog';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -18,19 +19,13 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/message',   label: 'Experience',    icon: '💌', description: 'The full cinematic message' },
-  { href: '/panda',     label: 'Apology',       icon: '🐼', description: '8-screen apology journey' },
   { href: '/hub',       label: 'Explore',       icon: '✦',  description: 'All experiences' },
-  { href: '/timeline',  label: 'Timeline',      icon: '🌙', description: 'Our memory timeline' },
-  { href: '/reasons',   label: 'Reasons',       icon: '🌸', description: 'Why I love you' },
-  { href: '/stars',     label: 'Stars',         icon: '✨', description: 'Our constellation' },
-  { href: '/promise',   label: 'Promises',      icon: '🕯️', description: 'My commitments' },
-  { href: '/her',       label: 'Who She Is',    icon: '🌙', description: 'A page entirely about her' },
-  { href: '/questions', label: 'Questions',     icon: '❓', description: 'Things he still sits with' },
-  { href: '/small-things', label: 'Noticed',    icon: '👁️', description: 'The small things he saw' },
-  { href: '/before-after', label: 'Then & Now', icon: '🔄', description: 'A before-and-after of him' },
-  { href: '/gratitude', label: 'Gratitude',     icon: '🙏', description: 'What she changed in him' },
-  { href: '/love-sorry',label: 'Love & Sorry',  icon: '💔', description: 'Letters and cards' },
-  { href: '/letter',    label: 'Letter',        icon: '✉️', description: 'A standalone letter for you' },
+  ...EXPERIENCE_CATALOG.map((experience) => ({
+    href: experience.href,
+    label: experience.navLabel ?? experience.title,
+    icon: experience.emoji,
+    description: experience.description,
+  })),
   { href: '/reply',     label: 'Your Reply',    icon: '💌', description: 'Send a response' },
 ];
 
