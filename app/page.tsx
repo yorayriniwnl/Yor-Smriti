@@ -839,11 +839,11 @@ export default function HomePage() {
     let touchStartX = 0;
 
     const onTouchStart = (e: TouchEvent) => {
-      touchStartX = e.touches[0]?.clientX ?? 0;
+      touchStartX = e.touches?.item(0)?.clientX ?? 0;
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX;
+      const dx = (e.changedTouches?.item(0)?.clientX ?? touchStartX) - touchStartX;
       if (Math.abs(dx) < 50) return;
       if (dx < 0) {
         experienceAdvanceFn?.();

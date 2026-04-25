@@ -82,7 +82,7 @@ https://yorayriniwnl.in
 - CSRF: `x-yor-csrf: 1` custom header required on mutating requests
 - Rate limiting: per-IP via Upstash → ioredis → in-memory fallback
 - IP extraction: trusts `cf-connecting-ip` → `x-real-ip` → last `X-Forwarded-For`
-- Security headers: HSTS, CSP, `X-Frame-Options: DENY`, `nosniff`
+- Security headers: HSTS, CSP, `X-Frame-Options: SAMEORIGIN`, `nosniff`
 - Startup validation: `instrumentation.ts` calls `requireEnv()` at boot
 
 ---
