@@ -53,7 +53,8 @@ jobs:
         if: env.VERCEL_TOKEN == ''
         shell: bash
         run: |
-          echo "::warning title=Skipped sync::VERCEL_TOKEN is not set, so Vercel environment sync was skipped."
+          echo "::error title=Missing VERCEL_TOKEN::Set the VERCEL_TOKEN GitHub secret so production deploys can run."
+          exit 1
 
       - name: Validate required production environment variables
         if: env.VERCEL_TOKEN != ''
