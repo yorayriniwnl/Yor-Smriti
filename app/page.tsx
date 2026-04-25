@@ -69,6 +69,7 @@ export default function HomePage() {
     let sequenceToken = 0;
     let currentSlideIndex = 0;          // Fix 5: track which slide is active for Prev/Next
     let slideAdvanceFn: (() => void) | null = null;  // Fix 6: cancel timer on postMessage
+    let sequenceScrollRafId: number | null = null;
     const sequenceTimeoutIds: number[] = [];
 
     const queueSequenceTimeout = (fn: () => void, ms: number) => {
@@ -79,6 +80,104 @@ export default function HomePage() {
     const clearSequenceTimeouts = () => {
       sequenceTimeoutIds.forEach((id) => window.clearTimeout(id));
       sequenceTimeoutIds.length = 0;
+    };
+
+    const cancelSequenceScroll = () => {
+      if (sequenceScrollRafId !== null) {
+        window.cancelAnimationFrame(sequenceScrollRafId);
+        sequenceScrollRafId = null;
+      }
+    };
+
+    const easeInOutCubic = (value: number) =>
+      value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+
+    const getScrollDriver = (target: HTMLElement) => {
+      let parent = target.parentElement;
+      while (parent && parent !== document.body) {
+        const style = window.getComputedStyle(parent);
+        const isScrollable = /(auto|scroll)/.test(style.overflowY);
+        if (isScrollable && parent.scrollHeight > parent.clientHeight + 2) {
+          const scrollParent = parent;
+          return {
+            viewportTop: () => scrollParent.getBoundingClientRect().top,
+            viewportHeight: () => scrollParent.clientHeight,
+            getTop: () => scrollParent.scrollTop,
+            setTop: (top: number) => {
+              scrollParent.scrollTop = top;
+            },
+            maxTop: () => Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight),
+          };
+        }
+        parent = parent.parentElement;
+      }
+
+      const root = document.scrollingElement as HTMLElement | null;
+      const documentElement = document.documentElement;
+      const body = document.body;
+
+      return {
+        viewportTop: () => 0,
+        viewportHeight: () => window.innerHeight,
+        getTop: () => window.scrollY || documentElement.scrollTop || body.scrollTop || root?.scrollTop || 0,
+        setTop: (top: number) => {
+          window.scrollTo(0, top);
+          documentElement.scrollTop = top;
+          body.scrollTop = top;
+          if (root) root.scrollTop = top;
+        },
+        maxTop: () =>
+          Math.max(
+            0,
+            Math.max(documentElement.scrollHeight, body.scrollHeight, root?.scrollHeight ?? 0) - window.innerHeight,
+          ),
+      };
+    };
+
+    const slowScrollToElement = (
+      target: HTMLElement | null | undefined,
+      durationMs: number,
+      token: number,
+      block: ScrollLogicalPosition = 'center',
+    ) => {
+      if (!target || token !== sequenceToken || !sequenceEnabled) return;
+      cancelSequenceScroll();
+
+      const driver = getScrollDriver(target);
+      const targetRect = target.getBoundingClientRect();
+      const startTop = driver.getTop();
+      const elementTop = startTop + targetRect.top - driver.viewportTop();
+      const viewportHeight = driver.viewportHeight();
+      let endTop = elementTop;
+
+      if (block === 'center') {
+        endTop = elementTop - (viewportHeight - targetRect.height) / 2;
+      } else if (block === 'end') {
+        endTop = elementTop - viewportHeight + targetRect.height;
+      }
+
+      endTop = Math.max(0, Math.min(driver.maxTop(), endTop));
+
+      if (Math.abs(endTop - startTop) < 1) return;
+
+      const startedAt = window.performance.now();
+      const step = (now: number) => {
+        if (token !== sequenceToken || !sequenceEnabled) {
+          sequenceScrollRafId = null;
+          return;
+        }
+
+        const progress = Math.min(1, (now - startedAt) / durationMs);
+        driver.setTop(startTop + (endTop - startTop) * easeInOutCubic(progress));
+
+        if (progress < 1) {
+          sequenceScrollRafId = window.requestAnimationFrame(step);
+        } else {
+          sequenceScrollRafId = null;
+        }
+      };
+
+      sequenceScrollRafId = window.requestAnimationFrame(step);
     };
 
     const goScene = (id: string) => {
@@ -260,6 +359,7 @@ export default function HomePage() {
     const stopSequence = () => {
       sequenceToken += 1;
       clearSequenceTimeouts();
+      cancelSequenceScroll();
       clearSequenceHighlights();
       clearStoryHighlights();
       resetExperienceMovie();
@@ -369,6 +469,10 @@ export default function HomePage() {
       const CARD_FOCUS_STEP_MS = 650;
       const STORY_POINT_STEP_MS = 2000;
       const STORY_END_PAUSE_MS = 1200;
+      const GRATITUDE_HOLD_MS = 5000;
+      const GRATITUDE_SCROLL_UP_MS = 6200;
+      const GRATITUDE_SCROLL_DOWN_TO_CARD_MS = 5600;
+      const GRATITUDE_SCROLL_DOWN_TO_STORY_MS = 7200;
       // Fix 10: let the scene transition CSS animation (~480ms) finish before
       // scrollIntoView calls fire on elements that may not yet be visible
       const SCENE_SETTLE_MS = 350;
@@ -379,6 +483,9 @@ export default function HomePage() {
       const storyItems = Array.from(
         document.querySelectorAll<HTMLElement>('[data-sequence-timeline-item="true"]'),
       );
+      const gratitudeCard = cards.find((card) => card.dataset.sequenceCardKey === 'gratitude');
+      const gratitudeIndex = gratitudeCard ? cards.indexOf(gratitudeCard) : -1;
+      const hubTitle = document.querySelector<HTMLElement>('.scene-hub-title');
 
       cards.forEach((card, index) => {
         queueSequenceTimeout(() => {
@@ -390,7 +497,36 @@ export default function HomePage() {
         }, SCENE_SETTLE_MS + 700 + index * CARD_FOCUS_STEP_MS);  // Fix 10: offset by settle delay
       });
 
-      const storyStart = SCENE_SETTLE_MS + 700 + cards.length * CARD_FOCUS_STEP_MS;
+      const gratitudeChoreographyStart =
+        gratitudeIndex >= 0
+          ? SCENE_SETTLE_MS + 700 + gratitudeIndex * CARD_FOCUS_STEP_MS + CARD_FOCUS_STEP_MS
+          : 0;
+      const gratitudeChoreographyDuration =
+        gratitudeIndex >= 0
+          ? GRATITUDE_HOLD_MS +
+            GRATITUDE_SCROLL_UP_MS +
+            GRATITUDE_SCROLL_DOWN_TO_CARD_MS +
+            GRATITUDE_SCROLL_DOWN_TO_STORY_MS
+          : 0;
+
+      if (gratitudeCard) {
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          slowScrollToElement(hubTitle ?? cards[0], GRATITUDE_SCROLL_UP_MS, token, 'center');
+        }, gratitudeChoreographyStart + GRATITUDE_HOLD_MS);
+
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          slowScrollToElement(gratitudeCard, GRATITUDE_SCROLL_DOWN_TO_CARD_MS, token, 'center');
+        }, gratitudeChoreographyStart + GRATITUDE_HOLD_MS + GRATITUDE_SCROLL_UP_MS);
+
+        queueSequenceTimeout(() => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          slowScrollToElement(storySection, GRATITUDE_SCROLL_DOWN_TO_STORY_MS, token, 'center');
+        }, gratitudeChoreographyStart + GRATITUDE_HOLD_MS + GRATITUDE_SCROLL_UP_MS + GRATITUDE_SCROLL_DOWN_TO_CARD_MS);
+      }
+
+      const storyStart = SCENE_SETTLE_MS + 700 + cards.length * CARD_FOCUS_STEP_MS + gratitudeChoreographyDuration;
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
@@ -1045,6 +1181,7 @@ export default function HomePage() {
                 key={experience.href}
                 className="hub-card"
                 data-sequence-card="true"
+                data-sequence-card-key={experience.eyebrow}
                 href={experience.href}
                 aria-label={`Open ${experience.title}`}
                 style={{ animationDelay: `${Math.min(1.2, 0.2 + index * 0.045)}s` }}
