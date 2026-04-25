@@ -15,7 +15,8 @@ type EventName =
   | 'apology_opened'
   | 'timeline_viewed'
   | 'stars_viewed'
-  | 'promise_viewed';
+  | 'promise_viewed'
+  | 'reasons_viewed';
 
 interface TrackOptions {
   screen?: string | number;
