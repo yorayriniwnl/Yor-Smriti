@@ -94,8 +94,8 @@ export default function HomePage() {
       }
     };
 
-    const easeInOutCubic = (value: number) =>
-      value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+    const easeInOutSmoother = (value: number) =>
+      value * value * value * (value * (value * 6 - 15) + 10);
 
     const getScrollDriver = (target: HTMLElement) => {
       let parent = target.parentElement;
@@ -141,7 +141,7 @@ export default function HomePage() {
 
     const slowScrollToElement = (
       target: HTMLElement | null | undefined,
-      durationMs: number,
+      durationMs: number | ((direction: 'up' | 'down', distance: number) => number),
       token: number,
       block: ScrollLogicalPosition = 'center',
     ) => {
@@ -163,7 +163,13 @@ export default function HomePage() {
 
       endTop = Math.max(0, Math.min(driver.maxTop(), endTop));
 
-      if (Math.abs(endTop - startTop) < 1) return;
+      const distance = endTop - startTop;
+      const absoluteDistance = Math.abs(distance);
+      if (absoluteDistance < 1) return;
+
+      const direction = distance > 0 ? 'down' : 'up';
+      const resolvedDurationMs =
+        typeof durationMs === 'function' ? durationMs(direction, absoluteDistance) : durationMs;
 
       const startedAt = window.performance.now();
       const step = (now: number) => {
@@ -172,8 +178,8 @@ export default function HomePage() {
           return;
         }
 
-        const progress = Math.min(1, (now - startedAt) / durationMs);
-        driver.setTop(startTop + (endTop - startTop) * easeInOutCubic(progress));
+        const progress = Math.min(1, (now - startedAt) / resolvedDurationMs);
+        driver.setTop(startTop + distance * easeInOutSmoother(progress));
 
         if (progress < 1) {
           sequenceScrollRafId = window.requestAnimationFrame(step);
@@ -401,15 +407,16 @@ export default function HomePage() {
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
       goScene('scene-hub');
-      const CARD_FOCUS_STEP_MS = 650;
+      const CARD_SCROLL_UP_MS = 1600;
+      const CARD_SCROLL_DOWN_MS = CARD_SCROLL_UP_MS * 2;
+      const CARD_FOCUS_SETTLE_MS = 450;
+      const CARD_FOCUS_STEP_MS = CARD_SCROLL_DOWN_MS + CARD_FOCUS_SETTLE_MS;
       const STORY_POINT_STEP_MS = 2000;
       const STORY_END_PAUSE_MS = 1200;
       const GRATITUDE_HOLD_MS = 5000;
-      const GRATITUDE_SCROLL_UP_MS = 6200;
-      const GRATITUDE_SCROLL_DOWN_TO_CARD_MS = 5600;
-      const GRATITUDE_SCROLL_DOWN_TO_STORY_MS = 7200;
-      // Fix 10: let the scene transition CSS animation (~480ms) finish before
-      // scrollIntoView calls fire on elements that may not yet be visible
+      const GRATITUDE_SCROLL_UP_MS = 3600;
+      const GRATITUDE_SCROLL_DOWN_MS = GRATITUDE_SCROLL_UP_MS * 2;
+      // Let the scene transition CSS animation finish before sequence scrolling starts.
       const SCENE_SETTLE_MS = 350;
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
@@ -421,15 +428,17 @@ export default function HomePage() {
       const gratitudeCard = cards.find((card) => card.dataset.sequenceCardKey === 'gratitude');
       const gratitudeIndex = gratitudeCard ? cards.indexOf(gratitudeCard) : -1;
       const hubTitle = document.querySelector<HTMLElement>('.scene-hub-title');
+      const cardScrollDuration = (direction: 'up' | 'down') =>
+        direction === 'down' ? CARD_SCROLL_DOWN_MS : CARD_SCROLL_UP_MS;
 
       cards.forEach((card, index) => {
         queueSequenceTimeout(() => {
           if (token !== sequenceToken || !sequenceEnabled) return;
           clearSequenceHighlights();
           card.classList.add('sequence-focus');
-          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          slowScrollToElement(card, cardScrollDuration, token, 'center');
           spawnHearts();
-        }, SCENE_SETTLE_MS + 700 + index * CARD_FOCUS_STEP_MS);  // Fix 10: offset by settle delay
+        }, SCENE_SETTLE_MS + 700 + index * CARD_FOCUS_STEP_MS);
       });
 
       const gratitudeChoreographyStart =
@@ -440,8 +449,8 @@ export default function HomePage() {
         gratitudeIndex >= 0
           ? GRATITUDE_HOLD_MS +
             GRATITUDE_SCROLL_UP_MS +
-            GRATITUDE_SCROLL_DOWN_TO_CARD_MS +
-            GRATITUDE_SCROLL_DOWN_TO_STORY_MS
+            GRATITUDE_SCROLL_DOWN_MS +
+            GRATITUDE_SCROLL_DOWN_MS
           : 0;
 
       if (gratitudeCard) {
@@ -452,13 +461,13 @@ export default function HomePage() {
 
         queueSequenceTimeout(() => {
           if (token !== sequenceToken || !sequenceEnabled) return;
-          slowScrollToElement(gratitudeCard, GRATITUDE_SCROLL_DOWN_TO_CARD_MS, token, 'center');
+          slowScrollToElement(gratitudeCard, GRATITUDE_SCROLL_DOWN_MS, token, 'center');
         }, gratitudeChoreographyStart + GRATITUDE_HOLD_MS + GRATITUDE_SCROLL_UP_MS);
 
         queueSequenceTimeout(() => {
           if (token !== sequenceToken || !sequenceEnabled) return;
-          slowScrollToElement(storySection, GRATITUDE_SCROLL_DOWN_TO_STORY_MS, token, 'center');
-        }, gratitudeChoreographyStart + GRATITUDE_HOLD_MS + GRATITUDE_SCROLL_UP_MS + GRATITUDE_SCROLL_DOWN_TO_CARD_MS);
+          slowScrollToElement(storySection, GRATITUDE_SCROLL_DOWN_MS, token, 'center');
+        }, gratitudeChoreographyStart + GRATITUDE_HOLD_MS + GRATITUDE_SCROLL_UP_MS + GRATITUDE_SCROLL_DOWN_MS);
       }
 
       const storyStart = SCENE_SETTLE_MS + 700 + cards.length * CARD_FOCUS_STEP_MS + gratitudeChoreographyDuration;
@@ -469,7 +478,7 @@ export default function HomePage() {
         clearStoryHighlights();
         storySection?.classList.add('sequence-story-focus');
         storyLabel?.classList.add('sequence-story-label-focus');
-        storySection?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        slowScrollToElement(storySection, GRATITUDE_SCROLL_DOWN_MS, token, 'center');
         spawnHearts();
       }, storyStart);
 
