@@ -17,48 +17,48 @@ interface Promise {
   weight: 'light' | 'medium' | 'heavy';
 }
 
-// ─── Real promises — specific, not decorative ────────────────────────────────
+// ─── Replace with your real promises ─────────────────────────────────────────
 const PROMISES: Promise[] = [
   {
     id: 'p1',
     number: 1,
-    title: 'I will not go quiet.',
-    body: 'When things get hard, I used to disappear into myself and call it giving you space. It was not that. It was avoidance. I will stay present — especially when staying present is uncomfortable. If I need time, I will say so. I will not just vanish.',
+    title: '[SHORT TITLE — e.g. "I will not disappear."]',
+    body: '[SPECIFIC BODY — not a general statement, but what this actually means in your case. e.g. "Not when things get uncomfortable. Not when I do not know what to say. I used to go quiet for days — that was not giving you space, that was avoiding you. I will not do that again."]',
     weight: 'heavy',
   },
   {
     id: 'p2',
     number: 2,
-    title: 'I will say what is actually true.',
-    body: 'Not the version that makes things easier. Not "I am fine" when I am not. You always said exactly what you meant — I never matched that. I am going to try. The real answer, even when it is messy, even when I do not have it fully formed yet.',
+    title: '[SHORT TITLE]',
+    body: '[SPECIFIC BODY — tied to something real that happened between you]',
     weight: 'medium',
   },
   {
     id: 'p3',
     number: 3,
-    title: 'I will listen without waiting for my turn.',
-    body: 'I have caught myself forming replies while you were still talking. That is not listening — that is waiting. When you speak, I am going to be fully in it. Not solving, not planning my response. Just there, with you, in what you are saying.',
+    title: '[SHORT TITLE]',
+    body: '[SPECIFIC BODY]',
     weight: 'medium',
   },
   {
     id: 'p4',
     number: 4,
-    title: 'I will choose you — as a decision, not a default.',
-    body: 'Every day. Not because it is familiar, not because change is hard. Because you are the person I want. That is a choice I will make deliberately, and I will make sure you can feel that it is a choice — not just inertia.',
+    title: '[SHORT TITLE — e.g. "I will choose you intentionally."]',
+    body: '[SPECIFIC BODY — e.g. "Not out of habit, not because it is easier than being alone. Because I want to. Every day as a decision."]',
     weight: 'heavy',
   },
   {
     id: 'p5',
     number: 5,
-    title: 'I will earn trust — not ask for it.',
-    body: 'I know "trust me" means nothing right now. I am not saying it. I am saying I understand that trust comes back through months of consistency, not through a conversation. I will be consistent. You will not have to wonder.',
+    title: '[SHORT TITLE — e.g. "I will earn trust back, not ask for it."]',
+    body: '[SPECIFIC BODY — e.g. "I know I cannot say \'trust me\' and have that mean anything right now. I am not asking you to. I am saying I understand that trust is rebuilt through consistency over months, not through a conversation."]',
     weight: 'heavy',
   },
   {
     id: 'p6',
     number: 6,
-    title: 'I will notice — and I will say it.',
-    body: 'I noticed everything. I just kept it to myself. The small things you did for people, the moments you were quietly extraordinary, the times you were more generous than you needed to be. I am going to say those things out loud, every time.',
+    title: '[SHORT TITLE — lighter tone, something personal]',
+    body: '[SPECIFIC BODY — can reference a specific small habit or gesture you know matters to her]',
     weight: 'light',
   },
 ];

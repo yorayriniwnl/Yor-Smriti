@@ -3,6 +3,14 @@
 import { useEffect } from 'react';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 
+const SINCE_DATE = '2025-XX-XX';
+
+function daysSince(dateStr: string): number {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 0;
+  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 const REPLIES = [
   { text: "I hear you... and I'm not going anywhere.", emotion: 'warmAttention' },
   { text: 'That means more to me than you know.', emotion: 'affectionate' },
@@ -772,7 +780,7 @@ export default function HomePage() {
         <section className="scene active" id="scene-entry">
           <p className="eyebrow">for smriti - with love</p>
           <canvas id="heart-canvas" />
-          <h1 className="hero-title">Keyrin &amp; Ayrin</h1>
+          <h1 className="hero-title">Meri Anya &lt;3 &amp; Ayrin</h1>
           <p className="hero-sub">Every star here has a story. Every word was chosen with care. This is for you.</p>
           <div className="glass-card glass-card--entry">
             <p className="entry-quote">
@@ -832,6 +840,10 @@ export default function HomePage() {
                   There is so much I want to say - but first, just tell me how you are.
                 </div>
               </div>
+
+              <p className="since-line">
+                he has been working on this for {daysSince(SINCE_DATE)} days
+              </p>
             </div>
 
             <div className="msg ayrin typing-row" id="typing-row">
@@ -1436,7 +1448,18 @@ export default function HomePage() {
           margin-bottom: 0.35rem;
         }
 
-        .typing-indicator {
+        .since-line {
+          font-family: var(--mono);
+          font-size: 0.62rem;
+          letter-spacing: 0.18em;
+          color: rgba(255,193,219,0.45);
+          text-align: center;
+          margin: 1.4rem auto 0;
+          padding: 0 1rem;
+          text-transform: lowercase;
+        }
+
+
           display: flex;
           gap: 4px;
           align-items: center;

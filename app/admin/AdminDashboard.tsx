@@ -90,7 +90,7 @@ export default function AdminDashboard({ metrics, user, repliesKV }: Props) {
       value: repliesKV?.total ?? replyTotal,
       sub: repliesKV
         ? `Yes: ${repliesKV.byMood.yes} · Maybe: ${repliesKV.byMood.maybe} · Need time: ${repliesKV.byMood.needTime} · No: ${repliesKV.byMood.no}`
-        : 'From Keyrin',
+        : 'From Meri Anya <3',
     },
     { label: 'Experience Events',     value: eventTotal,    sub: 'Screen views + interactions' },
   ];

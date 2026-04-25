@@ -39,7 +39,7 @@ https://yorayriniwnl.in
 | `/reasons` | Why I love you — card deck |
 | `/stars` | Our constellation — interactive starfield |
 | `/promise` | Promises — commitment cards |
-| `/reply` | Keyrin's response form 💌 |
+| `/reply` | Meri Anya <3's response form 💌 |
 | `/hub` | Experience index |
 | `/admin` | Analytics dashboard (auth required) |
 
@@ -54,7 +54,7 @@ https://yorayriniwnl.in
 | `GET` | `/api/session` | Cookie | Current session info |
 | `POST` | `/api/chat` | Cookie + CSRF | AI chat reply |
 | `POST` | `/api/events` | Cookie + CSRF | Experience event tracking |
-| `POST` | `/api/reply` | Cookie + CSRF | Keyrin sends a response |
+| `POST` | `/api/reply` | Cookie + CSRF | Meri Anya <3 sends a response |
 | `GET` | `/api/config` | Cookie | Personalization config |
 | `GET` | `/api/health` | — | Health + config check |
 | `GET` | `/api/metrics` | — / Cookie+JSON | Prometheus / JSON metrics |

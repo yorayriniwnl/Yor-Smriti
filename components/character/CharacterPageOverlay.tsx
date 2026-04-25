@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useAnimationControls } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { KeyrinCharacter } from '@/components/character/KeyrinCharacter';
+import { MeriAnyaCharacter } from '@/components/character/MeriAnyaCharacter';
 import dynamic from 'next/dynamic';
 
 import LoadingFallback from '@/components/ui/LoadingFallback';
@@ -175,7 +175,7 @@ export function CharacterPageOverlay() {
 								animate={leftHairControls}
 								style={{ width: '100%', height: '100%', transformOrigin: 'bottom center' }}
 							>
-								<KeyrinCharacter />
+								<MeriAnyaCharacter />
 							</motion.div>
 						</motion.div>
 					</motion.div>,

@@ -5,40 +5,39 @@ import { motion } from 'framer-motion';
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 const ITEMS: string[] = [
-  '[One specific small thing you noticed about her and never mentioned - a gesture, a habit, a detail no one else would have clocked.]',
+  // [One specific small thing you noticed about her and never mentioned — a gesture, a habit, a pattern]
+  '[One specific small thing you noticed about her and never mentioned — a gesture, a habit, a detail no one else would have clocked.]',
   '[Something she does with her hands, her voice, or her face that is entirely and specifically hers.]',
-  '[A pattern you noticed in how she is when she is happy - not that she was happy, but how it looked.]',
+  '[A pattern you noticed in how she is when she is happy — not that she was happy, but how it looked.]',
   '[Something small she does when she thinks no one is watching.]',
-  '[The way she handles something difficult - one specific, observable thing she does, not how it made you feel.]',
-  '[Something about how she talks - a phrase, a cadence, something that is just the way she speaks.]',
-  '[A small preference or habit - something she always orders, avoids, reaches for, or keeps nearby.]',
+  '[The way she handles something difficult — one specific, observable thing she does, not how it made you feel.]',
+  '[Something about how she talks — a phrase, a cadence, something that is just the way she speaks.]',
+  '[A small preference or habit — something she always orders, avoids, reaches for, or keeps nearby.]',
   '[Something you noticed once and thought you would mention later and never did.]',
-  '[The way she is in a specific kind of moment - tired, or certain, or waiting for something.]',
-  '[Something about how she laughs, listens, or goes still - specific and true.]',
-  "[A thing you noticed about her that most people probably haven't, because most people weren't paying attention the way you were.]",
-  '[One last one - the smallest, most specific thing on the list. The one that proves you were really watching.]',
+  '[The way she is in a specific kind of moment — tired, or certain, or waiting for something.]',
+  '[Something about how she laughs, listens, or goes still — specific and true.]',
+  '[A thing you noticed about her that most people probably haven\'t, because most people weren\'t paying attention the way you were.]',
+  '[One last one — the smallest, most specific thing on the list. The one that proves you were really watching.]',
 ];
 
 export default function SmallThingsPage() {
   return (
     <main
-      id="main-content"
       className="relative flex min-h-dvh w-dvw flex-col items-center justify-start overflow-hidden px-5 py-20"
       style={{
         background:
           'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255,213,233,0.55) 0%, rgba(95,45,82,0.5) 32%, rgba(22,8,20,0.96) 64%, #05030a 100%)',
       }}
     >
+      {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0" aria-hidden="true">
         <motion.div
           animate={{ opacity: [0.09, 0.17, 0.09], scale: [1, 1.08, 1] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'absolute',
-            top: '15%',
-            right: '18%',
-            width: 200,
-            height: 200,
+            top: '15%', right: '18%',
+            width: 200, height: 200,
             borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(247,85,144,0.2), transparent 70%)',
             filter: 'blur(44px)',
@@ -47,6 +46,8 @@ export default function SmallThingsPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-[580px]">
+
+        {/* Eyebrow */}
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -63,14 +64,15 @@ export default function SmallThingsPage() {
           things he saw but never said
         </motion.p>
 
+        {/* List */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {ITEMS.map((item, index) => (
+          {ITEMS.map((item, i) => (
             <motion.div
-              key={index}
+              key={i}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-30px' }}
-              transition={{ duration: 0.85, delay: index * 0.06, ease: EASE }}
+              transition={{ duration: 0.85, delay: i * 0.06, ease: EASE }}
             >
               <p
                 style={{
@@ -84,7 +86,7 @@ export default function SmallThingsPage() {
               >
                 {item}
               </p>
-              {index < ITEMS.length - 1 ? (
+              {i < ITEMS.length - 1 && (
                 <div
                   aria-hidden="true"
                   style={{
@@ -92,11 +94,12 @@ export default function SmallThingsPage() {
                     background: 'rgba(244,173,210,0.12)',
                   }}
                 />
-              ) : null}
+              )}
             </motion.div>
           ))}
         </div>
 
+        {/* Closing line */}
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -113,6 +116,7 @@ export default function SmallThingsPage() {
         >
           I was paying attention. I just didn&apos;t say it often enough.
         </motion.p>
+
       </div>
     </main>
   );
