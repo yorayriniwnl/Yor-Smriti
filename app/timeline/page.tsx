@@ -91,7 +91,7 @@ function TimelinePageContent() {
 
   const activeMemory = MEMORIES[activeIndex] ?? MEMORIES[0];
 
-  // Signal parent slideshow when this slide's cinematic phase is fully complete
+  // Signal the parent sequence runner when this cinematic phase is fully complete.
   useEffect(() => {
     if (!isSequenceMode || scene.phase !== 'complete') return;
     try {

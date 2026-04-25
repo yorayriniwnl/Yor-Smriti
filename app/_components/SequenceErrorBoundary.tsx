@@ -13,7 +13,7 @@ export default class SequenceErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch() {
-    // Signal the parent slideshow so it can show Retry / Skip
+    // Signal the parent sequence runner so it can show Retry / Skip.
     try {
       window.parent.postMessage(
         { type: 'yor:slide-error' },

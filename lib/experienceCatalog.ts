@@ -1,10 +1,3 @@
-export interface ExperienceMovieSlide {
-  eyebrow: string;
-  title?: string;
-  caption: string;
-  duration: number;
-}
-
 export interface ExperienceCatalogItem {
   href: string;
   eyebrow: string;
@@ -14,11 +7,6 @@ export interface ExperienceCatalogItem {
   emoji: string;
   action: string;
   feeling: string;
-  movie?: ExperienceMovieSlide;
-}
-
-function withSequenceParam(href: string): string {
-  return `${href}${href.includes('?') ? '&' : '?'}sequence=1`;
 }
 
 export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
@@ -31,12 +19,6 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     emoji: '🌙',
     action: 'Open',
     feeling: 'Every moment that mattered, in order. It is all still here.',
-    movie: {
-      eyebrow: 'chapter one',
-      title: 'Our Story',
-      caption: 'Every moment that mattered, replayed like a memory we can still step inside.',
-      duration: 8000,
-    },
   },
   {
     href: '/reasons',
@@ -47,11 +29,6 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     emoji: '🌸',
     action: 'Feel it',
     feeling: 'Fifteen reasons. Each one is about you specifically.',
-    movie: {
-      eyebrow: 'chapter two',
-      caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
-      duration: 6000,
-    },
   },
   {
     href: '/stars',
@@ -62,11 +39,6 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     emoji: '✨',
     action: 'Explore',
     feeling: 'An interactive sky made of things I still think about.',
-    movie: {
-      eyebrow: 'chapter three',
-      caption: 'Then the sky opens up, and every light remembers something about us.',
-      duration: 8600,
-    },
   },
   {
     href: '/promise',
@@ -77,11 +49,6 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     emoji: '🕯️',
     action: 'Read',
     feeling: 'What I am committing to, not as performance, as record.',
-    movie: {
-      eyebrow: 'chapter four',
-      caption: 'And last, the promises. Not decoration. Not performance. The part I want to live.',
-      duration: 8800,
-    },
   },
   {
     href: '/panda',
@@ -239,15 +206,3 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     feeling: 'Some people leave gifts inside you. This names them.',
   },
 ];
-
-export const EXPERIENCE_MOVIE_SLIDES = EXPERIENCE_CATALOG.flatMap((experience) =>
-  experience.movie
-    ? [{
-        href: withSequenceParam(experience.href),
-        eyebrow: experience.movie.eyebrow,
-        title: experience.movie.title ?? experience.title,
-        caption: experience.movie.caption,
-        duration: experience.movie.duration,
-      }]
-    : [],
-);

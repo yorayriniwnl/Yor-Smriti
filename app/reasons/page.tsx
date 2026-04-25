@@ -98,7 +98,7 @@ function ReasonsPageContent() {
   const card = visibleReasons[current] ?? visibleReasons[visibleReasons.length - 1];
   const style = SHADE_STYLES[card.shade];
 
-  // Signal parent slideshow when this slide's autoplay finishes
+  // Signal the parent sequence runner when autoplay finishes.
   useEffect(() => {
     if (!isSequenceMode || !completed) return;
     try {

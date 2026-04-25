@@ -107,7 +107,7 @@ function StarsPageContent() {
     if (!isSequenceMode) track('stars_viewed');
   }, [isSequenceMode, track]);
 
-  // Signal parent slideshow when all stars have been revealed and panel closed
+  // Signal the parent sequence runner when all stars have been revealed and the panel is closed.
   useEffect(() => {
     if (!isSequenceMode) return;
     if (revealed.size === discoveryTotal && active === null && discoveryTotal > 0) {

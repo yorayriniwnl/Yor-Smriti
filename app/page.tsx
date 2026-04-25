@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
-import { EXPERIENCE_CATALOG, EXPERIENCE_MOVIE_SLIDES } from '@/lib/experienceCatalog';
+import { EXPERIENCE_CATALOG } from '@/lib/experienceCatalog';
 
 const SINCE_DATE = '2025-05-18';
 
@@ -26,9 +26,18 @@ const REPLIES = [
 ] as const;
 
 // 640×480 gives ~0.59x scale on iPhone SE vs the previous 0.27x at 1280×920.
-// Child pages are responsive and render correctly at this viewport.
-const EXPERIENCE_SEQUENCE_FRAME_WIDTH = 640;
-const EXPERIENCE_SEQUENCE_FRAME_HEIGHT = 480;
+function withSequenceParam(href: string): string {
+  return `${href}${href.includes('?') ? '&' : '?'}sequence=1`;
+}
+
+const EXPERIENCE_PAGE_DURATION_MS = 9000;
+const EXPERIENCE_PAGE_LOAD_TIMEOUT_MS = 10000;
+
+const EXPERIENCE_PAGE_SEQUENCE = EXPERIENCE_CATALOG.map((experience) => ({
+  href: withSequenceParam(experience.href),
+  title: experience.title,
+  duration: EXPERIENCE_PAGE_DURATION_MS,
+}));
 
 export default function HomePage() {
   useEffect(() => {
@@ -39,19 +48,15 @@ export default function HomePage() {
     const typing = document.getElementById('typing') as HTMLDivElement | null;
     const moodFill = document.getElementById('mood-fill') as HTMLDivElement | null;
     const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement | null;
-    const experienceSequence = document.getElementById('experience-sequence') as HTMLDivElement | null;
-    const experienceSequenceStage = document.querySelector('.experience-sequence-stage') as HTMLDivElement | null;
-    const experienceSequenceFrame = document.getElementById('experience-sequence-frame') as HTMLIFrameElement | null;
-    const experienceSequenceEyebrow = document.getElementById('experience-sequence-eyebrow') as HTMLParagraphElement | null;
-    const experienceSequenceTitle = document.getElementById('experience-sequence-title') as HTMLHeadingElement | null;
-    const experienceSequenceCaption = document.getElementById('experience-sequence-caption') as HTMLParagraphElement | null;
-    const experienceSequenceCount = document.getElementById('experience-sequence-count') as HTMLParagraphElement | null;
-    const experienceSequenceSkip = document.getElementById('experience-sequence-skip') as HTMLButtonElement | null;
-    const experienceSequencePrev = document.getElementById('experience-sequence-prev') as HTMLButtonElement | null;
-    const experienceSequenceNext = document.getElementById('experience-sequence-next') as HTMLButtonElement | null;
-    const experienceSequenceError = document.getElementById('experience-sequence-error') as HTMLDivElement | null;
-    const experienceSequenceErrorRetry = document.getElementById('experience-sequence-error-retry') as HTMLButtonElement | null;
-    const experienceSequenceErrorNext = document.getElementById('experience-sequence-error-next') as HTMLButtonElement | null;
+    const experienceRunner = document.getElementById('experience-runner') as HTMLDivElement | null;
+    const experienceRunnerFrame = document.getElementById('experience-runner-frame') as HTMLIFrameElement | null;
+    const experienceRunnerTitle = document.getElementById('experience-runner-title') as HTMLHeadingElement | null;
+    const experienceRunnerCount = document.getElementById('experience-runner-count') as HTMLParagraphElement | null;
+    const experienceRunnerSkip = document.getElementById('experience-runner-skip') as HTMLButtonElement | null;
+    const experienceRunnerNext = document.getElementById('experience-runner-next') as HTMLButtonElement | null;
+    const experienceRunnerError = document.getElementById('experience-runner-error') as HTMLDivElement | null;
+    const experienceRunnerErrorRetry = document.getElementById('experience-runner-error-retry') as HTMLButtonElement | null;
+    const experienceRunnerErrorNext = document.getElementById('experience-runner-error-next') as HTMLButtonElement | null;
 
     let mx = -100;
     let my = -100;
@@ -67,8 +72,8 @@ export default function HomePage() {
     const chatHistoryRef = { current: [] as Array<{ role: 'user' | 'assistant'; content: string }> };
     let sequenceRunning = false;
     let sequenceToken = 0;
-    let currentSlideIndex = 0;          // Fix 5: track which slide is active for Prev/Next
-    let slideAdvanceFn: (() => void) | null = null;  // Fix 6: cancel timer on postMessage
+    let currentExperienceIndex = 0;
+    let experienceAdvanceFn: (() => void) | null = null;
     let sequenceScrollRafId: number | null = null;
     const sequenceTimeoutIds: number[] = [];
 
@@ -209,63 +214,27 @@ export default function HomePage() {
       });
     };
 
-    const syncExperienceSequenceFrameScale = () => {
-      if (!experienceSequence || !experienceSequenceStage || !experienceSequenceFrame) return;
-
-      const stageWidth = experienceSequenceStage.clientWidth;
-      const stageHeight = experienceSequenceStage.clientHeight;
-      if (!stageWidth || !stageHeight) return;
-
-      const scale = Math.min(
-        1,
-        stageWidth / EXPERIENCE_SEQUENCE_FRAME_WIDTH,
-        stageHeight / EXPERIENCE_SEQUENCE_FRAME_HEIGHT,
-      );
-
-      experienceSequence.style.setProperty('--experience-sequence-frame-scale', `${scale}`);
-      experienceSequence.style.setProperty('--experience-sequence-frame-width', `${EXPERIENCE_SEQUENCE_FRAME_WIDTH}px`);
-      experienceSequence.style.setProperty('--experience-sequence-frame-height', `${EXPERIENCE_SEQUENCE_FRAME_HEIGHT}px`);
+    const hideExperienceError = () => {
+      experienceRunner?.classList.remove('is-error');
+      experienceRunnerError?.setAttribute('aria-hidden', 'true');
     };
 
-    const applyMovieSlideMeta = (index: number) => {
-      const slide = EXPERIENCE_MOVIE_SLIDES[index];
-      if (!slide) return;
-
-      if (experienceSequenceEyebrow) {
-        experienceSequenceEyebrow.textContent = slide.eyebrow;
-      }
-      if (experienceSequenceTitle) {
-        experienceSequenceTitle.textContent = slide.title;
-      }
-      if (experienceSequenceCaption) {
-        experienceSequenceCaption.textContent = slide.caption;
-      }
-      if (experienceSequenceCount) {
-        experienceSequenceCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`;
-      }
-    };
-
-    const hideSlideError = () => {
-      experienceSequence?.classList.remove('is-error');
-      if (experienceSequenceError) experienceSequenceError.setAttribute('aria-hidden', 'true');
-    };
-
-    const resetExperienceMovie = () => {
-      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending', 'is-error');
-      experienceSequence?.setAttribute('aria-hidden', 'true');   // Fix 8: restore aria-hidden
+    const resetExperienceRunner = () => {
+      experienceRunner?.classList.remove('active', 'is-loading', 'is-error');
+      experienceRunner?.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('sequence-cinema');
-      slideAdvanceFn = null;
-      hideSlideError();
+      experienceAdvanceFn = null;
+      hideExperienceError();
 
-      if (experienceSequenceFrame) {
-        experienceSequenceFrame.onload = null;
-        experienceSequenceFrame.onerror = null;
-        experienceSequenceFrame.src = 'about:blank';
+      if (experienceRunnerFrame) {
+        experienceRunnerFrame.onload = null;
+        experienceRunnerFrame.onerror = null;
+        experienceRunnerFrame.src = 'about:blank';
       }
     };
 
-    const offerChatAfterMovie = () => {
-      resetExperienceMovie();
+    const offerChatAfterExperienceSequence = () => {
+      resetExperienceRunner();
       clearSequenceHighlights();
       clearStoryHighlights();
       sequenceRunning = false;
@@ -273,7 +242,7 @@ export default function HomePage() {
       goScene('scene-chat');
 
       if (messages && !messages.querySelector('[data-sequence-chat-offer="true"]')) {
-        addMessage("I stayed through all of it. If you want, talk to me now. I'm here.", 'ayrin', 'warmAttention');
+        addMessage("I opened every part of it for you. If you want, talk to me now. I'm here.", 'ayrin', 'warmAttention');
         messages.lastElementChild?.setAttribute('data-sequence-chat-offer', 'true');
       }
 
@@ -284,76 +253,86 @@ export default function HomePage() {
       spawnHeart();
     };
 
-    const showSlideError = (index: number, retryFn: () => void, nextFn: () => void) => {
-      experienceSequence?.classList.remove('is-loading');
-      experienceSequence?.classList.add('is-error');
-      if (experienceSequenceError) {
-        experienceSequenceError.setAttribute('aria-hidden', 'false');
-        if (experienceSequenceErrorRetry) experienceSequenceErrorRetry.onclick = retryFn;
-        if (experienceSequenceErrorNext) {
-          experienceSequenceErrorNext.style.display = index >= EXPERIENCE_MOVIE_SLIDES.length - 1 ? 'none' : '';
-          experienceSequenceErrorNext.onclick = nextFn;
+    const showExperienceError = (index: number, retryFn: () => void, nextFn: () => void) => {
+      experienceRunner?.classList.remove('is-loading');
+      experienceRunner?.classList.add('is-error');
+      if (experienceRunnerError) {
+        experienceRunnerError.setAttribute('aria-hidden', 'false');
+        if (experienceRunnerErrorRetry) experienceRunnerErrorRetry.onclick = retryFn;
+        if (experienceRunnerErrorNext) {
+          experienceRunnerErrorNext.style.display = '';
+          experienceRunnerErrorNext.textContent = index >= EXPERIENCE_PAGE_SEQUENCE.length - 1 ? 'Finish' : 'Skip experience ->';
+          experienceRunnerErrorNext.onclick = nextFn;
         }
       }
     };
 
-    const loadMovieSlide = (index: number, token: number, onReady?: () => void) => {
-      const slide = EXPERIENCE_MOVIE_SLIDES[index];
-      if (!slide || !experienceSequence || !experienceSequenceFrame) return;
+    const openExperiencePage = (index: number, token: number) => {
+      const page = EXPERIENCE_PAGE_SEQUENCE[index];
+      if (!page || !experienceRunner || !experienceRunnerFrame) return;
       if (token !== sequenceToken || !sequenceEnabled) return;
 
-      currentSlideIndex = index;
-      // Keep Prev disabled state accurate
-      if (experienceSequencePrev) experienceSequencePrev.disabled = index <= 0;
+      currentExperienceIndex = index;
       let settled = false;
-      hideSlideError();
+      let advanced = false;
+      hideExperienceError();
+      if (experienceRunnerTitle) experienceRunnerTitle.textContent = page.title;
+      if (experienceRunnerCount) {
+        experienceRunnerCount.textContent = `${String(index + 1).padStart(2, '0')} / ${String(EXPERIENCE_PAGE_SEQUENCE.length).padStart(2, '0')}`;
+      }
+      if (experienceRunnerNext) {
+        experienceRunnerNext.textContent = index >= EXPERIENCE_PAGE_SEQUENCE.length - 1 ? 'Finish ->' : 'Next ->';
+      }
 
-      // Fix 4: neutralise any stale handler before assigning a new one
-      experienceSequenceFrame.onload = null;
-      experienceSequenceFrame.onerror = null;
+      const advance = () => {
+        if (advanced || token !== sequenceToken || !sequenceEnabled) return;
+        advanced = true;
+        experienceAdvanceFn = null;
+        if (index >= EXPERIENCE_PAGE_SEQUENCE.length - 1) {
+          offerChatAfterExperienceSequence();
+        } else {
+          openExperiencePage(index + 1, token);
+        }
+      };
+      experienceAdvanceFn = advance;
 
-      // Fix 8: expose overlay to assistive technology while active
-      experienceSequence.removeAttribute('aria-hidden');
-      experienceSequence.classList.remove('is-ending');
-      experienceSequence.classList.add('active', 'is-loading');
+      experienceRunnerFrame.onload = null;
+      experienceRunnerFrame.onerror = null;
+      experienceRunner.removeAttribute('aria-hidden');
+      experienceRunner.classList.add('active', 'is-loading');
       document.body.classList.add('sequence-cinema');
-      syncExperienceSequenceFrameScale();
 
-      const retryFn = () => { if (token === sequenceToken) loadMovieSlide(index, token, onReady); };
-      const nextFn  = () => { if (token === sequenceToken) onReady?.(); };
+      const retryFn = () => { if (token === sequenceToken) openExperiencePage(index, token); };
+      const nextFn = () => { if (token === sequenceToken) advance(); };
 
-      // Fix 7: register in sequenceTimeoutIds so stopSequence() cancels it
-      // Fix 2: show in-overlay error — never navigate the whole window away
-      // 8000ms matches the longest slide duration and covers Vercel cold starts (2–8s)
+      // Keep load failures inside the runner so the home page never navigates away.
       const fallbackId = window.setTimeout(() => {
         if (settled || token !== sequenceToken || !sequenceEnabled) return;
         settled = true;
-        showSlideError(index, retryFn, nextFn);
-      }, 8000);
+        showExperienceError(index, retryFn, nextFn);
+      }, EXPERIENCE_PAGE_LOAD_TIMEOUT_MS);
       sequenceTimeoutIds.push(fallbackId);
 
-      experienceSequenceFrame.onload = () => {
-        // Fix 4: about:blank reset fires onload — ignore it
-        const src = experienceSequenceFrame?.src ?? '';
+      experienceRunnerFrame.onload = () => {
+        // about:blank reset fires onload; ignore it.
+        const src = experienceRunnerFrame?.src ?? '';
         if (!src || src === 'about:blank') return;
         if (settled || token !== sequenceToken) return;
         settled = true;
         window.clearTimeout(fallbackId);
-        syncExperienceSequenceFrameScale();
-        applyMovieSlideMeta(index);
-        experienceSequence?.classList.remove('is-loading');
-        onReady?.();
+        experienceRunner?.classList.remove('is-loading');
+        queueSequenceTimeout(advance, page.duration);
       };
 
       // Fix 9: hard load errors (network failure, 404) show error state instead of blank
-      experienceSequenceFrame.onerror = () => {
+      experienceRunnerFrame.onerror = () => {
         if (settled || token !== sequenceToken || !sequenceEnabled) return;
         settled = true;
         window.clearTimeout(fallbackId);
-        showSlideError(index, retryFn, nextFn);
+        showExperienceError(index, retryFn, nextFn);
       };
 
-      experienceSequenceFrame.src = slide.href;
+      experienceRunnerFrame.src = page.href;
     };
 
     const stopSequence = () => {
@@ -362,7 +341,7 @@ export default function HomePage() {
       cancelSequenceScroll();
       clearSequenceHighlights();
       clearStoryHighlights();
-      resetExperienceMovie();
+      resetExperienceRunner();
       sequenceRunning = false;
       document.body.classList.remove('sequence-running');
     };
@@ -414,50 +393,6 @@ export default function HomePage() {
         document.body.appendChild(h);
         window.setTimeout(() => h.remove(), 3200);
       }
-    };
-
-    // Hoisted here (not inside runExperienceSequence) so Prev/Next manual-navigation
-    // handlers — which are siblings, not children, of runExperienceSequence — can call them.
-    // Both accept an explicit token so stale callbacks self-cancel correctly.
-    const MOVIE_TO_CHAT_TRANSITION_MS = 1800;
-
-    const startMovieFinale = (token: number) => {
-      if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
-      experienceSequence.classList.add('is-ending');
-      if (experienceSequenceEyebrow) experienceSequenceEyebrow.textContent = 'finale';
-      if (experienceSequenceTitle) experienceSequenceTitle.textContent = 'Talk With Ayrin';
-      if (experienceSequenceCaption) {
-        experienceSequenceCaption.textContent = 'The movie is over. He stayed. The chat box is waiting for you.';
-      }
-      spawnHearts();
-      queueSequenceTimeout(() => {
-        if (token !== sequenceToken || !sequenceEnabled) return;
-        offerChatAfterMovie();
-      }, MOVIE_TO_CHAT_TRANSITION_MS);
-    };
-
-    const playMovieSlide = (index: number, token: number) => {
-      const slide = EXPERIENCE_MOVIE_SLIDES[index];
-      if (!slide || token !== sequenceToken || !sequenceEnabled) return;
-      clearSequenceHighlights();
-      clearStoryHighlights();
-      loadMovieSlide(index, token, () => {
-        if (token !== sequenceToken || !sequenceEnabled) return;
-        let advanced = false;
-        const advance = () => {
-          if (advanced || token !== sequenceToken || !sequenceEnabled) return;
-          advanced = true;
-          slideAdvanceFn = null;
-          if (index === EXPERIENCE_MOVIE_SLIDES.length - 1) {
-            startMovieFinale(token);
-          } else {
-            playMovieSlide(index + 1, token);
-          }
-        };
-        slideAdvanceFn = advance;
-        const durationId = window.setTimeout(advance, slide.duration);
-        sequenceTimeoutIds.push(durationId);
-      });
     };
 
     const runExperienceSequence = () => {
@@ -548,12 +483,12 @@ export default function HomePage() {
       });
 
       const storyFinalBeat = storyStart + 320 + (storyItems.length - 1) * STORY_POINT_STEP_MS;
-      const movieStart = storyFinalBeat + STORY_END_PAUSE_MS;
+      const experienceStart = storyFinalBeat + STORY_END_PAUSE_MS;
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
-        playMovieSlide(0, token);
-      }, movieStart);
+        openExperiencePage(0, token);
+      }, experienceStart);
     };
 
     const sendMsg = () => {
@@ -891,9 +826,6 @@ export default function HomePage() {
       sendBtn.onclick = sendMsg;
     }
 
-    syncExperienceSequenceFrameScale();
-    window.addEventListener('resize', syncExperienceSequenceFrameScale);
-
     // Fix #20: swipe gestures on the overlay
     let touchStartX = 0;
 
@@ -905,126 +837,42 @@ export default function HomePage() {
       const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX;
       if (Math.abs(dx) < 50) return;
       if (dx < 0) {
-        experienceSequenceNext?.click();
-      } else {
-        experienceSequencePrev?.click();
+        experienceAdvanceFn?.();
       }
     };
 
-    experienceSequence?.addEventListener('touchstart', onTouchStart, { passive: true });
-    experienceSequence?.addEventListener('touchend', onTouchEnd, { passive: true });
+    experienceRunner?.addEventListener('touchstart', onTouchStart, { passive: true });
+    experienceRunner?.addEventListener('touchend', onTouchEnd, { passive: true });
 
-    if (experienceSequenceSkip) {
-      experienceSequenceSkip.onclick = () => {
+    if (experienceRunnerSkip) {
+      experienceRunnerSkip.onclick = () => {
         stopSequence();
-        offerChatAfterMovie();
+        offerChatAfterExperienceSequence();
       };
     }
 
-    // Fix 5: Prev / Next manual navigation between slides
-    if (experienceSequencePrev) {
-      experienceSequencePrev.onclick = () => {
-        const prevIndex = Math.max(0, currentSlideIndex - 1);
-        if (prevIndex === currentSlideIndex) return;
-        stopSequence();
-        sequenceToken += 1;
-        const token = sequenceToken;
-        sequenceRunning = true;
-        document.body.classList.add('sequence-running');
-        // Fix 4: wire onReady so duration timer fires and slideAdvanceFn is set
-        loadMovieSlide(prevIndex, token, () => {
-          if (token !== sequenceToken || !sequenceEnabled) return;
-          let advanced = false;
-          const advance = () => {
-            if (advanced || token !== sequenceToken || !sequenceEnabled) return;
-            advanced = true;
-            slideAdvanceFn = null;
-            if (prevIndex === EXPERIENCE_MOVIE_SLIDES.length - 1) {
-              startMovieFinale(token);
-            } else {
-              playMovieSlide(prevIndex + 1, token);
-            }
-          };
-          slideAdvanceFn = advance;
-          const slide = EXPERIENCE_MOVIE_SLIDES[prevIndex];
-          if (slide) {
-            const durationId = window.setTimeout(advance, slide.duration);
-            sequenceTimeoutIds.push(durationId);
-          }
-        });
-        // Fix 5b: keep disabled state accurate
-        experienceSequencePrev.disabled = prevIndex <= 0;
-      };
-      // Initialise disabled state
-      experienceSequencePrev.disabled = currentSlideIndex <= 0;
-    }
-
-    if (experienceSequenceNext) {
-      experienceSequenceNext.onclick = () => {
-        const nextIndex = currentSlideIndex + 1;
-        if (nextIndex >= EXPERIENCE_MOVIE_SLIDES.length) {
-          // already on last slide — go to finale
-          stopSequence();
-          offerChatAfterMovie();
-          return;
-        }
-        // cancel current duration timer and advance immediately
-        if (slideAdvanceFn) {
-          slideAdvanceFn();
-        } else {
-          // Fix 6: no stale advance fn — load next slide with full onReady chain
-          stopSequence();
-          sequenceToken += 1;
-          const token = sequenceToken;
-          sequenceRunning = true;
-          document.body.classList.add('sequence-running');
-          loadMovieSlide(nextIndex, token, () => {
-            if (token !== sequenceToken || !sequenceEnabled) return;
-            let advanced = false;
-            const advance = () => {
-              if (advanced || token !== sequenceToken || !sequenceEnabled) return;
-              advanced = true;
-              slideAdvanceFn = null;
-              if (nextIndex === EXPERIENCE_MOVIE_SLIDES.length - 1) {
-                startMovieFinale(token);
-              } else {
-                playMovieSlide(nextIndex + 1, token);
-              }
-            };
-            slideAdvanceFn = advance;
-            const slide = EXPERIENCE_MOVIE_SLIDES[nextIndex];
-            if (slide) {
-              const durationId = window.setTimeout(advance, slide.duration);
-              sequenceTimeoutIds.push(durationId);
-            }
-          });
-        }
+    if (experienceRunnerNext) {
+      experienceRunnerNext.onclick = () => {
+        experienceAdvanceFn?.();
       };
     }
 
-    // Fix 6 / Fix 12: child slides emit postMessage when their sequence completes.
-    // Origin is checked so arbitrary iframes cannot skip slides.
-    const onSlideMessage = (e: MessageEvent) => {
+    const onExperienceMessage = (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return;
       if (!sequenceRunning || !sequenceEnabled) return;
 
-      if (e.data?.type === 'yor:slide-complete') {
-        // Cancel the duration timer and advance immediately
-        if (slideAdvanceFn) slideAdvanceFn();
+      if (e.data?.type === 'yor:slide-complete' || e.data?.type === 'yor:experience-complete') {
+        experienceAdvanceFn?.();
         return;
       }
 
-      if (e.data?.type === 'yor:slide-error') {
-        // Child render threw — show the in-overlay error state immediately.
-        // retryFn re-runs the full playMovieSlide chain (wires slideAdvanceFn + duration
-        // timer) rather than calling loadMovieSlide with onReady=undefined, which would
-        // load the slide but stall forever with no advance function.
-        const retryFn = () => playMovieSlide(currentSlideIndex, sequenceToken);
-        const nextFn  = () => slideAdvanceFn?.();
-        showSlideError(currentSlideIndex, retryFn, nextFn);
+      if (e.data?.type === 'yor:slide-error' || e.data?.type === 'yor:experience-error') {
+        const retryFn = () => openExperiencePage(currentExperienceIndex, sequenceToken);
+        const nextFn = () => experienceAdvanceFn?.();
+        showExperienceError(currentExperienceIndex, retryFn, nextFn);
       }
     };
-    window.addEventListener('message', onSlideMessage);
+    window.addEventListener('message', onExperienceMessage);
 
     const hubCard = document.querySelector<HTMLElement>('[data-action="hearts"]');
     if (hubCard) {
@@ -1041,16 +889,14 @@ export default function HomePage() {
       if (openHeartBtn) openHeartBtn.onclick = null;
       if (navPower) navPower.onclick = null;
       if (sendBtn) sendBtn.onclick = null;
-      if (experienceSequenceSkip) experienceSequenceSkip.onclick = null;
-      if (experienceSequencePrev) experienceSequencePrev.onclick = null;
-      if (experienceSequenceNext) experienceSequenceNext.onclick = null;
-      if (experienceSequenceErrorRetry) experienceSequenceErrorRetry.onclick = null;
-      if (experienceSequenceErrorNext) experienceSequenceErrorNext.onclick = null;
+      if (experienceRunnerSkip) experienceRunnerSkip.onclick = null;
+      if (experienceRunnerNext) experienceRunnerNext.onclick = null;
+      if (experienceRunnerErrorRetry) experienceRunnerErrorRetry.onclick = null;
+      if (experienceRunnerErrorNext) experienceRunnerErrorNext.onclick = null;
       if (hubCard) hubCard.onclick = null;
-      window.removeEventListener('resize', syncExperienceSequenceFrameScale);
-      window.removeEventListener('message', onSlideMessage);
-      experienceSequence?.removeEventListener('touchstart', onTouchStart);
-      experienceSequence?.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('message', onExperienceMessage);
+      experienceRunner?.removeEventListener('touchstart', onTouchStart);
+      experienceRunner?.removeEventListener('touchend', onTouchEnd);
 
       stopSequence();
       if (cursorRafId) cancelAnimationFrame(cursorRafId);
@@ -1237,59 +1083,52 @@ export default function HomePage() {
         </section>
       </div>
 
-      <div className="experience-sequence" id="experience-sequence" aria-hidden="true">
-        <div className="experience-sequence-shell">
-          <div className="experience-sequence-head">
+      <div className="experience-runner" id="experience-runner" aria-hidden="true">
+        <div className="experience-runner-shell">
+          <div className="experience-runner-head">
             <div>
-              <p className="experience-sequence-eyebrow" id="experience-sequence-eyebrow">
-                chapter one
+              <p className="experience-runner-eyebrow">
+                experience pages
               </p>
-              <h3 className="experience-sequence-title" id="experience-sequence-title">
-                Our Story
+              <h3 className="experience-runner-title" id="experience-runner-title">
+                Opening each experience
               </h3>
             </div>
 
-            <div className="experience-sequence-actions">
-              <button className="btn-ghost experience-sequence-prev" id="experience-sequence-prev" type="button" aria-label="Previous chapter">
-                ← prev
-              </button>
-              <p className="experience-sequence-count" id="experience-sequence-count">
-                {`01 / ${String(EXPERIENCE_MOVIE_SLIDES.length).padStart(2, '0')}`}
+            <div className="experience-runner-actions">
+              <p className="experience-runner-count" id="experience-runner-count">
+                {`01 / ${String(EXPERIENCE_PAGE_SEQUENCE.length).padStart(2, '0')}`}
               </p>
-              <button className="btn-ghost experience-sequence-next" id="experience-sequence-next" type="button" aria-label="Next chapter">
-                next →
+              <button className="btn-ghost experience-runner-next" id="experience-runner-next" type="button" aria-label="Next experience">
+                Next -&gt;
               </button>
-              <button className="btn-ghost experience-sequence-skip" id="experience-sequence-skip" type="button">
-                Skip →
+              <button className="btn-ghost experience-runner-skip" id="experience-runner-skip" type="button">
+                Skip -&gt;
               </button>
             </div>
           </div>
 
-          <div className="experience-sequence-stage">
+          <div className="experience-runner-stage">
             <iframe
-              id="experience-sequence-frame"
-              className="experience-sequence-frame"
-              title="Experience movie sequence"
+              id="experience-runner-frame"
+              className="experience-runner-frame"
+              title="Experience page sequence"
               loading="eager"
               tabIndex={-1}
             />
-            <div className="experience-sequence-loading" aria-hidden="true">
-              Loading the next chapter...
+            <div className="experience-runner-loading" aria-hidden="true">
+              Opening the next experience...
             </div>
-            <div className="experience-sequence-error" id="experience-sequence-error" aria-hidden="true">
-              <p className="experience-sequence-error-msg">This chapter couldn&apos;t load.</p>
-              <button className="btn-ghost experience-sequence-error-retry" id="experience-sequence-error-retry" type="button">
+            <div className="experience-runner-error" id="experience-runner-error" aria-hidden="true">
+              <p className="experience-runner-error-msg">This experience couldn&apos;t load.</p>
+              <button className="btn-ghost experience-runner-error-retry" id="experience-runner-error-retry" type="button">
                 Retry
               </button>
-              <button className="btn-ghost experience-sequence-error-next" id="experience-sequence-error-next" type="button">
-                Skip chapter →
+              <button className="btn-ghost experience-runner-error-next" id="experience-runner-error-next" type="button">
+                Skip experience -&gt;
               </button>
             </div>
           </div>
-
-          <p className="experience-sequence-caption" id="experience-sequence-caption">
-            Every moment that mattered, replayed like a memory we can still step inside.
-          </p>
         </div>
       </div>
 
@@ -2011,7 +1850,7 @@ export default function HomePage() {
           transform: translateX(8px);
         }
 
-        .experience-sequence {
+        .experience-runner {
           position: fixed;
           inset: 0;
           z-index: 140;
@@ -2027,26 +1866,26 @@ export default function HomePage() {
           transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1);
         }
 
-        .experience-sequence.active {
+        .experience-runner.active {
           opacity: 1;
           pointer-events: auto;
         }
 
-        .experience-sequence-shell {
+        .experience-runner-shell {
           width: min(94vw, 1180px);
           display: flex;
           flex-direction: column;
           gap: 1rem;
         }
 
-        .experience-sequence-head {
+        .experience-runner-head {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
           gap: 1rem;
         }
 
-        .experience-sequence-actions {
+        .experience-runner-actions {
           display: flex;
           align-items: center;
           gap: 0.8rem;
@@ -2054,7 +1893,7 @@ export default function HomePage() {
           justify-content: flex-end;
         }
 
-        .experience-sequence-eyebrow {
+        .experience-runner-eyebrow {
           margin: 0 0 0.45rem;
           font-family: var(--mono);
           font-size: 0.58rem;
@@ -2063,7 +1902,7 @@ export default function HomePage() {
           color: rgba(255, 193, 219, 0.68);
         }
 
-        .experience-sequence-title {
+        .experience-runner-title {
           margin: 0;
           font-family: var(--serif);
           font-size: clamp(1.8rem, 4vw, 3rem);
@@ -2073,7 +1912,7 @@ export default function HomePage() {
           line-height: 1.05;
         }
 
-        .experience-sequence-count {
+        .experience-runner-count {
           margin: 0;
           font-family: var(--mono);
           font-size: 0.62rem;
@@ -2082,26 +1921,18 @@ export default function HomePage() {
           color: rgba(255, 193, 219, 0.62);
         }
 
-        .experience-sequence-skip {
+        .experience-runner-skip {
           padding-inline: 1.2rem;
           background: rgba(255,255,255,0.04);
         }
 
-        .experience-sequence-prev,
-        .experience-sequence-next {
+        .experience-runner-next {
           padding-inline: 1rem;
           background: rgba(255,255,255,0.04);
           transition: opacity 0.2s ease;
         }
 
-        .experience-sequence-prev:disabled,
-        .experience-sequence-next:disabled {
-          opacity: 0.25;
-          pointer-events: none;
-        }
-
-        /* Error state — shown when a slide fails to load */
-        .experience-sequence-error {
+        .experience-runner-error {
           position: absolute;
           inset: 0;
           z-index: 4;
@@ -2117,16 +1948,16 @@ export default function HomePage() {
           transition: opacity 0.4s ease;
         }
 
-        .experience-sequence.is-error .experience-sequence-error {
+        .experience-runner.is-error .experience-runner-error {
           opacity: 1;
           pointer-events: auto;
         }
 
-        .experience-sequence.is-error .experience-sequence-stage {
+        .experience-runner.is-error .experience-runner-stage {
           box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(200,40,80,0.18);
         }
 
-        .experience-sequence-error-msg {
+        .experience-runner-error-msg {
           font-family: var(--mono);
           font-size: 0.7rem;
           letter-spacing: 0.18em;
@@ -2135,13 +1966,13 @@ export default function HomePage() {
           margin: 0;
         }
 
-        .experience-sequence-error [id$="-retry"],
-        .experience-sequence-error [id$="-next"] {
+        .experience-runner-error [id$="-retry"],
+        .experience-runner-error [id$="-next"] {
           padding-inline: 1.4rem;
           background: rgba(255,255,255,0.05);
         }
 
-        .experience-sequence-stage {
+        .experience-runner-stage {
           position: relative;
           width: 100%;
           height: min(76vh, 760px);
@@ -2156,7 +1987,7 @@ export default function HomePage() {
           transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), box-shadow 0.7s ease, opacity 0.45s ease;
         }
 
-        .experience-sequence-stage::before {
+        .experience-runner-stage::before {
           content: '';
           position: absolute;
           inset: 0;
@@ -2165,34 +1996,25 @@ export default function HomePage() {
           z-index: 2;
         }
 
-        .experience-sequence.active.is-loading .experience-sequence-stage {
+        .experience-runner.active.is-loading .experience-runner-stage {
           transform: scale(0.985);
           box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(247,85,144,0.12);
         }
 
-        .experience-sequence.active.is-ending .experience-sequence-stage {
-          transform: scale(0.99);
-          box-shadow: 0 36px 82px rgba(0,0,0,0.62), 0 16px 34px rgba(247,85,144,0.2);
-        }
-
-        .experience-sequence-frame {
-          width: var(--experience-sequence-frame-width, 1280px);
-          height: var(--experience-sequence-frame-height, 920px);
-          flex: none;
+        .experience-runner-frame {
+          width: 100%;
+          height: 100%;
+          flex: 1 1 auto;
           border: 0;
           background: #05030a;
           pointer-events: none;
-          transform: scale(var(--experience-sequence-frame-scale, 1));
-          transform-origin: center center;
-          will-change: transform;
         }
 
-        /* Fix 1: enable interaction inside iframe once loaded and not in transition */
-        .experience-sequence.active:not(.is-loading) .experience-sequence-frame {
+        .experience-runner.active:not(.is-loading) .experience-runner-frame {
           pointer-events: auto;
         }
 
-        .experience-sequence-loading {
+        .experience-runner-loading {
           position: absolute;
           inset: 0;
           z-index: 3;
@@ -2212,17 +2034,8 @@ export default function HomePage() {
           pointer-events: none;
         }
 
-        .experience-sequence.active.is-loading .experience-sequence-loading {
+        .experience-runner.active.is-loading .experience-runner-loading {
           opacity: 1;
-        }
-
-        .experience-sequence-caption {
-          margin: 0;
-          max-width: 60ch;
-          font-family: var(--body);
-          font-size: clamp(0.95rem, 2vw, 1.08rem);
-          line-height: 1.7;
-          color: rgba(255, 209, 232, 0.8);
         }
 
         body.sequence-cinema .nav {
@@ -2440,10 +2253,10 @@ export default function HomePage() {
           .hub-grid { grid-template-columns: 1fr; }
           .hero-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
           .story-section { padding: 1.2rem 1.1rem 1rem; }
-          .experience-sequence { padding: 1rem; }
-          .experience-sequence-head { flex-direction: column; }
-          .experience-sequence-actions { width: 100%; justify-content: space-between; }
-          .experience-sequence-stage { height: min(64vh, 560px); border-radius: 1.4rem; }
+          .experience-runner { padding: 1rem; }
+          .experience-runner-head { flex-direction: column; }
+          .experience-runner-actions { width: 100%; justify-content: space-between; }
+          .experience-runner-stage { height: min(64vh, 560px); border-radius: 1.4rem; }
         }
       `}</style>
     </>
