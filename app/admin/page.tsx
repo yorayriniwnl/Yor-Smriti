@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/auth';
 import { getPrometheusMetrics } from '@/lib/metrics';
 import { getReplyEntries } from '@/lib/db';
+import { parseMetrics } from '@/lib/parseMetrics';
 import type { Metadata } from 'next';
 import AdminDashboard from './AdminDashboard';
 
@@ -11,23 +12,21 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-function parseMetrics(raw: string): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const line of raw.split('\n')) {
-    if (line.startsWith('#') || !line.trim()) continue;
-    const match = line.match(/^([a-z_]+)(?:\{[^}]*\})?\s+([\d.e+\-]+)/);
-    if (match) {
-      result[match[1]] = (result[match[1]] ?? 0) + parseFloat(match[2]);
-    }
-  }
-  return result;
-}
-
 export default async function AdminPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value ?? null;
   const session = token ? verifySession(token) : null;
+
+  // Must be authenticated
   if (!session) redirect('/login?next=/admin');
+
+  // Role guard: guest sessions (open-access visitors) cannot reach admin.
+  // Only the configured APP_USERNAME — or the sole user when no credentials
+  // are set — may access this page.
+  if (session.sub === 'guest') redirect('/');
+
+  const configuredUsername = process.env.APP_USERNAME ?? '';
+  if (configuredUsername && session.sub !== configuredUsername) redirect('/');
 
   const [raw, replyEntries] = await Promise.all([
     Promise.resolve(getPrometheusMetrics()),

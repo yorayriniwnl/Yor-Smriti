@@ -68,11 +68,22 @@ export async function POST(request: Request): Promise<NextResponse> {
   logger.info(`[event] ${eventName}${screen ? ` screen=${screen}` : ''} ip=${ip}`);
 
   if (body.event === 'experience_opened') {
-    // Fire-and-forget first-visit notification
-    import('@/lib/email').then(({ notifyFirstVisit }) => {
-      notifyFirstVisit({ ip, timestamp: new Date().toISOString() }).catch((e: unknown) =>
-        logger.error('[events] first-visit email error:', e)
-      );
+    // Fire first-visit notification only once — guard with a Redis flag so
+    // page refreshes don't spam the sender's inbox.
+    import('@/lib/kv').then(async ({ kvGet, kvSet }) => {
+      const NOTIFIED_KEY = 'first_visit_notified';
+      try {
+        const already = await kvGet(NOTIFIED_KEY);
+        if (already) return;                         // already notified — skip
+        await kvSet(NOTIFIED_KEY, '1');              // mark before sending to avoid race
+      } catch {
+        // If KV is unavailable we fall through and send anyway (acceptable degradation)
+      }
+      import('@/lib/email').then(({ notifyFirstVisit }) => {
+        notifyFirstVisit({ ip, timestamp: new Date().toISOString() }).catch((e: unknown) =>
+          logger.error('[events] first-visit email error:', e)
+        );
+      }).catch(() => {});
     }).catch(() => {});
   }
 

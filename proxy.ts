@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Middleware runs in the Edge runtime — we cannot use Node.js crypto here.
+// Proxy runs in the Edge runtime — we cannot use Node.js crypto here.
 // We check cookie *presence* only; full JWT verification happens in each
 // API route / Server Component via lib/auth.ts (Node.js runtime).
-// This is a standard Next.js pattern: middleware as a UX gate, server code
+// This is a standard Next.js pattern: proxy as a UX gate, server code
 // as the security gate.
 
 // NOTE: Cannot import from lib/auth (Edge runtime excludes Node.js crypto).
@@ -13,7 +13,7 @@ const SESSION_COOKIE = 'yor_session';
 
 // Paths that are always public — no session required
 // NOTE: /api/admin/* and /admin are NOT listed here — they require authentication.
-// The middleware redirects unauthenticated requests to /login.
+// The proxy redirects unauthenticated requests to /login.
 const PUBLIC_PREFIXES = [
   '/login',
   '/api/login',

@@ -1,29 +1,32 @@
 /**
  * Extracts the real client IP from a request.
- * 
- * Vercel sets CF-Connecting-IP (via Cloudflare) or X-Real-IP.
- * We trust these over X-Forwarded-For which is spoofable by clients.
- * 
- * IMPORTANT: In production on Vercel, the rightmost non-private IP
- * in X-Forwarded-For is the real client. But since we're behind Vercel's
- * proxy, X-Real-IP is already the real client IP.
+ *
+ * CF-Connecting-IP / X-Real-IP are only trustworthy when the app is running
+ * behind Vercel's edge or Cloudflare. On a raw Node.js server these headers
+ * can be spoofed by any client and would defeat the rate limiter.
+ *
+ * Set TRUST_PROXY=1 in your environment only when you are genuinely behind
+ * a trusted reverse proxy (Vercel, Cloudflare, your own nginx with
+ * proxy_set_header directives). Leave it unset for local dev.
  */
 export function getClientIp(request: Request): string {
-  // Vercel/Cloudflare inject these from their own infrastructure
-  const cfIp   = request.headers.get('cf-connecting-ip');
-  const realIp = request.headers.get('x-real-ip');
-  
-  if (cfIp)   return cfIp.trim();
-  if (realIp) return realIp.trim();
+  const trustProxy = process.env.TRUST_PROXY === '1';
 
-  // X-Forwarded-For: take the LAST entry (added by our trusted proxy)
-  // not the first (which could be spoofed by the client)
-  const xff = request.headers.get('x-forwarded-for');
-  if (xff) {
-    const ips = xff.split(',').map(s => s.trim()).filter(Boolean);
-    if (ips.length > 0) return ips[ips.length - 1];
+  if (trustProxy) {
+    const cfIp   = request.headers.get('cf-connecting-ip');
+    const realIp = request.headers.get('x-real-ip');
+    if (cfIp)   return cfIp.trim();
+    if (realIp) return realIp.trim();
+
+    // X-Forwarded-For: take the LAST entry added by the trusted proxy
+    const xff = request.headers.get('x-forwarded-for');
+    if (xff) {
+      const ips = xff.split(',').map(s => s.trim()).filter(Boolean);
+      if (ips.length > 0) return ips[ips.length - 1];
+    }
   }
 
+  // Fallback — no spoofable headers trusted outside proxy context
   return 'unknown';
 }
 

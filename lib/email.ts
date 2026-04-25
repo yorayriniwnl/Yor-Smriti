@@ -13,6 +13,16 @@
 
 import { logger } from './logger';
 
+/** Escape user-supplied strings before interpolating into HTML email bodies. */
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface SendEmailOptions {
   to: string | string[];
   subject: string;
@@ -95,12 +105,14 @@ export async function notifyReplyReceived(entry: {
   await sendEmail({
     to: notifyTo,
     subject: `💌 She replied - ${moodEmoji[entry.mood] ?? ''} ${entry.mood}`,
-    text: `Meri Anya <3 replied!\n\nMood: ${entry.mood}\n\n${entry.message}`,
+    text: `Keyrin replied!\n\nMood: ${entry.mood}\n\n${entry.message}`,
     html: `
       <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px;background:#05030a;color:#ffe8f4;border-radius:16px">
         <h2 style="font-weight:400;color:#f75590;margin-bottom:8px">She replied ${moodEmoji[entry.mood] ?? ''}</h2>
-        <p style="color:#c07090;margin-bottom:20px;font-size:14px">Mood: <strong style="color:#f75590">${entry.mood}</strong></p>
-        ${entry.message ? `<blockquote style="border-left:3px solid #f75590;margin:0;padding:12px 16px;color:#ffd4ea;font-style:italic">"${entry.message}"</blockquote>` : '<p style="color:#7a3050;font-style:italic">No message added.</p>'}
+        <p style="color:#c07090;margin-bottom:20px;font-size:14px">Mood: <strong style="color:#f75590">${escHtml(entry.mood)}</strong></p>
+        ${entry.message
+          ? `<blockquote style="border-left:3px solid #f75590;margin:0;padding:12px 16px;color:#ffd4ea;font-style:italic">&ldquo;${escHtml(entry.message)}&rdquo;</blockquote>`
+          : '<p style="color:#7a3050;font-style:italic">No message added.</p>'}
       </div>`,
   });
 }

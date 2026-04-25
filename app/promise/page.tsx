@@ -6,6 +6,15 @@ import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
 import { useEventTracking } from '@/hooks/useEventTracking';
+import SequenceErrorBoundary from '@/app/_components/SequenceErrorBoundary';
+
+function useIsIframe(): boolean {
+  const [isIframe, setIsIframe] = useState(false);
+  useEffect(() => {
+    setIsIframe(window.self !== window.top);
+  }, []);
+  return isIframe;
+}
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -63,7 +72,7 @@ const PROMISES: Promise[] = [
   },
 ];
 
-const SEQUENCE_PROMISES: Promise[] = [PROMISES[0], PROMISES[1], PROMISES[3], PROMISES[4], PROMISES[6]];
+const SEQUENCE_PROMISES: Promise[] = [PROMISES[0], PROMISES[1], PROMISES[3], PROMISES[4], PROMISES[5]];
 
 const WEIGHT_STYLES: Record<Promise['weight'], {
   border: string;
@@ -102,6 +111,7 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
   const [sealed, setSealed] = useState(false);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
+  const progressRef = useRef(0);  // mirrors progress state for use in callbacks
   const autoStartTimeoutRef = useRef<number | null>(null);
   const holdMs = autoplay ? 1700 : 2800;
 
@@ -112,6 +122,7 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
     const tick = (now: number) => {
       const pct = Math.min((now - (startRef.current ?? now)) / holdMs, 1);
       setProgress(pct);
+      progressRef.current = pct;
       if (pct >= 1) {
         setSealed(true);
         setHolding(false);
@@ -126,8 +137,20 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
   const stopHold = useCallback(() => {
     if (sealed) return;
     setHolding(false);
-    setProgress(0);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    // Fix #15: animate progress back to 0 over 400ms instead of snapping
+    const resetStart = performance.now();
+    const startPct = progressRef.current;
+    const resetTick = (now: number) => {
+      const elapsed = now - resetStart;
+      const pct = Math.max(0, startPct * (1 - elapsed / 400));
+      setProgress(pct);
+      progressRef.current = pct;
+      if (pct > 0) {
+        rafRef.current = requestAnimationFrame(resetTick);
+      }
+    };
+    rafRef.current = requestAnimationFrame(resetTick);
   }, [sealed]);
 
   useEffect(() => {
@@ -234,9 +257,16 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
 // ─── Page ────────────────────────────────────────────────────────────────────
 function PromisePageContent() {
   const isSequenceMode = useSequenceMode();
+  const isIframe = useIsIframe();
+  const { track } = useEventTracking();
   const [current, setCurrent] = useState(0);
   const [allRead, setAllRead] = useState(false);
   const [sealComplete, setSealComplete] = useState(false);
+
+  // Fix #13: only fire analytics in direct-navigation mode, not during automated sequence
+  useEffect(() => {
+    if (!isSequenceMode) track('promise_viewed');
+  }, [isSequenceMode, track]);
 
   const visiblePromises = isSequenceMode ? SEQUENCE_PROMISES : PROMISES;
   const isLast = current === visiblePromises.length - 1;
@@ -258,14 +288,14 @@ function PromisePageContent() {
       timeoutIds.push(
         window.setTimeout(() => {
           setCurrent(index);
-        }, 900 + index * 950),
+        }, 900 + index * 2800),
       );
     });
 
     timeoutIds.push(
       window.setTimeout(() => {
         setAllRead(true);
-      }, 900 + visiblePromises.length * 950 + 200),
+      }, 900 + visiblePromises.length * 2800 + 200),
     );
 
     return () => {
@@ -283,7 +313,12 @@ function PromisePageContent() {
 
   const handleSealed = useCallback(() => {
     setSealComplete(true);
-  }, []);
+    if (isSequenceMode) {
+      try {
+        window.parent.postMessage({ type: 'yor:slide-complete' }, window.location.origin);
+      } catch { /* cross-origin guard */ }
+    }
+  }, [isSequenceMode]);
 
   return (
     <main
@@ -294,7 +329,7 @@ function PromisePageContent() {
           'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
       }}
     >
-      <CharacterPageOverlayClient />
+      {!isIframe && <CharacterPageOverlayClient />}
       {/* Ambient candle-flicker glow */}
       <motion.div
         className="pointer-events-none fixed inset-0"
@@ -580,14 +615,11 @@ function PromisePageContent() {
 }
 
 export default function PromisePage() {
-  const { track } = useEventTracking();
-  useEffect(() => {
-    track('promise_viewed');
-  }, [track]);
-
   return (
-    <Suspense fallback={null}>
-      <PromisePageContent />
-    </Suspense>
+    <SequenceErrorBoundary>
+      <Suspense fallback={null}>
+        <PromisePageContent />
+      </Suspense>
+    </SequenceErrorBoundary>
   );
 }

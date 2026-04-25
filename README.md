@@ -39,7 +39,7 @@ https://yorayriniwnl.in
 | `/reasons` | Why I love you — card deck |
 | `/stars` | Our constellation — interactive starfield |
 | `/promise` | Promises — commitment cards |
-| `/reply` | Meri Anya <3's response form 💌 |
+| `/reply` | Keyrin's response form 💌 |
 | `/hub` | Experience index |
 | `/admin` | Analytics dashboard (auth required) |
 
@@ -54,7 +54,7 @@ https://yorayriniwnl.in
 | `GET` | `/api/session` | Cookie | Current session info |
 | `POST` | `/api/chat` | Cookie + CSRF | AI chat reply |
 | `POST` | `/api/events` | Cookie + CSRF | Experience event tracking |
-| `POST` | `/api/reply` | Cookie + CSRF | Meri Anya <3 sends a response |
+| `POST` | `/api/reply` | Cookie + CSRF | Keyrin sends a response |
 | `GET` | `/api/config` | Cookie | Personalization config |
 | `GET` | `/api/health` | — | Health + config check |
 | `GET` | `/api/metrics` | — / Cookie+JSON | Prometheus / JSON metrics |
@@ -64,7 +64,7 @@ https://yorayriniwnl.in
 ## 🔐 Security
 
 - JWT sessions (HS256, 7-day, `HttpOnly; SameSite=Lax; Secure`)
-- Edge middleware guards every non-public route
+- Edge proxy guards every non-public route
 - CSRF: `x-yor-csrf: 1` custom header required on mutating requests
 - Rate limiting: per-IP via Upstash → ioredis → in-memory fallback
 - IP extraction: trusts `cf-connecting-ip` → `x-real-ip` → last `X-Forwarded-For`

@@ -7,6 +7,15 @@ import CharacterPageOverlayClient from '@/components/character/CharacterPageOver
 import { useCinematicScenePhase } from '@/hooks/useCinematicScenePhase';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
 import { useEventTracking } from '@/hooks/useEventTracking';
+import SequenceErrorBoundary from '@/app/_components/SequenceErrorBoundary';
+
+function useIsIframe(): boolean {
+  const [isIframe, setIsIframe] = useState(false);
+  useEffect(() => {
+    setIsIframe(window.self !== window.top);
+  }, []);
+  return isIframe;
+}
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -69,11 +78,26 @@ const TIMELINE_SCENE_DURATION_MS = 8000;
 
 function TimelinePageContent() {
   const isSequenceMode = useSequenceMode();
+  const isIframe = useIsIframe();
+  const { track } = useEventTracking();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFinalBeat, setIsFinalBeat] = useState(false);
-  const scene = useCinematicScenePhase(isSequenceMode, 900, 1500, 3800, 1800);
+  const scene = useCinematicScenePhase(isSequenceMode, 700, 1200, 3300, 1300);
+
+  // Fix #13: only fire analytics in direct-navigation mode, not during automated sequence
+  useEffect(() => {
+    if (!isSequenceMode) track('timeline_viewed');
+  }, [isSequenceMode, track]);
 
   const activeMemory = MEMORIES[activeIndex] ?? MEMORIES[0];
+
+  // Signal parent slideshow when this slide's cinematic phase is fully complete
+  useEffect(() => {
+    if (!isSequenceMode || scene.phase !== 'complete') return;
+    try {
+      window.parent.postMessage({ type: 'yor:slide-complete' }, window.location.origin);
+    } catch { /* cross-origin guard */ }
+  }, [isSequenceMode, scene.phase]);
 
   useEffect(() => {
     if (!isSequenceMode) return;
@@ -139,7 +163,7 @@ function TimelinePageContent() {
           'radial-gradient(circle at 18% 20%, rgba(255, 196, 223, 0.16), transparent 32%), radial-gradient(circle at 84% 18%, rgba(196, 171, 255, 0.16), transparent 30%), linear-gradient(180deg, rgba(32, 10, 28, 0.98) 0%, rgba(10, 5, 14, 1) 100%)',
       }}
     >
-      <CharacterPageOverlayClient />
+      {!isIframe && <CharacterPageOverlayClient />}
 
       {isSequenceMode ? (
         <div className="pointer-events-none absolute left-5 right-5 top-5 z-20">
@@ -148,7 +172,7 @@ function TimelinePageContent() {
               className="h-full origin-left rounded-full bg-[linear-gradient(90deg,rgba(255,165,208,0.95),rgba(255,255,255,0.82))]"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ duration: TIMELINE_SCENE_DURATION_MS / 1000, ease: 'linear' }}
+              transition={{ duration: (TIMELINE_SCENE_DURATION_MS - 700) / 1000, ease: 'linear' }}
             />
           </div>
         </div>
@@ -275,7 +299,7 @@ function TimelinePageContent() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.12, ease: EASE_SOFT }}
                       onClick={isSequenceMode ? undefined : () => setActiveIndex(index)}
-                      className="relative block w-full rounded-[1.1rem] px-3 py-3 text-left"
+                      className={`relative block w-full rounded-[1.1rem] px-3 py-3 text-left${isSequenceMode ? ' pointer-events-none opacity-50' : ''}`}
                       style={{
                         background: isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.02)',
                         border: `1px solid ${isActive ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'}`,
@@ -587,7 +611,7 @@ function TimelinePageContent() {
           className="absolute bottom-6 left-0 right-0 z-20 flex justify-center"
         >
           <Link
-            href="/hub"
+            href="/"
             style={{
               fontFamily: 'var(--font-dm-mono)',
               fontSize: '0.58rem',
@@ -605,14 +629,11 @@ function TimelinePageContent() {
 }
 
 export default function TimelinePage() {
-  const { track } = useEventTracking();
-  useEffect(() => {
-    track('timeline_viewed');
-  }, [track]);
-
   return (
-    <Suspense fallback={null}>
-      <TimelinePageContent />
-    </Suspense>
+    <SequenceErrorBoundary>
+      <Suspense fallback={null}>
+        <TimelinePageContent />
+      </Suspense>
+    </SequenceErrorBoundary>
   );
 }

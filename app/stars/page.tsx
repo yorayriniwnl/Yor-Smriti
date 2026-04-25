@@ -6,6 +6,15 @@ import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
 import { useEventTracking } from '@/hooks/useEventTracking';
+import SequenceErrorBoundary from '@/app/_components/SequenceErrorBoundary';
+
+function useIsIframe(): boolean {
+  const [isIframe, setIsIframe] = useState(false);
+  useEffect(() => {
+    setIsIframe(window.self !== window.top);
+  }, []);
+  return isIframe;
+}
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -85,11 +94,28 @@ function getStarCoords(star: Star, w: number, h: number) {
 
 function StarsPageContent() {
   const isSequenceMode = useSequenceMode();
+  const isIframe = useIsIframe();
+  const { track } = useEventTracking();
   const [active, setActive] = useState<Star | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const { w, h } = useWindowSize();
   const svgRef = useRef<SVGSVGElement>(null);
   const discoveryTotal = isSequenceMode ? SEQUENCE_STARS.length : STARS.length;
+
+  // Fix #13: only fire analytics in direct-navigation mode, not during automated sequence
+  useEffect(() => {
+    if (!isSequenceMode) track('stars_viewed');
+  }, [isSequenceMode, track]);
+
+  // Signal parent slideshow when all stars have been revealed and panel closed
+  useEffect(() => {
+    if (!isSequenceMode) return;
+    if (revealed.size === discoveryTotal && active === null && discoveryTotal > 0) {
+      try {
+        window.parent.postMessage({ type: 'yor:slide-complete' }, window.location.origin);
+      } catch { /* cross-origin guard */ }
+    }
+  }, [isSequenceMode, revealed, active, discoveryTotal]);
 
   useEffect(() => {
     if (!isSequenceMode) return;
@@ -139,7 +165,7 @@ function StarsPageContent() {
         background: 'radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30, 8, 50, 0.8) 0%, rgba(10, 3, 20, 0.98) 40%, #03020a 100%)',
       }}
     >
-      <CharacterPageOverlayClient />
+      {!isIframe && <CharacterPageOverlayClient />}
       {/* Deep space background stars (decorative non-interactive) */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         {Array.from({ length: 60 }, (_, i) => (
@@ -219,6 +245,9 @@ function StarsPageContent() {
           className="absolute inset-0 z-10"
           width={w}
           height={h}
+          viewBox={`0 0 ${w} ${h * 0.85}`}
+          preserveAspectRatio="xMidYMin meet"
+          style={{ marginBottom: '120px' }}
           aria-label="Constellation memory map"
         >
           {/* Constellation lines */}
@@ -258,6 +287,16 @@ function StarsPageContent() {
                 onKeyDown={isSequenceMode ? undefined : (e) => e.key === 'Enter' && handleStarClick(star)}
                 style={{ cursor: isSequenceMode ? 'default' : 'pointer' }}
               >
+                {/* Fix #14: invisible expanded hit area — meets WCAG 44×44px minimum touch target */}
+                {!isSequenceMode && (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={Math.max(22, star.size * 2.5)}
+                    fill="transparent"
+                  />
+                )}
+
                 {/* Outer glow ring for special stars */}
                 {star.isSpecial && (
                   <motion.circle
@@ -484,14 +523,11 @@ function StarsPageContent() {
 }
 
 export default function StarsPage() {
-  const { track } = useEventTracking();
-  useEffect(() => {
-    track('stars_viewed');
-  }, [track]);
-
   return (
-    <Suspense fallback={null}>
-      <StarsPageContent />
-    </Suspense>
+    <SequenceErrorBoundary>
+      <Suspense fallback={null}>
+        <StarsPageContent />
+      </Suspense>
+    </SequenceErrorBoundary>
   );
 }

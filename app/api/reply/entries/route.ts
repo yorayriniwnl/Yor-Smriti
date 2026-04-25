@@ -23,7 +23,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       { yes: 0, maybe: 0, needTime: 0, no: 0 }
     );
 
-    return NextResponse.json({ ok: true, total: entries.length, byMood, entries });
+    // Strip IP addresses before sending to client — admin UI doesn't need them
+    // and exposing them creates unnecessary privacy/legal risk.
+    const safeEntries = entries.map(({ mood, message, createdAt }) => ({
+      mood,
+      message,
+      createdAt,
+    }));
+
+    return NextResponse.json({ ok: true, total: safeEntries.length, byMood, entries: safeEntries });
   } catch (err) {
     return NextResponse.json(
       { ok: false, error: 'Failed to fetch replies.', detail: String(err) },

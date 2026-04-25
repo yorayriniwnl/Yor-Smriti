@@ -9,12 +9,9 @@ import { ReadingProgress } from '@/components/ui/ReadingProgress';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
-// ─── Set this to whatever password only she knows ────────────────────────────
-// This is intentionally client-side — the content is emotional, not state-secret.
-// Change this before deploying.
-const HER_PASSWORD = 'change-this-password';
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ─── Password is verified server-side via /api/her-unlock ───────────────────
+// Set HER_UNLOCK_PASSWORD in your environment variables.
+// The password is never shipped in the client bundle.
 const SESSION_KEY = 'ys_her_unlocked';
 
 // ─── The private content ─────────────────────────────────────────────────────
@@ -94,23 +91,37 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const [shaking, setShaking] = useState(false);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const attempt = () => {
-    if (value.trim() === HER_PASSWORD) {
-      setError(false);
-      try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
-      onUnlock();
-    } else {
+  const attempt = async () => {
+    if (!value.trim() || loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/her-unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-yor-csrf': '1' },
+        body: JSON.stringify({ password: value.trim() }),
+      });
+      if (res.ok) {
+        setError(false);
+        try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+        onUnlock();
+      } else {
+        setError(true);
+        setShaking(true);
+        setTimeout(() => setShaking(false), 500);
+        setValue('');
+        setTimeout(() => inputRef.current?.focus(), 10);
+      }
+    } catch {
       setError(true);
-      setShaking(true);
-      setTimeout(() => setShaking(false), 500);
-      setValue('');
-      setTimeout(() => inputRef.current?.focus(), 10);
+    } finally {
+      setLoading(false);
     }
   };
 

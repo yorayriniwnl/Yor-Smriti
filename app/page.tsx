@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 
-const SINCE_DATE = '2025-XX-XX';
+const SINCE_DATE = '2025-05-18';
 
 function daysSince(dateStr: string): number {
   const d = new Date(dateStr);
@@ -37,7 +37,7 @@ const EXPERIENCE_MOVIE_SLIDES = [
     eyebrow: 'chapter two',
     title: 'Why I Love You',
     caption: 'The reasons come next: gentle, direct, and impossible for me to unfeel.',
-    duration: 7200,
+    duration: 6000,
   },
   {
     href: '/stars?sequence=1',
@@ -55,8 +55,10 @@ const EXPERIENCE_MOVIE_SLIDES = [
   },
 ] as const;
 
-const EXPERIENCE_SEQUENCE_FRAME_WIDTH = 1280;
-const EXPERIENCE_SEQUENCE_FRAME_HEIGHT = 920;
+// 640×480 gives ~0.59x scale on iPhone SE vs the previous 0.27x at 1280×920.
+// Child pages are responsive and render correctly at this viewport.
+const EXPERIENCE_SEQUENCE_FRAME_WIDTH = 640;
+const EXPERIENCE_SEQUENCE_FRAME_HEIGHT = 480;
 
 export default function HomePage() {
   useEffect(() => {
@@ -75,6 +77,11 @@ export default function HomePage() {
     const experienceSequenceCaption = document.getElementById('experience-sequence-caption') as HTMLParagraphElement | null;
     const experienceSequenceCount = document.getElementById('experience-sequence-count') as HTMLParagraphElement | null;
     const experienceSequenceSkip = document.getElementById('experience-sequence-skip') as HTMLButtonElement | null;
+    const experienceSequencePrev = document.getElementById('experience-sequence-prev') as HTMLButtonElement | null;
+    const experienceSequenceNext = document.getElementById('experience-sequence-next') as HTMLButtonElement | null;
+    const experienceSequenceError = document.getElementById('experience-sequence-error') as HTMLDivElement | null;
+    const experienceSequenceErrorRetry = document.getElementById('experience-sequence-error-retry') as HTMLButtonElement | null;
+    const experienceSequenceErrorNext = document.getElementById('experience-sequence-error-next') as HTMLButtonElement | null;
 
     let mx = -100;
     let my = -100;
@@ -90,6 +97,8 @@ export default function HomePage() {
     const chatHistoryRef = { current: [] as Array<{ role: 'user' | 'assistant'; content: string }> };
     let sequenceRunning = false;
     let sequenceToken = 0;
+    let currentSlideIndex = 0;          // Fix 5: track which slide is active for Prev/Next
+    let slideAdvanceFn: (() => void) | null = null;  // Fix 6: cancel timer on postMessage
     const sequenceTimeoutIds: number[] = [];
 
     const queueSequenceTimeout = (fn: () => void, ms: number) => {
@@ -167,12 +176,21 @@ export default function HomePage() {
       }
     };
 
+    const hideSlideError = () => {
+      experienceSequence?.classList.remove('is-error');
+      if (experienceSequenceError) experienceSequenceError.setAttribute('aria-hidden', 'true');
+    };
+
     const resetExperienceMovie = () => {
-      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending');
+      experienceSequence?.classList.remove('active', 'is-loading', 'is-ending', 'is-error');
+      experienceSequence?.setAttribute('aria-hidden', 'true');   // Fix 8: restore aria-hidden
       document.body.classList.remove('sequence-cinema');
+      slideAdvanceFn = null;
+      hideSlideError();
 
       if (experienceSequenceFrame) {
         experienceSequenceFrame.onload = null;
+        experienceSequenceFrame.onerror = null;
         experienceSequenceFrame.src = 'about:blank';
       }
     };
@@ -197,25 +215,58 @@ export default function HomePage() {
       spawnHeart();
     };
 
+    const showSlideError = (index: number, retryFn: () => void, nextFn: () => void) => {
+      experienceSequence?.classList.remove('is-loading');
+      experienceSequence?.classList.add('is-error');
+      if (experienceSequenceError) {
+        experienceSequenceError.setAttribute('aria-hidden', 'false');
+        if (experienceSequenceErrorRetry) experienceSequenceErrorRetry.onclick = retryFn;
+        if (experienceSequenceErrorNext) {
+          experienceSequenceErrorNext.style.display = index >= EXPERIENCE_MOVIE_SLIDES.length - 1 ? 'none' : '';
+          experienceSequenceErrorNext.onclick = nextFn;
+        }
+      }
+    };
+
     const loadMovieSlide = (index: number, token: number, onReady?: () => void) => {
       const slide = EXPERIENCE_MOVIE_SLIDES[index];
       if (!slide || !experienceSequence || !experienceSequenceFrame) return;
       if (token !== sequenceToken || !sequenceEnabled) return;
 
+      currentSlideIndex = index;
+      // Keep Prev disabled state accurate
+      if (experienceSequencePrev) experienceSequencePrev.disabled = index <= 0;
       let settled = false;
+      hideSlideError();
 
+      // Fix 4: neutralise any stale handler before assigning a new one
+      experienceSequenceFrame.onload = null;
+      experienceSequenceFrame.onerror = null;
+
+      // Fix 8: expose overlay to assistive technology while active
+      experienceSequence.removeAttribute('aria-hidden');
       experienceSequence.classList.remove('is-ending');
       experienceSequence.classList.add('active', 'is-loading');
       document.body.classList.add('sequence-cinema');
       syncExperienceSequenceFrameScale();
 
+      const retryFn = () => { if (token === sequenceToken) loadMovieSlide(index, token, onReady); };
+      const nextFn  = () => { if (token === sequenceToken) onReady?.(); };
+
+      // Fix 7: register in sequenceTimeoutIds so stopSequence() cancels it
+      // Fix 2: show in-overlay error — never navigate the whole window away
+      // 8000ms matches the longest slide duration and covers Vercel cold starts (2–8s)
       const fallbackId = window.setTimeout(() => {
         if (settled || token !== sequenceToken || !sequenceEnabled) return;
         settled = true;
-        window.location.assign(slide.href);
-      }, 1800);
+        showSlideError(index, retryFn, nextFn);
+      }, 8000);
+      sequenceTimeoutIds.push(fallbackId);
 
       experienceSequenceFrame.onload = () => {
+        // Fix 4: about:blank reset fires onload — ignore it
+        const src = experienceSequenceFrame?.src ?? '';
+        if (!src || src === 'about:blank') return;
         if (settled || token !== sequenceToken) return;
         settled = true;
         window.clearTimeout(fallbackId);
@@ -223,6 +274,14 @@ export default function HomePage() {
         applyMovieSlideMeta(index);
         experienceSequence?.classList.remove('is-loading');
         onReady?.();
+      };
+
+      // Fix 9: hard load errors (network failure, 404) show error state instead of blank
+      experienceSequenceFrame.onerror = () => {
+        if (settled || token !== sequenceToken || !sequenceEnabled) return;
+        settled = true;
+        window.clearTimeout(fallbackId);
+        showSlideError(index, retryFn, nextFn);
       };
 
       experienceSequenceFrame.src = slide.href;
@@ -287,6 +346,50 @@ export default function HomePage() {
       }
     };
 
+    // Hoisted here (not inside runExperienceSequence) so Prev/Next manual-navigation
+    // handlers — which are siblings, not children, of runExperienceSequence — can call them.
+    // Both accept an explicit token so stale callbacks self-cancel correctly.
+    const MOVIE_TO_CHAT_TRANSITION_MS = 1800;
+
+    const startMovieFinale = (token: number) => {
+      if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
+      experienceSequence.classList.add('is-ending');
+      if (experienceSequenceEyebrow) experienceSequenceEyebrow.textContent = 'finale';
+      if (experienceSequenceTitle) experienceSequenceTitle.textContent = 'Talk With Ayrin';
+      if (experienceSequenceCaption) {
+        experienceSequenceCaption.textContent = 'The movie is over. He stayed. The chat box is waiting for you.';
+      }
+      spawnHearts();
+      queueSequenceTimeout(() => {
+        if (token !== sequenceToken || !sequenceEnabled) return;
+        offerChatAfterMovie();
+      }, MOVIE_TO_CHAT_TRANSITION_MS);
+    };
+
+    const playMovieSlide = (index: number, token: number) => {
+      const slide = EXPERIENCE_MOVIE_SLIDES[index];
+      if (!slide || token !== sequenceToken || !sequenceEnabled) return;
+      clearSequenceHighlights();
+      clearStoryHighlights();
+      loadMovieSlide(index, token, () => {
+        if (token !== sequenceToken || !sequenceEnabled) return;
+        let advanced = false;
+        const advance = () => {
+          if (advanced || token !== sequenceToken || !sequenceEnabled) return;
+          advanced = true;
+          slideAdvanceFn = null;
+          if (index === EXPERIENCE_MOVIE_SLIDES.length - 1) {
+            startMovieFinale(token);
+          } else {
+            playMovieSlide(index + 1, token);
+          }
+        };
+        slideAdvanceFn = advance;
+        const durationId = window.setTimeout(advance, slide.duration);
+        sequenceTimeoutIds.push(durationId);
+      });
+    };
+
     const runExperienceSequence = () => {
       stopSequence();
       const token = sequenceToken;
@@ -295,7 +398,9 @@ export default function HomePage() {
       goScene('scene-hub');
       const STORY_POINT_STEP_MS = 2000;
       const STORY_END_PAUSE_MS = 1200;
-      const MOVIE_TO_CHAT_TRANSITION_MS = 1800;
+      // Fix 10: let the scene transition CSS animation (~480ms) finish before
+      // scrollIntoView calls fire on elements that may not yet be visible
+      const SCENE_SETTLE_MS = 350;
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
       const storySection = document.querySelector<HTMLElement>('[data-sequence-story="true"]');
@@ -311,10 +416,10 @@ export default function HomePage() {
           card.classList.add('sequence-focus');
           card.scrollIntoView({ behavior: 'smooth', block: 'center' });
           spawnHearts();
-        }, 700 + index * 1200);
+        }, SCENE_SETTLE_MS + 700 + index * 1200);  // Fix 10: offset by settle delay
       });
 
-      const storyStart = 700 + cards.length * 1200;
+      const storyStart = SCENE_SETTLE_MS + 700 + cards.length * 1200;
 
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
@@ -338,51 +443,9 @@ export default function HomePage() {
       const storyFinalBeat = storyStart + 320 + (storyItems.length - 1) * STORY_POINT_STEP_MS;
       const movieStart = storyFinalBeat + STORY_END_PAUSE_MS;
 
-      const startMovieFinale = () => {
-        if (token !== sequenceToken || !sequenceEnabled || !experienceSequence) return;
-        experienceSequence.classList.add('is-ending');
-        if (experienceSequenceEyebrow) {
-          experienceSequenceEyebrow.textContent = 'finale';
-        }
-        if (experienceSequenceTitle) {
-          experienceSequenceTitle.textContent = 'Talk With Ayrin';
-        }
-        if (experienceSequenceCaption) {
-          experienceSequenceCaption.textContent = 'The movie is over. He stayed. The chat box is waiting for you.';
-        }
-        spawnHearts();
-
-        queueSequenceTimeout(() => {
-          if (token !== sequenceToken || !sequenceEnabled) return;
-          offerChatAfterMovie();
-        }, MOVIE_TO_CHAT_TRANSITION_MS);
-      };
-
-      const playMovieSlide = (index: number) => {
-        const slide = EXPERIENCE_MOVIE_SLIDES[index];
-        if (!slide || token !== sequenceToken || !sequenceEnabled) return;
-
-        clearSequenceHighlights();
-        clearStoryHighlights();
-        loadMovieSlide(index, token, () => {
-          if (token !== sequenceToken || !sequenceEnabled) return;
-
-          queueSequenceTimeout(() => {
-            if (token !== sequenceToken || !sequenceEnabled) return;
-
-            if (index === EXPERIENCE_MOVIE_SLIDES.length - 1) {
-              startMovieFinale();
-              return;
-            }
-
-            playMovieSlide(index + 1);
-          }, slide.duration);
-        });
-      };
-
       queueSequenceTimeout(() => {
         if (token !== sequenceToken || !sequenceEnabled) return;
-        playMovieSlide(0);
+        playMovieSlide(0, token);
       }, movieStart);
     };
 
@@ -724,12 +787,137 @@ export default function HomePage() {
     syncExperienceSequenceFrameScale();
     window.addEventListener('resize', syncExperienceSequenceFrameScale);
 
+    // Fix #20: swipe gestures on the overlay
+    let touchStartX = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0]?.clientX ?? 0;
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX;
+      if (Math.abs(dx) < 50) return;
+      if (dx < 0) {
+        experienceSequenceNext?.click();
+      } else {
+        experienceSequencePrev?.click();
+      }
+    };
+
+    experienceSequence?.addEventListener('touchstart', onTouchStart, { passive: true });
+    experienceSequence?.addEventListener('touchend', onTouchEnd, { passive: true });
+
     if (experienceSequenceSkip) {
       experienceSequenceSkip.onclick = () => {
         stopSequence();
         offerChatAfterMovie();
       };
     }
+
+    // Fix 5: Prev / Next manual navigation between slides
+    if (experienceSequencePrev) {
+      experienceSequencePrev.onclick = () => {
+        const prevIndex = Math.max(0, currentSlideIndex - 1);
+        if (prevIndex === currentSlideIndex) return;
+        stopSequence();
+        sequenceToken += 1;
+        const token = sequenceToken;
+        sequenceRunning = true;
+        document.body.classList.add('sequence-running');
+        // Fix 4: wire onReady so duration timer fires and slideAdvanceFn is set
+        loadMovieSlide(prevIndex, token, () => {
+          if (token !== sequenceToken || !sequenceEnabled) return;
+          let advanced = false;
+          const advance = () => {
+            if (advanced || token !== sequenceToken || !sequenceEnabled) return;
+            advanced = true;
+            slideAdvanceFn = null;
+            if (prevIndex === EXPERIENCE_MOVIE_SLIDES.length - 1) {
+              startMovieFinale(token);
+            } else {
+              playMovieSlide(prevIndex + 1, token);
+            }
+          };
+          slideAdvanceFn = advance;
+          const slide = EXPERIENCE_MOVIE_SLIDES[prevIndex];
+          if (slide) {
+            const durationId = window.setTimeout(advance, slide.duration);
+            sequenceTimeoutIds.push(durationId);
+          }
+        });
+        // Fix 5b: keep disabled state accurate
+        experienceSequencePrev.disabled = prevIndex <= 0;
+      };
+      // Initialise disabled state
+      experienceSequencePrev.disabled = currentSlideIndex <= 0;
+    }
+
+    if (experienceSequenceNext) {
+      experienceSequenceNext.onclick = () => {
+        const nextIndex = currentSlideIndex + 1;
+        if (nextIndex >= EXPERIENCE_MOVIE_SLIDES.length) {
+          // already on last slide — go to finale
+          stopSequence();
+          offerChatAfterMovie();
+          return;
+        }
+        // cancel current duration timer and advance immediately
+        if (slideAdvanceFn) {
+          slideAdvanceFn();
+        } else {
+          // Fix 6: no stale advance fn — load next slide with full onReady chain
+          stopSequence();
+          sequenceToken += 1;
+          const token = sequenceToken;
+          sequenceRunning = true;
+          document.body.classList.add('sequence-running');
+          loadMovieSlide(nextIndex, token, () => {
+            if (token !== sequenceToken || !sequenceEnabled) return;
+            let advanced = false;
+            const advance = () => {
+              if (advanced || token !== sequenceToken || !sequenceEnabled) return;
+              advanced = true;
+              slideAdvanceFn = null;
+              if (nextIndex === EXPERIENCE_MOVIE_SLIDES.length - 1) {
+                startMovieFinale(token);
+              } else {
+                playMovieSlide(nextIndex + 1, token);
+              }
+            };
+            slideAdvanceFn = advance;
+            const slide = EXPERIENCE_MOVIE_SLIDES[nextIndex];
+            if (slide) {
+              const durationId = window.setTimeout(advance, slide.duration);
+              sequenceTimeoutIds.push(durationId);
+            }
+          });
+        }
+      };
+    }
+
+    // Fix 6 / Fix 12: child slides emit postMessage when their sequence completes.
+    // Origin is checked so arbitrary iframes cannot skip slides.
+    const onSlideMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (!sequenceRunning || !sequenceEnabled) return;
+
+      if (e.data?.type === 'yor:slide-complete') {
+        // Cancel the duration timer and advance immediately
+        if (slideAdvanceFn) slideAdvanceFn();
+        return;
+      }
+
+      if (e.data?.type === 'yor:slide-error') {
+        // Child render threw — show the in-overlay error state immediately.
+        // retryFn re-runs the full playMovieSlide chain (wires slideAdvanceFn + duration
+        // timer) rather than calling loadMovieSlide with onReady=undefined, which would
+        // load the slide but stall forever with no advance function.
+        const retryFn = () => playMovieSlide(currentSlideIndex, sequenceToken);
+        const nextFn  = () => slideAdvanceFn?.();
+        showSlideError(currentSlideIndex, retryFn, nextFn);
+      }
+    };
+    window.addEventListener('message', onSlideMessage);
 
     const hubCard = document.querySelector<HTMLElement>('[data-action="hearts"]');
     if (hubCard) {
@@ -747,8 +935,15 @@ export default function HomePage() {
       if (navPower) navPower.onclick = null;
       if (sendBtn) sendBtn.onclick = null;
       if (experienceSequenceSkip) experienceSequenceSkip.onclick = null;
+      if (experienceSequencePrev) experienceSequencePrev.onclick = null;
+      if (experienceSequenceNext) experienceSequenceNext.onclick = null;
+      if (experienceSequenceErrorRetry) experienceSequenceErrorRetry.onclick = null;
+      if (experienceSequenceErrorNext) experienceSequenceErrorNext.onclick = null;
       if (hubCard) hubCard.onclick = null;
       window.removeEventListener('resize', syncExperienceSequenceFrameScale);
+      window.removeEventListener('message', onSlideMessage);
+      experienceSequence?.removeEventListener('touchstart', onTouchStart);
+      experienceSequence?.removeEventListener('touchend', onTouchEnd);
 
       stopSequence();
       if (cursorRafId) cancelAnimationFrame(cursorRafId);
@@ -780,7 +975,7 @@ export default function HomePage() {
         <section className="scene active" id="scene-entry">
           <p className="eyebrow">for smriti - with love</p>
           <canvas id="heart-canvas" />
-          <h1 className="hero-title">Meri Anya &lt;3 &amp; Ayrin</h1>
+          <h1 className="hero-title">Keyrin &amp; Ayrin</h1>
           <p className="hero-sub">Every star here has a story. Every word was chosen with care. This is for you.</p>
           <div className="glass-card glass-card--entry">
             <p className="entry-quote">
@@ -968,11 +1163,17 @@ export default function HomePage() {
             </div>
 
             <div className="experience-sequence-actions">
+              <button className="btn-ghost experience-sequence-prev" id="experience-sequence-prev" type="button" aria-label="Previous chapter">
+                ← prev
+              </button>
               <p className="experience-sequence-count" id="experience-sequence-count">
                 01 / 04
               </p>
+              <button className="btn-ghost experience-sequence-next" id="experience-sequence-next" type="button" aria-label="Next chapter">
+                next →
+              </button>
               <button className="btn-ghost experience-sequence-skip" id="experience-sequence-skip" type="button">
-                Skip to chat
+                Skip →
               </button>
             </div>
           </div>
@@ -984,10 +1185,18 @@ export default function HomePage() {
               title="Experience movie sequence"
               loading="eager"
               tabIndex={-1}
-              aria-hidden="true"
             />
             <div className="experience-sequence-loading" aria-hidden="true">
               Loading the next chapter...
+            </div>
+            <div className="experience-sequence-error" id="experience-sequence-error" aria-hidden="true">
+              <p className="experience-sequence-error-msg">This chapter couldn&apos;t load.</p>
+              <button className="btn-ghost experience-sequence-error-retry" id="experience-sequence-error-retry" type="button">
+                Retry
+              </button>
+              <button className="btn-ghost experience-sequence-error-next" id="experience-sequence-error-next" type="button">
+                Skip chapter →
+              </button>
             </div>
           </div>
 
@@ -996,6 +1205,7 @@ export default function HomePage() {
           </p>
         </div>
       </div>
+
 
       <nav className="nav">
         <button className="nav-btn" id="nav-power" type="button" aria-pressed="true">
@@ -1459,7 +1669,7 @@ export default function HomePage() {
           text-transform: lowercase;
         }
 
-
+        .typing-indicator {
           display: flex;
           gap: 4px;
           align-items: center;
@@ -1789,6 +1999,60 @@ export default function HomePage() {
           background: rgba(255,255,255,0.04);
         }
 
+        .experience-sequence-prev,
+        .experience-sequence-next {
+          padding-inline: 1rem;
+          background: rgba(255,255,255,0.04);
+          transition: opacity 0.2s ease;
+        }
+
+        .experience-sequence-prev:disabled,
+        .experience-sequence-next:disabled {
+          opacity: 0.25;
+          pointer-events: none;
+        }
+
+        /* Error state — shown when a slide fails to load */
+        .experience-sequence-error {
+          position: absolute;
+          inset: 0;
+          z-index: 4;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1.2rem;
+          padding: 2rem;
+          background: radial-gradient(circle at 50% 40%, rgba(180,30,80,0.18), rgba(4,1,8,0.96) 70%);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.4s ease;
+        }
+
+        .experience-sequence.is-error .experience-sequence-error {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .experience-sequence.is-error .experience-sequence-stage {
+          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(200,40,80,0.18);
+        }
+
+        .experience-sequence-error-msg {
+          font-family: var(--mono);
+          font-size: 0.7rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: rgba(255, 160, 190, 0.75);
+          margin: 0;
+        }
+
+        .experience-sequence-error [id$="-retry"],
+        .experience-sequence-error [id$="-next"] {
+          padding-inline: 1.4rem;
+          background: rgba(255,255,255,0.05);
+        }
+
         .experience-sequence-stage {
           position: relative;
           width: 100%;
@@ -1833,6 +2097,11 @@ export default function HomePage() {
           transform: scale(var(--experience-sequence-frame-scale, 1));
           transform-origin: center center;
           will-change: transform;
+        }
+
+        /* Fix 1: enable interaction inside iframe once loaded and not in transition */
+        .experience-sequence.active:not(.is-loading) .experience-sequence-frame {
+          pointer-events: auto;
         }
 
         .experience-sequence-loading {

@@ -77,7 +77,7 @@ export const PROMISES = [
 ] as const;
 
 export const LETTER_PARAGRAPHS: LetterParagraph[] = [
-  { id: 'p1', text: 'Meri Anya <3,', style: 'salutation', delay: 0.3 },
+  { id: 'p1', text: 'Keyrin,', style: 'salutation', delay: 0.3 },
   {
     id: 'p2',
     text: 'I have been carrying this for a while. And I think it is time I stopped hiding it in late-night overthinking and actually gave it to you.',

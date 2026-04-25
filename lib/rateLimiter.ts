@@ -6,7 +6,6 @@ export type RateLimitEntry = { count: number; first: number };
 // ─── Upstash Redis (serverless-compatible, recommended for Vercel) ──────────
 // Uses HTTP API — works in both Edge and Node.js runtimes.
 
-const __upstashClient: { url: string; token: string } | null = null;
 
 function getUpstashConfig(): { url: string; token: string } | null {
   const url   = process.env.UPSTASH_REDIS_REST_URL;
@@ -70,13 +69,29 @@ export async function checkAndRecordRateLimit(key: string, limit = 5, windowMs =
       const now = Date.now();
       const windowSec = Math.ceil(windowMs / 1000);
 
-      // Atomic INCR + EXPIRE
-      const count = await upstashCommand(upstash, 'INCR', redisKey) as number;
-      if (count === 1) {
-        await upstashCommand(upstash, 'EXPIRE', redisKey, windowSec);
-      }
-      const ttl = await upstashCommand(upstash, 'TTL', redisKey) as number;
+      // Use a pipeline (array of commands in one HTTP request) so INCR and
+      // EXPIRE are sent atomically — eliminates the race condition where a
+      // process crash between the two calls leaves a key that never expires.
+      const results = await fetch(`${upstash.url}/pipeline`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${upstash.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([
+          ['INCR', redisKey],
+          ['EXPIRE', redisKey, windowSec, 'NX'],  // NX: only set TTL on first write
+          ['TTL', redisKey],
+        ]),
+        cache: 'no-store',
+      });
+      if (!results.ok) throw new Error(`Upstash pipeline HTTP ${results.status}`);
+      const pipeline = await results.json() as Array<{ result?: unknown; error?: string }>;
+
+      const count  = Number(pipeline[0]?.result ?? 0);
+      const ttl    = Number(pipeline[2]?.result ?? windowSec);
       const resetMs = now + (ttl > 0 ? ttl * 1000 : windowMs);
+
       return {
         allowed: count <= limit,
         remaining: Math.max(0, limit - count),

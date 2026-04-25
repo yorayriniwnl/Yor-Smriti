@@ -1,38 +1,37 @@
 /**
  * Admin stats endpoint — aggregates in-memory Prometheus metrics + persistent db data.
- * Requires authentication.
+ * Requires authentication AND the configured admin username.
  */
 import { NextResponse } from 'next/server';
 import { getTokenFromRequest, verifySession } from '@/lib/auth';
 import { getPrometheusMetrics } from '@/lib/metrics';
 import { getReplyEntries } from '@/lib/db';
 import { getRedisInfo } from '@/lib/rateLimiter';
-
-function parseMetrics(raw: string): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const line of raw.split('\n')) {
-    if (line.startsWith('#') || !line.trim()) continue;
-    const match = line.match(/^([a-z_]+)(?:\{[^}]*\})?\s+([\d.e+\-]+)/);
-    if (match) {
-      result[match[1]] = (result[match[1]] ?? 0) + parseFloat(match[2]);
-    }
-  }
-  return result;
-}
+import { parseMetrics } from '@/lib/parseMetrics';
 
 export async function GET(request: Request): Promise<NextResponse> {
   const token = getTokenFromRequest(request);
-  if (!token || !verifySession(token)) {
+  const session = token ? verifySession(token) : null;
+
+  if (!session) {
     return NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 });
+  }
+
+  // Role guard — only the real admin user, not guest sessions
+  if (session.sub === 'guest') {
+    return NextResponse.json({ ok: false, error: 'Forbidden.' }, { status: 403 });
+  }
+  const configuredUsername = process.env.APP_USERNAME ?? '';
+  if (configuredUsername && session.sub !== configuredUsername) {
+    return NextResponse.json({ ok: false, error: 'Forbidden.' }, { status: 403 });
   }
 
   const [rawMetrics, redisInfo, replyEntries] = await Promise.all([
     Promise.resolve(getPrometheusMetrics()),
     getRedisInfo(),
-    getReplyEntries(100).catch(()  => [] as Awaited<ReturnType<typeof getReplyEntries>>),
+    getReplyEntries(100).catch(() => [] as Awaited<ReturnType<typeof getReplyEntries>>),
   ]);
 
-  // Aggregate replies by mood
   const repliesByMood = replyEntries.reduce(
     (acc, e) => {
       const m = e.mood as keyof typeof acc;
@@ -46,11 +45,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     ok: true,
     timestamp: new Date().toISOString(),
     uptimeSec: Math.floor(process.uptime()),
-
-    // In-memory Prometheus counters (resets on cold start)
     memory: parseMetrics(rawMetrics),
-
-    // Persistent data from Upstash (survives restarts)
     persistent: {
       replies: {
         total: replyEntries.length,
@@ -59,14 +54,11 @@ export async function GET(request: Request): Promise<NextResponse> {
           mood: r.mood,
           createdAt: r.createdAt,
           preview: r.message.slice(0, 60) + (r.message.length > 60 ? '…' : ''),
+          // IP intentionally omitted
         })),
       },
     },
-
-    // Infrastructure
     redis: redisInfo,
-
-    // Config (non-sensitive keys only)
     config: {
       authSecret:          Boolean((process.env.AUTH_SECRET?.length ?? 0) >= 32),
       openai:              Boolean(process.env.OPENAI_API_KEY),

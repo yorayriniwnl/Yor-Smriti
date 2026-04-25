@@ -5,6 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { useSequenceMode } from '@/hooks/useSequenceMode';
+import SequenceErrorBoundary from '@/app/_components/SequenceErrorBoundary';
+
+function useIsIframe(): boolean {
+  const [isIframe, setIsIframe] = useState(false);
+  useEffect(() => {
+    setIsIframe(window.self !== window.top);
+  }, []);
+  return isIframe;
+}
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -79,6 +88,7 @@ const SHADE_STYLES: Record<ReasonCard['shade'], {
 
 function ReasonsPageContent() {
   const isSequenceMode = useSequenceMode();
+  const isIframe = useIsIframe();
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [completed, setCompleted] = useState(false);
@@ -87,6 +97,14 @@ function ReasonsPageContent() {
   const total = visibleReasons.length;
   const card = visibleReasons[current] ?? visibleReasons[visibleReasons.length - 1];
   const style = SHADE_STYLES[card.shade];
+
+  // Signal parent slideshow when this slide's autoplay finishes
+  useEffect(() => {
+    if (!isSequenceMode || !completed) return;
+    try {
+      window.parent.postMessage({ type: 'yor:slide-complete' }, window.location.origin);
+    } catch { /* cross-origin guard */ }
+  }, [isSequenceMode, completed]);
 
   useEffect(() => {
     if (!isSequenceMode) return;
@@ -159,7 +177,7 @@ function ReasonsPageContent() {
           'radial-gradient(ellipse 86% 56% at 50% 4%, rgba(255, 213, 233, 0.66) 0%, rgba(95, 45, 82, 0.54) 32%, rgba(22, 8, 20, 0.96) 64%, #05030a 100%)',
       }}
     >
-      <CharacterPageOverlayClient />
+      {!isIframe && <CharacterPageOverlayClient />}
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
@@ -387,7 +405,9 @@ function ReasonsPageContent() {
             transition: 'all 300ms ease',
           }}
           aria-label={completed ? 'Go back to hub' : 'Next reason'}
-          onClick={completed ? undefined : goNext}
+          onClick={completed
+            ? (isSequenceMode ? undefined : () => { window.location.assign('/'); })
+            : goNext}
         >
           {completed ? 'done ✓' : 'next →'}
         </button>
@@ -436,8 +456,10 @@ function ReasonsPageContent() {
 
 export default function ReasonsPage() {
   return (
-    <Suspense fallback={null}>
-      <ReasonsPageContent />
-    </Suspense>
+    <SequenceErrorBoundary>
+      <Suspense fallback={null}>
+        <ReasonsPageContent />
+      </Suspense>
+    </SequenceErrorBoundary>
   );
 }
