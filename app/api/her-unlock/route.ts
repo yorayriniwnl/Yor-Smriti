@@ -13,12 +13,17 @@ import { verifyCsrfHeader, getClientIp } from '@/lib/request';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 import { secureCompare } from '@/lib/security';
 import { logger } from '@/lib/logger';
-
-const UNLOCK_COOKIE_MAX_AGE_SECS = 2 * 60 * 60; // 2 hours
+import { getTokenFromRequest, verifySession } from '@/lib/auth';
+import { HER_UNLOCK_COOKIE, HER_UNLOCK_MAX_AGE_SECS, signHerUnlockToken } from '@/lib/unlock';
 
 export async function POST(request: Request): Promise<NextResponse> {
   if (!verifyCsrfHeader(request)) {
     return NextResponse.json({ ok: false, error: 'Forbidden.' }, { status: 403 });
+  }
+
+  const token = getTokenFromRequest(request);
+  if (!token || !verifySession(token)) {
+    return NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 });
   }
 
   const ip = getClientIp(request);
@@ -57,12 +62,12 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Set HttpOnly cookie scoped to the content route only.
   // JS cannot read this cookie — it is purely a server-side gate token.
   const res = NextResponse.json({ ok: true });
-  res.cookies.set('her_unlocked', '1', {
+  res.cookies.set(HER_UNLOCK_COOKIE, signHerUnlockToken(), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/for-her-alone/content',
-    maxAge: UNLOCK_COOKIE_MAX_AGE_SECS,
+    maxAge: HER_UNLOCK_MAX_AGE_SECS,
   });
   return res;
 }

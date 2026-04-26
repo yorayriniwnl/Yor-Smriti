@@ -39,21 +39,16 @@ export interface SessionPayload {
   exp: number;   // expiry (unix sec)
 }
 
-export function signSession(username: string): string {
+function signPayload(payload: Record<string, unknown>): string {
   const secret = getSecret();
   const header  = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const now     = Math.floor(Date.now() / 1000);
-  const payload = Buffer.from(JSON.stringify({
-    sub: username,
-    iat: now,
-    exp: now + SESSION_MAX_AGE_SEC,
-  })).toString('base64url');
-  const unsigned = `${header}.${payload}`;
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const unsigned = `${header}.${body}`;
   const sig = crypto.createHmac('sha256', secret).update(unsigned).digest().toString('base64url');
   return `${unsigned}.${sig}`;
 }
 
-export function verifySession(token: string): SessionPayload | null {
+function verifyPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -65,17 +60,74 @@ export function verifySession(token: string): SessionPayload | null {
       .digest()
       .toString('base64url');
 
-    // Timing-safe compare
     const a = Buffer.from(sig, 'base64url');
     const b = Buffer.from(expectedSig, 'base64url');
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
-    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as SessionPayload;
+    const parsedHeader = JSON.parse(Buffer.from(header, 'base64url').toString('utf8')) as {
+      alg?: unknown;
+      typ?: unknown;
+    };
+    if (parsedHeader.alg !== 'HS256' || parsedHeader.typ !== 'JWT') return null;
+
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as Record<string, unknown>;
     if (typeof data.exp !== 'number' || data.exp < Math.floor(Date.now() / 1000)) return null;
     return data;
   } catch {
     return null;
   }
+}
+
+export function signSession(username: string): string {
+  const now     = Math.floor(Date.now() / 1000);
+  return signPayload({
+    sub: username,
+    iat: now,
+    exp: now + SESSION_MAX_AGE_SEC,
+  });
+}
+
+export function verifySession(token: string): SessionPayload | null {
+  const data = verifyPayload(token);
+  if (!data) return null;
+
+  if (
+    typeof data.sub !== 'string' ||
+    typeof data.iat !== 'number' ||
+    typeof data.exp !== 'number'
+  ) {
+    return null;
+  }
+
+  return {
+    sub: data.sub,
+    iat: data.iat,
+    exp: data.exp,
+  };
+}
+
+export function signScopedToken(scope: string, maxAgeSec: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  return signPayload({
+    scope,
+    iat: now,
+    exp: now + maxAgeSec,
+  });
+}
+
+export function verifyScopedToken(token: string, expectedScope: string): boolean {
+  const data = verifyPayload(token);
+  if (!data) return false;
+
+  if (
+    typeof data.scope !== 'string' ||
+    typeof data.iat !== 'number' ||
+    typeof data.exp !== 'number'
+  ) {
+    return false;
+  }
+
+  return data.scope === expectedScope;
 }
 
 // ─── Cookie helpers ───────────────────────────────────────────────────────────

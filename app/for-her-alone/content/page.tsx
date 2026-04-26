@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { AmbientSound } from '@/components/ui/AmbientSound';
 import { ScrollReset } from '@/components/ui/ScrollReset';
 import { ContentShell } from './ContentShell';
+import { SESSION_COOKIE, verifySession } from '@/lib/auth';
+import { HER_UNLOCK_COOKIE, verifyHerUnlockToken } from '@/lib/unlock';
 
 export const metadata = {
   title: 'For Her Alone',
@@ -26,7 +28,9 @@ export const metadata = {
 export default async function ContentPage() {
   // Authoritative server-side gate.
   const cookieStore = await cookies();
-  if (cookieStore.get('her_unlocked')?.value !== '1') {
+  const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
+  const unlockToken = cookieStore.get(HER_UNLOCK_COOKIE)?.value;
+  if (!sessionToken || !verifySession(sessionToken) || !verifyHerUnlockToken(unlockToken)) {
     redirect('/for-her-alone');
   }
 

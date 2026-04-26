@@ -10,7 +10,10 @@ export function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: { 'x-yor-csrf': '1' },
+      });
     } finally {
       router.push('/login');
     }

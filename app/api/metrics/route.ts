@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrometheusMetrics } from '@/lib/metrics';
 import { getTokenFromRequest, verifySession } from '@/lib/auth';
 import { parseMetrics } from '@/lib/parseMetrics';
+import { secureCompare } from '@/lib/security';
 
 export async function GET(request: Request): Promise<NextResponse> {
   const accept = request.headers.get('accept') ?? '';
@@ -15,7 +16,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const authHeader   = request.headers.get('authorization') ?? '';
   const bearerToken  = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  const hasScrapeSecret = scrapeSecret && bearerToken === scrapeSecret;
+  const hasScrapeSecret = Boolean(scrapeSecret && bearerToken && secureCompare(bearerToken, scrapeSecret));
   const hasSession = (() => {
     const token = getTokenFromRequest(request);
     return token ? Boolean(verifySession(token)) : false;

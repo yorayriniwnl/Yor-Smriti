@@ -120,6 +120,16 @@ export default function HomePage() {
       sequenceTimeoutIds.length = 0;
     };
 
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    const appendPlainText = (parent: HTMLElement, text: string) => {
+      const lines = text.split('\n');
+      lines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) parent.appendChild(document.createElement('br'));
+        parent.appendChild(document.createTextNode(line));
+      });
+    };
+
     const cancelSequenceScroll = () => {
       if (sequenceScrollRafId !== null) {
         window.cancelAnimationFrame(sequenceScrollRafId);
@@ -390,7 +400,17 @@ export default function HomePage() {
       const div = document.createElement('div');
       div.className = `msg ${from}`;
       div.style.animationDelay = '0s';
-      div.innerHTML = `<div class=\"msg-bubble\">${from === 'ayrin' ? `<span class=\"emotion-tag\">${emotion}</span><br>` : ''}${text}</div>`;
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      if (from === 'ayrin' && emotion) {
+        const emotionTag = document.createElement('span');
+        emotionTag.className = 'emotion-tag';
+        emotionTag.textContent = emotion;
+        bubble.appendChild(emotionTag);
+        bubble.appendChild(document.createElement('br'));
+      }
+      appendPlainText(bubble, text);
+      div.appendChild(bubble);
       messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
       msgCount += 1;
@@ -640,7 +660,20 @@ export default function HomePage() {
       el.className = 'petal';
       const col = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
       const sz = Math.random() * 14 + 8;
-      el.innerHTML = `<svg width=\"${sz}\" height=\"${sz}\" viewBox=\"0 0 20 20\"><ellipse cx=\"10\" cy=\"12\" rx=\"6\" ry=\"9\" fill=\"${col}\" opacity=\"${Math.random() * 0.3 + 0.5}\" transform=\"rotate(${Math.random() * 30 - 15} 10 10)\"/></svg>`;
+      const svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('width', String(sz));
+      svg.setAttribute('height', String(sz));
+      svg.setAttribute('viewBox', '0 0 20 20');
+      const ellipse = document.createElementNS(SVG_NS, 'ellipse');
+      ellipse.setAttribute('cx', '10');
+      ellipse.setAttribute('cy', '12');
+      ellipse.setAttribute('rx', '6');
+      ellipse.setAttribute('ry', '9');
+      ellipse.setAttribute('fill', col);
+      ellipse.setAttribute('opacity', String(Math.random() * 0.3 + 0.5));
+      ellipse.setAttribute('transform', `rotate(${Math.random() * 30 - 15} 10 10)`);
+      svg.appendChild(ellipse);
+      el.appendChild(svg);
       el.style.left = `${Math.random() * 100}vw`;
       el.style.animationDuration = `${Math.random() * 8 + 7}s`;
       el.style.animationDelay = `${Math.random() * 10}s`;
@@ -800,7 +833,15 @@ export default function HomePage() {
         const dist = Math.random() * 30 + 12;
         const dx = Math.cos((angle * Math.PI) / 180) * dist;
         const dy = Math.sin((angle * Math.PI) / 180) * dist;
-        sp.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><polygon points="6,1 7.2,4.8 11,4.8 8,7.2 9.2,11 6,8.8 2.8,11 4,7.2 1,4.8 4.8,4.8" fill="rgba(247,85,144,0.85)"/></svg>';
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('width', '12');
+        svg.setAttribute('height', '12');
+        svg.setAttribute('viewBox', '0 0 12 12');
+        const polygon = document.createElementNS(SVG_NS, 'polygon');
+        polygon.setAttribute('points', '6,1 7.2,4.8 11,4.8 8,7.2 9.2,11 6,8.8 2.8,11 4,7.2 1,4.8 4.8,4.8');
+        polygon.setAttribute('fill', 'rgba(247,85,144,0.85)');
+        svg.appendChild(polygon);
+        sp.appendChild(svg);
         Object.assign(sp.style, {
           left: `${e.clientX}px`,
           top: `${e.clientY}px`,

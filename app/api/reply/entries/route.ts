@@ -4,12 +4,24 @@ import { getReplyEntries, type ReplyEntry } from '@/lib/db';
 
 export async function GET(request: Request): Promise<NextResponse> {
   const token = getTokenFromRequest(request);
-  if (!token || !verifySession(token)) {
+  const session = token ? verifySession(token) : null;
+  if (!session) {
     return NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 });
   }
+  if (session.sub === 'guest') {
+    return NextResponse.json({ ok: false, error: 'Forbidden.' }, { status: 403 });
+  }
 
-  const url   = new URL(request.url);
-  const limit = Math.min(Number(url.searchParams.get('limit') ?? '50'), 100);
+  const configuredUsername = process.env.APP_USERNAME ?? '';
+  if (configuredUsername && session.sub !== configuredUsername) {
+    return NextResponse.json({ ok: false, error: 'Forbidden.' }, { status: 403 });
+  }
+
+  const url = new URL(request.url);
+  const requestedLimit = Number(url.searchParams.get('limit') ?? '50');
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 100)
+    : 50;
 
   try {
     const entries: ReplyEntry[] = await getReplyEntries(limit);

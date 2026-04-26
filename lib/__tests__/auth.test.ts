@@ -14,6 +14,8 @@ import {
   clearSessionCookieHeader,
   getTokenFromRequest,
   SESSION_COOKIE,
+  signScopedToken,
+  verifyScopedToken,
 } from '../auth';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -151,6 +153,34 @@ describe('verifySession', () => {
 });
 
 // ─── Cookie helpers ───────────────────────────────────────────────────────────
+
+describe('scoped tokens', () => {
+  it('round-trips a token for the expected scope', () => {
+    const token = signScopedToken('private-letter', 60);
+    expect(verifyScopedToken(token, 'private-letter')).toBe(true);
+  });
+
+  it('rejects a token for a different scope', () => {
+    const token = signScopedToken('private-letter', 60);
+    expect(verifyScopedToken(token, 'other-scope')).toBe(false);
+  });
+
+  it('rejects a forged literal unlock value', () => {
+    expect(verifyScopedToken('1', 'private-letter')).toBe(false);
+  });
+
+  it('rejects expired scoped tokens', () => {
+    const realDateNow = Date.now;
+    let token = '';
+    try {
+      Date.now = () => Date.parse('2020-01-01T00:00:00Z');
+      token = signScopedToken('private-letter', 60);
+    } finally {
+      Date.now = realDateNow;
+    }
+    expect(verifyScopedToken(token, 'private-letter')).toBe(false);
+  });
+});
 
 describe('sessionCookieHeader', () => {
   it('includes the session cookie name', () => {

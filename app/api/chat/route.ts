@@ -5,7 +5,7 @@ import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger';
 import { incMetric } from '@/lib/metrics';
 import { getTokenFromRequest, verifySession } from '@/lib/auth';
-import { getClientIp } from '@/lib/request';
+import { getClientIp, verifyCsrfHeader } from '@/lib/request';
 
 
 type CharacterEmotion =
@@ -381,6 +381,10 @@ Return ONLY a JSON object with this exact shape and nothing else:
 }
 
 export async function POST(request: Request) {
+  if (!verifyCsrfHeader(request)) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+  }
+
   // Verify session before processing
   const token = getTokenFromRequest(request);
   if (!token || !verifySession(token)) {

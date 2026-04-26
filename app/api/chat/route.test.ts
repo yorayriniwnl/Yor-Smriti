@@ -30,6 +30,7 @@ vi.mock('@/lib/rateLimiter', () => ({
 // ─── Mock: request (IP extraction) ───────────────────────────────────────────
 vi.mock('@/lib/request', () => ({
   getClientIp: vi.fn(() => '127.0.0.1'),
+  verifyCsrfHeader: vi.fn(() => true),
 }));
 
 // ─── Mock: metrics (fire-and-forget — we don't care about side effects) ───────
@@ -67,11 +68,13 @@ vi.stubGlobal('fetch', mockFetch);
 // ─── Import after mocks ───────────────────────────────────────────────────────
 import { getTokenFromRequest, verifySession } from '@/lib/auth';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
+import { verifyCsrfHeader } from '@/lib/request';
 import { POST } from './route';
 
 const mockGetToken = vi.mocked(getTokenFromRequest);
 const mockVerify = vi.mocked(verifySession);
 const mockRateLimit = vi.mocked(checkAndRecordRateLimit);
+const mockVerifyCsrf = vi.mocked(verifyCsrfHeader);
 
 function validSession(): SessionPayload {
   const now = Math.floor(Date.now() / 1000);
@@ -107,6 +110,7 @@ function openAISuccessResponse(reply: string, emotion = 'calm') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockVerifyCsrf.mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -114,6 +118,13 @@ afterEach(() => {
 });
 
 describe('POST /api/chat — authentication', () => {
+  it('returns 403 when CSRF proof is missing', async () => {
+    mockVerifyCsrf.mockReturnValue(false);
+
+    const res = await POST(makeRequest({ message: 'hello' }));
+    expect(res.status).toBe(403);
+  });
+
   it('returns 401 when no token is present', async () => {
     mockGetToken.mockReturnValue(null);
     mockVerify.mockReturnValue(null);
