@@ -13,12 +13,23 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // 'unsafe-eval' removed (Issue 15) — it defeats XSS protection entirely.
+      // Three.js and Framer Motion do not require it. If a future dependency
+      // breaks at runtime with CSP errors pointing to eval/new Function, identify
+      // the specific module and apply a nonce-based approach instead of re-adding
+      // the blanket directive.
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
-      "connect-src 'self' https://api.openai.com",
+      // connect-src: all third-party calls (OpenAI, Upstash, Resend) are
+      // server-side, so 'self' is correct today. If you add client-side
+      // fetches to external origins (analytics, CDN APIs) you MUST extend
+      // this directive or browsers will silently block those requests.
+      "connect-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
       "frame-src 'self'",
       "worker-src 'self' blob:",
       "media-src 'self' blob:",

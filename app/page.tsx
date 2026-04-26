@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect } from 'react';
+// Bug 43 fix: styled-jsx was never installed. The entire CSS block that
+// was inside <style jsx global> (1,100+ lines) is now in app/home.css,
+// imported here as a plain Next.js CSS import. No runtime dep needed.
+import './home.css';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { usePetalWorker } from '@/hooks/usePetalWorker';
 import CharacterPageOverlayClient from '@/components/character/CharacterPageOverlayClient';
 import { EXPERIENCE_CATALOG } from '@/lib/experienceCatalog';
+// Set NEXT_PUBLIC_SINCE_DATE=YYYY-MM-DD in .env.local to control the counter
+// without a code push. Falls back to the original date if unset.
+const SINCE_DATE = process.env.NEXT_PUBLIC_SINCE_DATE ?? '2025-05-18';
 
-const SINCE_DATE = '2025-05-18';
-
-function daysSince(dateStr: string): number {
+function daysSince(dateStr: string): number | null {
+  if (!dateStr || dateStr === 'YYYY-MM-DD') return null;
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return 0;
-  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  if (isNaN(d.getTime())) return null;
+  const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  return days < 0 ? null : days;
 }
 
 const REPLIES = [
@@ -33,13 +41,39 @@ function withSequenceParam(href: string): string {
 const EXPERIENCE_PAGE_DURATION_MS = 45000;
 const EXPERIENCE_PAGE_LOAD_TIMEOUT_MS = 15000;
 
-const EXPERIENCE_PAGE_SEQUENCE = EXPERIENCE_CATALOG.map((experience) => ({
-  href: withSequenceParam(experience.href),
-  title: experience.title,
-  duration: EXPERIENCE_PAGE_DURATION_MS,
-}));
+const EXPERIENCE_PAGE_SEQUENCE = EXPERIENCE_CATALOG
+  // Bug 64 fix: password-gated pages (skipInSequence: true) cannot play
+  // meaningfully inside a 45-second iframe slot — the recipient would see a
+  // lock screen for the entire duration. They are accessible from the hub
+  // but excluded from the automated flow.
+  .filter((experience) => !experience.skipInSequence)
+  .map((experience) => ({
+    href: withSequenceParam(experience.href),
+    title: experience.title,
+    duration: EXPERIENCE_PAGE_DURATION_MS,
+  }));
 
 export default function HomePage() {
+  // Fix #25: petal.worker.js is now wired up with full error handling via
+  // usePetalWorker. If the worker fails (e.g. Firefox CSP, old mobile WebViews),
+  // useFallbackPetals flips true and the existing DOM animation takes over.
+  const petalCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [useFallbackPetals, setUseFallbackPetals] = useState(false);
+  const handleWorkerError = useCallback(() => setUseFallbackPetals(true), []);
+  usePetalWorker({
+    canvasRef: petalCanvasRef,
+    mode: 'mixed',
+    onError: handleWorkerError,
+  });
+
+  // Bug 55 fix: chatHistoryRef was declared as a plain object literal inside
+  // the useEffect closure. That means in React 18 Strict Mode (double-invoke),
+  // each effect execution created a fresh { current: [] } — wiping chat history
+  // on remount. It also meant the ref was not stable across re-renders by
+  // design. Moving it here as a useRef gives it a stable identity for the
+  // component lifetime, matching the intent of the original code.
+  const chatHistoryRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+
   useEffect(() => {
     const cur = document.getElementById('cursor') as HTMLDivElement | null;
     const ring = document.getElementById('cursor-ring') as HTMLDivElement | null;
@@ -69,7 +103,6 @@ export default function HomePage() {
     let cursorRafId: number | undefined;
     let typingTimerId: number | undefined;
     let sequenceEnabled = true;
-    const chatHistoryRef = { current: [] as Array<{ role: 'user' | 'assistant'; content: string }> };
     let sequenceRunning = false;
     let sequenceToken = 0;
     let currentExperienceIndex = 0;
@@ -575,20 +608,29 @@ export default function HomePage() {
     cursorRafId = window.requestAnimationFrame(animCursor);
     document.addEventListener('mousemove', mouseMoveHandler);
 
-    for (let i = 0; i < 110; i++) {
-      const s = document.createElement('div');
-      s.className = 'star';
-      const sz = Math.random() * 2.2 + 0.4;
-      Object.assign(s.style, {
-        width: `${sz}px`,
-        height: `${sz}px`,
-        left: `${Math.random() * 100}vw`,
-        top: `${Math.random() * 100}vh`,
-        animationDuration: `${Math.random() * 3 + 2}s`,
-        animationDelay: `${Math.random() * 4}s`,
-        opacity: `${Math.random() * 0.6 + 0.1}`,
-      });
-      document.body.appendChild(s);
+    // Bug 54 fix: guard star injection against React 18 Strict Mode double-invoke.
+    // In development, useEffect fires twice on mount. Without this guard,
+    // 220 star nodes are appended and the cleanup only removes the second batch,
+    // leaving 110 orphaned .star elements permanently in the DOM.
+    // The data attribute acts as an idempotency key: if stars are already present
+    // from a prior invocation (same page lifecycle), we skip re-injection entirely.
+    if (!document.body.hasAttribute('data-stars-injected')) {
+      document.body.setAttribute('data-stars-injected', '1');
+      for (let i = 0; i < 110; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const sz = Math.random() * 2.2 + 0.4;
+        Object.assign(s.style, {
+          width: `${sz}px`,
+          height: `${sz}px`,
+          left: `${Math.random() * 100}vw`,
+          top: `${Math.random() * 100}vh`,
+          animationDuration: `${Math.random() * 3 + 2}s`,
+          animationDelay: `${Math.random() * 4}s`,
+          opacity: `${Math.random() * 0.6 + 0.1}`,
+        });
+        document.body.appendChild(s);
+      }
     }
 
     const PETAL_COLORS = ['#f75590', '#ff8cb8', '#ffc1db', '#e8447a', '#ffa0c8'];
@@ -606,8 +648,14 @@ export default function HomePage() {
       window.setTimeout(() => el.remove(), 20000);
     };
 
-    for (let i = 0; i < 18; i++) makePetal();
-    const petalInterval = window.setInterval(makePetal, 1200);
+    // DOM petals only run as fallback when the worker canvas failed or isn't
+    // supported — prevents duplicate rendering when the worker is active.
+    if (useFallbackPetals) {
+      for (let i = 0; i < 18; i++) makePetal();
+    }
+    const petalInterval = useFallbackPetals
+      ? window.setInterval(makePetal, 1200)
+      : (0 as unknown as ReturnType<typeof setInterval>);
 
     const heartCanvas = document.getElementById('heart-canvas') as HTMLCanvasElement | null;
     let disposeHeart: (() => void) | undefined;
@@ -922,8 +970,9 @@ export default function HomePage() {
       disposeHeart?.();
 
       document.querySelectorAll('.star, .petal, .float-heart, .sparkle').forEach((node) => node.remove());
+      document.body.removeAttribute('data-stars-injected');
     };
-  }, []);
+  }, [useFallbackPetals]);
 
   return (
     <>
@@ -931,7 +980,23 @@ export default function HomePage() {
       <div id="cursor" />
       <div id="cursor-ring" />
       <canvas id="bg-canvas" />
-      <div id="petals" />
+      {/* Petal worker canvas — worker draws here; hidden when falling back to DOM petals */}
+      <canvas
+        ref={petalCanvasRef}
+        id="petal-canvas"
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 1,
+          display: useFallbackPetals ? 'none' : 'block',
+        }}
+      />
+      {/* DOM petal container — only active when worker is unavailable */}
+      <div id="petals" style={{ display: useFallbackPetals ? 'block' : 'none' }} />
 
       <div id="app">
         <section className="scene active" id="scene-entry">
@@ -999,7 +1064,7 @@ export default function HomePage() {
               </div>
 
               <p className="since-line">
-                he has been working on this for {daysSince(SINCE_DATE)} days
+                he has been working on this for {daysSince(SINCE_DATE) ?? '...'} days
               </p>
             </div>
 
@@ -1118,13 +1183,30 @@ export default function HomePage() {
           </div>
 
           <div className="experience-runner-stage">
+            {/*
+              Bug 44 fix: iframe previously had NO src attribute on mount, so
+              with JS disabled or on error the recipient saw an empty box and
+              "Opening the next experience..." text that never resolved.
+
+              Fixes applied:
+              1. src="about:blank" — a valid, blank document so the iframe is
+                 never in an undefined state before JS sets the real src.
+              2. <noscript> fallback — renders a human-readable message instead
+                 of an invisible empty box when JS is unavailable.
+            */}
             <iframe
               id="experience-runner-frame"
               className="experience-runner-frame"
               title="Experience page sequence"
+              src="about:blank"
               loading="eager"
               tabIndex={-1}
             />
+            <noscript>
+              <div className="experience-runner-noscript">
+                <p>This experience requires JavaScript to be enabled.</p>
+              </div>
+            </noscript>
             <div className="experience-runner-loading" aria-hidden="true">
               Opening the next experience...
             </div>
@@ -1157,1117 +1239,6 @@ export default function HomePage() {
         </button>
       </nav>
 
-      <style jsx global>{`
-        :root {
-          --serif: var(--font-cormorant);
-          --body: var(--font-crimson);
-          --mono: var(--font-dm-mono);
-        }
-
-        *, *::before, *::after { box-sizing: border-box; }
-
-        html, body {
-          width: 100%;
-          min-height: 100%;
-          overflow-x: hidden;
-          overflow-y: auto;
-        }
-
-        body {
-          margin: 0;
-          overscroll-behavior-y: contain;
-        }
-        #cursor-ring {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid rgba(247,85,144,0.5);
-          pointer-events: none;
-          z-index: 9998;
-          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.2s;
-        }
-
-        #bg-canvas {
-          position: fixed;
-          inset: 0;
-          z-index: 0;
-          display: block;
-        }
-
-        #petals {
-          position: fixed;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          overflow: hidden;
-        }
-
-        .petal {
-          position: absolute;
-          top: -60px;
-          opacity: 0;
-          animation: fall linear infinite;
-          will-change: transform, opacity;
-        }
-
-        .petal svg { display: block; }
-
-        @keyframes fall {
-          0% { opacity: 0; transform: translateY(-60px) rotate(0deg) scale(0.7); }
-          5% { opacity: 0.85; }
-          90% { opacity: 0.6; }
-          100% { opacity: 0; transform: translateY(105vh) rotate(720deg) scale(1); }
-        }
-
-        .float-heart {
-          position: fixed;
-          pointer-events: none;
-          z-index: 2;
-          animation: heartRise 2.8s cubic-bezier(0.2,1,0.4,1) forwards;
-          font-size: 1.4rem;
-          filter: drop-shadow(0 0 8px rgba(247,85,144,0.8));
-        }
-
-        @keyframes heartRise {
-          0% { opacity: 1; transform: translateY(0) scale(1) rotate(-10deg); }
-          50% { opacity: 0.9; transform: translateY(-60px) scale(1.3) rotate(10deg); }
-          100% { opacity: 0; transform: translateY(-140px) scale(0.6) rotate(-5deg); }
-        }
-
-        .star {
-          position: fixed;
-          border-radius: 50%;
-          background: #fff;
-          pointer-events: none;
-          z-index: 0;
-          animation: twinkle ease-in-out infinite alternate;
-        }
-
-        @keyframes twinkle {
-          from { opacity: 0.15; transform: scale(0.8); }
-          to { opacity: 1; transform: scale(1.2); }
-        }
-
-        #app {
-          position: relative;
-          z-index: 10;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          width: 100%;
-        }
-
-        .scene {
-          display: none;
-          width: 100%;
-          min-height: 100vh;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-          padding: 2rem;
-          overflow-y: auto;
-        }
-
-        .scene.active { display: flex; }
-
-        .scene.slide-in {
-          animation: sceneSlideIn 0.45s cubic-bezier(0.16,1,0.3,1);
-        }
-
-        @keyframes sceneSlideIn {
-          from { opacity: 0; transform: translateX(34px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-
-        #scene-entry { gap: 2rem; justify-content: center; }
-
-        .eyebrow {
-          font-family: var(--mono);
-          font-size: 0.6rem;
-          letter-spacing: 0.3em;
-          text-transform: uppercase;
-          color: rgba(255,193,219,0.7);
-          animation: fadeUp 1s ease both;
-        }
-
-        .hero-title {
-          font-family: var(--serif);
-          font-size: clamp(3rem, 8vw, 5.5rem);
-          font-weight: 300;
-          font-style: italic;
-          line-height: 1.05;
-          text-align: center;
-          background: linear-gradient(135deg, #ffc1db 0%, #f75590 45%, #fff5f9 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: fadeUp 1s 0.2s ease both;
-          filter: drop-shadow(0 0 40px rgba(247,85,144,0.4));
-        }
-
-        .hero-sub {
-          font-family: var(--body);
-          font-size: clamp(1rem, 2.2vw, 1.25rem);
-          font-style: italic;
-          color: rgba(255,210,230,0.8);
-          text-align: center;
-          max-width: 42ch;
-          line-height: 1.7;
-          animation: fadeUp 1s 0.4s ease both;
-        }
-
-        #heart-canvas {
-          width: clamp(240px, 40vw, 420px);
-          height: clamp(240px, 40vw, 420px);
-          animation: fadeUp 1s 0.3s ease both;
-          filter: drop-shadow(0 0 60px rgba(247,85,144,0.5));
-        }
-
-        .glass-card {
-          background: linear-gradient(160deg, rgba(40,10,28,0.85) 0%, rgba(15,5,14,0.92) 100%);
-          border: 1px solid rgba(244,173,210,0.22);
-          border-radius: 2rem;
-          padding: 2.5rem 3rem;
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          box-shadow: 0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 20px 40px rgba(247,85,144,0.18);
-          text-align: center;
-          animation: fadeUp 1s 0.5s ease both;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .glass-card--entry {
-          max-width: 460px;
-          width: 100%;
-        }
-
-        .glass-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 30% 20%, rgba(247,85,144,0.08), transparent 60%);
-          pointer-events: none;
-        }
-
-        .entry-quote {
-          margin-bottom: 1.5rem;
-          font-family: var(--serif);
-          font-size: 1.1rem;
-          font-style: italic;
-          line-height: 1.7;
-          color: rgba(255,210,230,0.88);
-        }
-
-        .entry-actions {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: 0.75rem;
-        }
-
-        .mood-stack {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.4rem;
-        }
-
-        .mood-label {
-          font-family: var(--mono);
-          font-size: 0.55rem;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: rgba(255,193,219,0.4);
-        }
-
-        .btn-primary {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.6rem;
-          padding: 0.9rem 2.5rem;
-          border-radius: 999px;
-          border: none;
-          background: linear-gradient(90deg, rgba(255,133,179,0.95), rgba(247,85,144,0.95));
-          color: #fff;
-          font-family: var(--mono);
-          font-size: 0.72rem;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          cursor: none;
-          position: relative;
-          overflow: hidden;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          box-shadow: 0 12px 32px rgba(247,85,144,0.35);
-          animation: pulseBtn 3s ease-in-out infinite;
-        }
-
-        .btn-primary::before {
-          content: '';
-          position: absolute;
-          inset: -1px;
-          border-radius: 999px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent 50%);
-          pointer-events: none;
-        }
-
-        .btn-primary:hover {
-          transform: scale(1.05) translateY(-2px);
-          box-shadow: 0 20px 48px rgba(247,85,144,0.55);
-        }
-
-        .btn-primary:active { transform: scale(0.97); }
-
-        @keyframes pulseBtn {
-          0%, 100% { box-shadow: 0 12px 32px rgba(247,85,144,0.35); }
-          50% { box-shadow: 0 16px 48px rgba(247,85,144,0.65), 0 0 0 8px rgba(247,85,144,0.1); }
-        }
-
-        .btn-ghost {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.8rem 2rem;
-          border-radius: 999px;
-          border: 1px solid rgba(244,173,210,0.3);
-          background: transparent;
-          color: rgba(255,200,225,0.85);
-          font-family: var(--mono);
-          font-size: 0.68rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          cursor: none;
-          transition: border-color 0.2s, background 0.2s, transform 0.2s;
-        }
-
-        .btn-ghost:hover {
-          border-color: rgba(247,85,144,0.5);
-          background: rgba(247,85,144,0.08);
-          transform: translateY(-1px);
-        }
-
-        #scene-chat { gap: 0; padding: 0; }
-
-        .chat-wrap {
-          width: 100%;
-          max-width: 640px;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          padding: 1.5rem 1rem;
-        }
-
-        .chat-header {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding: 1rem 0 1.5rem;
-          border-bottom: 1px solid rgba(244,173,210,0.12);
-          margin-bottom: 1.5rem;
-        }
-
-        .avatar-ring {
-          position: relative;
-          width: 52px;
-          height: 52px;
-        }
-
-        .avatar-ring::before {
-          content: '';
-          position: absolute;
-          inset: -3px;
-          border-radius: 50%;
-          background: conic-gradient(from 0deg, rgba(247,85,144,0.9), rgba(255,193,219,0.7), rgba(200,100,160,0.8), rgba(247,85,144,0.9));
-          animation: spinRing 4s linear infinite;
-        }
-
-        @keyframes spinRing { to { transform: rotate(360deg); } }
-
-        .avatar-inner {
-          position: absolute;
-          inset: 2px;
-          border-radius: 50%;
-          background: linear-gradient(145deg, #4a1030, #1a0520);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.4rem;
-          z-index: 1;
-        }
-
-        .chat-name {
-          font-family: var(--serif);
-          font-size: 1.3rem;
-          color: rgba(255,236,246,0.97);
-        }
-
-        .chat-status { display: flex; align-items: center; gap: 0.4rem; }
-
-        .chat-presence {
-          font-family: var(--mono);
-          font-size: 0.58rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: rgba(255,193,219,0.6);
-        }
-
-        .btn-ghost--chat-back {
-          margin-left: auto;
-          padding: 0.5rem 1.1rem;
-          font-size: 0.6rem;
-        }
-
-        .status-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #5ef0a0;
-          box-shadow: 0 0 8px rgba(94,240,160,0.7);
-          animation: statusPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes statusPulse {
-          0%, 100% { box-shadow: 0 0 8px rgba(94,240,160,0.7); }
-          50% { box-shadow: 0 0 16px rgba(94,240,160,1); }
-        }
-
-        .messages {
-          flex: 1;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          padding-right: 0.25rem;
-        }
-
-        .msg {
-          display: flex;
-          gap: 0.7rem;
-          animation: msgSlide 0.4s cubic-bezier(0.16,1,0.3,1) both;
-        }
-
-        @keyframes msgSlide {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .msg.user { flex-direction: row-reverse; }
-
-        .msg-bubble {
-          max-width: 75%;
-          padding: 0.85rem 1.2rem;
-          border-radius: 1.5rem;
-          font-family: var(--body);
-          font-size: 1rem;
-          line-height: 1.6;
-          position: relative;
-        }
-
-        .msg.ayrin .msg-bubble {
-          background: linear-gradient(160deg, rgba(40,12,28,0.95), rgba(22,6,18,0.98));
-          border: 1px solid rgba(244,173,210,0.22);
-          border-bottom-left-radius: 0.4rem;
-          color: rgba(255,230,245,0.95);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 30px rgba(247,85,144,0.08);
-        }
-
-        .msg.user .msg-bubble {
-          background: linear-gradient(135deg, rgba(255,133,179,0.3), rgba(247,85,144,0.25));
-          border: 1px solid rgba(247,85,144,0.35);
-          border-bottom-right-radius: 0.4rem;
-          color: rgba(255,236,246,0.95);
-          box-shadow: 0 8px 24px rgba(247,85,144,0.15);
-        }
-
-        .emotion-tag {
-          display: inline-block;
-          font-family: var(--mono);
-          font-size: 0.55rem;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255,171,210,0.6);
-          margin-bottom: 0.35rem;
-        }
-
-        .since-line {
-          font-family: var(--mono);
-          font-size: 0.62rem;
-          letter-spacing: 0.18em;
-          color: rgba(255,193,219,0.45);
-          text-align: center;
-          margin: 1.4rem auto 0;
-          padding: 0 1rem;
-          text-transform: lowercase;
-        }
-
-        .typing-indicator {
-          display: flex;
-          gap: 4px;
-          align-items: center;
-          padding: 0.85rem 1.2rem;
-          background: linear-gradient(160deg, rgba(40,12,28,0.95), rgba(22,6,18,0.98));
-          border: 1px solid rgba(244,173,210,0.22);
-          border-radius: 1.5rem;
-          border-bottom-left-radius: 0.4rem;
-          width: fit-content;
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-
-        .typing-indicator.visible { opacity: 1; }
-
-        .typing-row { margin-top: 0.5rem; }
-
-        .typing-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: rgba(247,85,144,0.7);
-          animation: typingBounce 1.2s ease-in-out infinite;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: 0.15s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.3s; }
-
-        @keyframes typingBounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-          30% { transform: translateY(-5px); opacity: 1; }
-        }
-
-        .chat-input-row {
-          display: flex;
-          gap: 0.75rem;
-          align-items: flex-end;
-          padding-top: 1rem;
-          border-top: 1px solid rgba(244,173,210,0.12);
-          margin-top: 1rem;
-        }
-
-        .chat-input {
-          flex: 1;
-          padding: 0.85rem 1.2rem;
-          border-radius: 1.5rem;
-          border: 1px solid rgba(244,173,210,0.25);
-          background: rgba(30,8,24,0.9);
-          color: rgba(255,230,245,0.95);
-          font-family: var(--body);
-          font-size: 1rem;
-          outline: none;
-          resize: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          cursor: none;
-          height: 50px;
-          line-height: 1.5;
-        }
-
-        .chat-input:focus {
-          border-color: rgba(247,85,144,0.5);
-          box-shadow: 0 0 0 3px rgba(247,85,144,0.12), 0 8px 24px rgba(247,85,144,0.1);
-        }
-
-        .chat-input::placeholder { color: rgba(255,193,219,0.4); }
-
-        .send-btn {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          border: none;
-          background: linear-gradient(135deg, rgba(255,133,179,0.95), rgba(247,85,144,0.95));
-          color: #fff;
-          font-size: 1.1rem;
-          cursor: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform 0.2s, box-shadow 0.2s;
-          box-shadow: 0 8px 24px rgba(247,85,144,0.35);
-          flex-shrink: 0;
-        }
-
-        .send-btn:hover { transform: scale(1.1); box-shadow: 0 12px 32px rgba(247,85,144,0.55); }
-        .send-btn:active { transform: scale(0.93); }
-
-        #scene-hub {
-          gap: 2rem;
-          padding: 4rem 2rem;
-          min-height: 100vh;
-          align-items: center;
-        }
-
-        .scene-hub-eyebrow {
-          animation: fadeUp 0.6s ease both;
-        }
-
-        .scene-hub-title {
-          font-family: var(--serif);
-          font-size: clamp(2rem,5vw,3.2rem);
-          font-style: italic;
-          font-weight: 300;
-          text-align: center;
-          color: rgba(255,236,246,0.97);
-          animation: fadeUp 0.6s 0.1s ease both;
-        }
-
-        .hub-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-          gap: 1rem;
-          width: 100%;
-          max-width: 1100px;
-        }
-
-        .hub-card {
-          background: linear-gradient(160deg, rgba(38,10,28,0.92) 0%, rgba(16,5,14,0.96) 100%);
-          border: 1px solid rgba(244,173,210,0.2);
-          border-radius: 1.2rem;
-          padding: 1.35rem 1.45rem;
-          cursor: none;
-          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s, border-color 0.4s;
-          position: relative;
-          overflow: hidden;
-          box-shadow: 0 20px 48px rgba(0,0,0,0.5), 0 8px 20px rgba(247,85,144,0.1);
-          animation: fadeUp 0.6s ease both;
-        }
-
-        .hub-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 25% 25%, rgba(247,85,144,0.1), transparent 55%);
-          opacity: 0;
-          transition: opacity 0.4s;
-        }
-
-        .hub-card:hover {
-          transform: translateY(-8px) scale(1.02);
-          border-color: rgba(247,150,200,0.45);
-          box-shadow: 0 36px 72px rgba(0,0,0,0.65), 0 20px 40px rgba(247,85,144,0.28);
-        }
-
-        .hub-card.sequence-focus {
-          border-color: rgba(255,193,219,0.66);
-          box-shadow: 0 42px 86px rgba(0,0,0,0.7), 0 22px 52px rgba(247,85,144,0.45);
-          transform: translateY(-10px) scale(1.03);
-        }
-
-        .hub-card:hover::before { opacity: 1; }
-
-        .card-emoji {
-          font-size: 1.8rem;
-          margin-bottom: 0.8rem;
-          display: block;
-          filter: drop-shadow(0 0 12px rgba(247,85,144,0.5));
-          animation: floatEmoji 4s ease-in-out infinite;
-        }
-
-        @keyframes floatEmoji {
-          0%, 100% { transform: translateY(0) rotate(-3deg); }
-          50% { transform: translateY(-5px) rotate(3deg); }
-        }
-
-        .card-label {
-          font-family: var(--mono);
-          font-size: 0.55rem;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: rgba(255,171,210,0.65);
-          margin-bottom: 0.4rem;
-        }
-
-        .card-title {
-          font-family: var(--serif);
-          font-size: 1.35rem;
-          font-weight: 300;
-          color: rgba(255,236,246,0.97);
-          margin-bottom: 0.5rem;
-          line-height: 1.2;
-        }
-
-        .card-desc {
-          font-family: var(--body);
-          font-size: 0.86rem;
-          color: rgba(255,200,225,0.68);
-          line-height: 1.55;
-        }
-
-        .card-arrow {
-          margin-top: 1rem;
-          font-family: var(--mono);
-          font-size: 0.6rem;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(247,85,144,0.85);
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          transition: gap 0.2s;
-        }
-
-        .hub-card:hover .card-arrow { gap: 0.7rem; }
-
-        .story-section {
-          width: 100%;
-          max-width: 560px;
-          margin-top: 1rem;
-          position: relative;
-          border-radius: 1.8rem;
-          border: 1px solid rgba(244,173,210,0.12);
-          background: linear-gradient(160deg, rgba(24,8,18,0.28) 0%, rgba(10,4,10,0.12) 100%);
-          padding: 1.35rem 1.5rem 1.15rem;
-          transition: transform 0.65s cubic-bezier(0.16,1,0.3,1), border-color 0.65s, box-shadow 0.65s, background 0.65s;
-          overflow: hidden;
-        }
-
-        .story-section::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 18% 0%, rgba(247,85,144,0.18), transparent 55%);
-          opacity: 0;
-          transition: opacity 0.65s ease;
-          pointer-events: none;
-        }
-
-        .story-section.sequence-story-focus {
-          transform: translateY(-6px) scale(1.01);
-          border-color: rgba(255,193,219,0.35);
-          background: linear-gradient(160deg, rgba(40,12,30,0.72) 0%, rgba(16,6,14,0.45) 100%);
-          box-shadow: 0 28px 60px rgba(0,0,0,0.46), 0 14px 34px rgba(247,85,144,0.24);
-        }
-
-        .story-section.sequence-story-focus::before { opacity: 1; }
-
-        .story-label {
-          font-family: var(--mono);
-          font-size: 0.58rem;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: rgba(255,171,210,0.55);
-          margin-bottom: 1.2rem;
-          transition: transform 0.55s cubic-bezier(0.16,1,0.3,1), color 0.55s ease, letter-spacing 0.55s ease;
-          position: relative;
-          z-index: 1;
-        }
-
-        .story-label.sequence-story-label-focus {
-          color: rgba(255,216,233,0.82);
-          letter-spacing: 0.24em;
-          transform: translateX(8px);
-        }
-
-        .experience-runner {
-          position: fixed;
-          inset: 0;
-          z-index: 140;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 2rem;
-          background: rgba(4, 1, 8, 0.84);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1);
-        }
-
-        .experience-runner.active {
-          opacity: 1;
-          pointer-events: auto;
-        }
-
-        .experience-runner-shell {
-          width: min(94vw, 1180px);
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .experience-runner-head {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 1rem;
-        }
-
-        .experience-runner-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.8rem;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-
-        .experience-runner-eyebrow {
-          margin: 0 0 0.45rem;
-          font-family: var(--mono);
-          font-size: 0.58rem;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          color: rgba(255, 193, 219, 0.68);
-        }
-
-        .experience-runner-title {
-          margin: 0;
-          font-family: var(--serif);
-          font-size: clamp(1.8rem, 4vw, 3rem);
-          font-weight: 300;
-          font-style: italic;
-          color: rgba(255, 236, 246, 0.98);
-          line-height: 1.05;
-        }
-
-        .experience-runner-count {
-          margin: 0;
-          font-family: var(--mono);
-          font-size: 0.62rem;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: rgba(255, 193, 219, 0.62);
-        }
-
-        .experience-runner-skip {
-          padding-inline: 1.2rem;
-          background: rgba(255,255,255,0.04);
-        }
-
-        .experience-runner-next {
-          padding-inline: 1rem;
-          background: rgba(255,255,255,0.04);
-          transition: opacity 0.2s ease;
-        }
-
-        .experience-runner-error {
-          position: absolute;
-          inset: 0;
-          z-index: 4;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 1.2rem;
-          padding: 2rem;
-          background: radial-gradient(circle at 50% 40%, rgba(180,30,80,0.18), rgba(4,1,8,0.96) 70%);
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.4s ease;
-        }
-
-        .experience-runner.is-error .experience-runner-error {
-          opacity: 1;
-          pointer-events: auto;
-        }
-
-        .experience-runner.is-error .experience-runner-stage {
-          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(200,40,80,0.18);
-        }
-
-        .experience-runner-error-msg {
-          font-family: var(--mono);
-          font-size: 0.7rem;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: rgba(255, 160, 190, 0.75);
-          margin: 0;
-        }
-
-        .experience-runner-error [id$="-retry"],
-        .experience-runner-error [id$="-next"] {
-          padding-inline: 1.4rem;
-          background: rgba(255,255,255,0.05);
-        }
-
-        .experience-runner-stage {
-          position: relative;
-          width: 100%;
-          height: min(76vh, 760px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          border-radius: 2rem;
-          border: 1px solid rgba(244,173,210,0.24);
-          background: linear-gradient(160deg, rgba(18, 7, 16, 0.98), rgba(8, 3, 9, 1));
-          box-shadow: 0 42px 90px rgba(0,0,0,0.64), 0 18px 40px rgba(247,85,144,0.16);
-          transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), box-shadow 0.7s ease, opacity 0.45s ease;
-        }
-
-        .experience-runner-stage::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to bottom, rgba(4,1,8,0.18), transparent 18%, transparent 82%, rgba(4,1,8,0.34));
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        .experience-runner.active.is-loading .experience-runner-stage {
-          transform: scale(0.985);
-          box-shadow: 0 30px 72px rgba(0,0,0,0.58), 0 12px 28px rgba(247,85,144,0.12);
-        }
-
-        .experience-runner-frame {
-          width: 100%;
-          height: 100%;
-          flex: 1 1 auto;
-          border: 0;
-          background: #05030a;
-          pointer-events: none;
-        }
-
-        .experience-runner.active:not(.is-loading) .experience-runner-frame {
-          pointer-events: auto;
-        }
-
-        .experience-runner-loading {
-          position: absolute;
-          inset: 0;
-          z-index: 3;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 2rem;
-          text-align: center;
-          font-family: var(--mono);
-          font-size: 0.66rem;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: rgba(255, 212, 233, 0.78);
-          background: radial-gradient(circle at 50% 30%, rgba(247,85,144,0.12), rgba(4,1,8,0.94) 65%);
-          opacity: 0;
-          transition: opacity 0.45s ease;
-          pointer-events: none;
-        }
-
-        .experience-runner.active.is-loading .experience-runner-loading {
-          opacity: 1;
-        }
-
-        body.sequence-cinema .nav {
-          opacity: 0;
-          pointer-events: none;
-          transform: translateX(-50%) translateY(14px);
-        }
-
-        .nav {
-          position: fixed;
-          bottom: 1.2rem;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 100;
-          display: flex;
-          gap: 0.5rem;
-          background: rgba(10,4,9,0.85);
-          border: 1px solid rgba(244,173,210,0.2);
-          border-radius: 999px;
-          padding: 0.5rem 0.75rem;
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(247,85,144,0.15);
-          transition: opacity 0.35s ease, transform 0.35s ease;
-        }
-
-        .nav-btn {
-          padding: 0.5rem 1rem;
-          border-radius: 999px;
-          border: none;
-          background: transparent;
-          color: rgba(255,193,219,0.6);
-          font-family: var(--mono);
-          font-size: 0.58rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          cursor: none;
-          transition: background 0.2s, color 0.2s;
-        }
-
-        .nav-btn[data-scene-target].active,
-        .nav-btn[data-scene-target]:hover {
-          background: rgba(247,85,144,0.2);
-          color: rgba(255,193,219,0.95);
-        }
-
-        .nav-btn#nav-power {
-          border: 1px solid rgba(244,173,210,0.2);
-          background: rgba(255,255,255,0.03);
-          color: rgba(255,193,219,0.68);
-        }
-
-        .nav-btn#nav-power.active {
-          border-color: rgba(247,85,144,0.52);
-          background: rgba(247,85,144,0.22);
-          color: rgba(255,230,245,0.95);
-          box-shadow: 0 0 20px rgba(247,85,144,0.2);
-        }
-
-        .mood-bar {
-          width: 100%;
-          max-width: 320px;
-          height: 3px;
-          background: rgba(255,193,219,0.1);
-          border-radius: 999px;
-          overflow: hidden;
-          margin-top: 0.5rem;
-        }
-
-        .mood-fill {
-          height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(90deg, #f75590, #ffb3d4);
-          transition: width 1s cubic-bezier(0.16,1,0.3,1);
-          box-shadow: 0 0 8px rgba(247,85,144,0.6);
-        }
-
-        .mood-fill--initial { width: 62%; }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .timeline {
-          width: 100%;
-          max-width: 560px;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-          position: relative;
-          padding-left: 2rem;
-          z-index: 1;
-        }
-
-        .timeline::before {
-          content: '';
-          position: absolute;
-          left: 0.45rem;
-          top: 8px;
-          bottom: 8px;
-          width: 1px;
-          background: linear-gradient(to bottom, transparent, rgba(247,85,144,0.4) 10%, rgba(247,85,144,0.4) 90%, transparent);
-          transition: background 0.55s ease, opacity 0.55s ease;
-        }
-
-        .story-section.sequence-story-focus .timeline::before {
-          background: linear-gradient(to bottom, transparent, rgba(255,193,219,0.62) 14%, rgba(247,85,144,0.68) 50%, rgba(255,193,219,0.62) 86%, transparent);
-        }
-
-        .tl-item {
-          position: relative;
-          padding: 0 0 1.8rem 1.2rem;
-          animation: fadeUp 0.6s ease both;
-          transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.16,1,0.3,1), filter 0.45s ease;
-        }
-
-        .anim-delay-100 { animation-delay: 0.1s; }
-        .anim-delay-200 { animation-delay: 0.2s; }
-        .anim-delay-300 { animation-delay: 0.3s; }
-        .anim-delay-400 { animation-delay: 0.4s; }
-        .anim-delay-500 { animation-delay: 0.5s; }
-        .anim-delay-600 { animation-delay: 0.6s; }
-        .anim-delay-750 { animation-delay: 0.75s; }
-        .anim-delay-900 { animation-delay: 0.9s; }
-        .anim-delay-1050 { animation-delay: 1.05s; }
-        .anim-delay-1200 { animation-delay: 1.2s; }
-
-        .tl-item::before {
-          content: '';
-          position: absolute;
-          left: -1.62rem;
-          top: 6px;
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--rose);
-          box-shadow: 0 0 12px rgba(247,85,144,0.7);
-          border: 2px solid var(--night);
-          transition: transform 0.45s ease, box-shadow 0.45s ease, background 0.45s ease;
-        }
-
-        .tl-date {
-          font-family: var(--mono);
-          font-size: 0.6rem;
-          letter-spacing: 0.14em;
-          color: rgba(255,171,210,0.55);
-          text-transform: uppercase;
-          margin-bottom: 0.3rem;
-          transition: color 0.45s ease;
-        }
-
-        .tl-title {
-          font-family: var(--serif);
-          font-size: 1.15rem;
-          color: rgba(255,230,245,0.95);
-          margin-bottom: 0.25rem;
-          transition: color 0.45s ease;
-        }
-
-        .tl-excerpt {
-          font-family: var(--body);
-          font-size: 0.88rem;
-          color: rgba(255,200,225,0.65);
-          line-height: 1.55;
-          font-style: italic;
-          transition: color 0.45s ease;
-        }
-
-        .story-section.sequence-story-focus .tl-item {
-          opacity: 0.48;
-          filter: saturate(0.82);
-        }
-
-        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus {
-          opacity: 1;
-          filter: saturate(1);
-          transform: translateX(10px);
-        }
-
-        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus::before {
-          transform: scale(1.18);
-          background: rgba(255,196,221,0.98);
-          box-shadow: 0 0 0 6px rgba(247,85,144,0.12), 0 0 18px rgba(247,85,144,0.78);
-        }
-
-        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-date {
-          color: rgba(255,201,224,0.82);
-        }
-
-        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-title {
-          color: rgba(255,243,249,0.99);
-        }
-
-        .story-section.sequence-story-focus .tl-item.sequence-timeline-focus .tl-excerpt {
-          color: rgba(255,218,236,0.82);
-        }
-
-        .btn-ghost--scene-back { margin-top: 1rem; }
-
-        .sparkle {
-          position: fixed;
-          pointer-events: none;
-          z-index: 9997;
-          animation: sparkleOut 0.6s ease forwards;
-        }
-
-        @keyframes sparkleOut {
-          0% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(2.5); }
-        }
-
-        @media (max-width: 600px) {
-          .glass-card { padding: 2rem 1.5rem; border-radius: 1.5rem; }
-          .hub-grid { grid-template-columns: 1fr; }
-          .hero-title { font-size: clamp(2.5rem, 10vw, 3.5rem); }
-          .story-section { padding: 1.2rem 1.1rem 1rem; }
-          .experience-runner { padding: 1rem; }
-          .experience-runner-head { flex-direction: column; }
-          .experience-runner-actions { width: 100%; justify-content: space-between; }
-          .experience-runner-stage { height: min(64vh, 560px); border-radius: 1.4rem; }
-        }
-      `}</style>
     </>
   );
 }

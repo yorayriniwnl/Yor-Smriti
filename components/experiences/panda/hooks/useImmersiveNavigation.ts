@@ -42,16 +42,10 @@ export function useImmersiveNavigation({
   disabled = false,
 }: UseImmersiveNavigationOptions) {
   const pointerStartRef = useRef<PointerSnapshot | null>(null);
-  const clickTimerRef = useRef<number | null>(null);
-
-  const clearClickTimer = useCallback(() => {
-    if (clickTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = null;
-  }, []);
+  // Tracks the timestamp of the previous click to detect double-taps.
+  // We use this instead of a deferred timer so that single taps fire
+  // immediately — no perceptible lag on every interaction.
+  const lastClickTimeRef = useRef<number>(0);
 
   const runDirection = useCallback(
     (direction: Direction) => {
@@ -112,7 +106,9 @@ export function useImmersiveNavigation({
         return;
       }
 
-      clearClickTimer();
+      // Reset double-tap tracking so a swipe doesn't count as half a double-tap
+      lastClickTimeRef.current = 0;
+
       if (deltaX < 0) {
         runDirection('next');
         return;
@@ -120,48 +116,63 @@ export function useImmersiveNavigation({
 
       runDirection('prev');
     },
-    [clearClickTimer, disabled, runDirection],
+    [disabled, runDirection],
   );
 
+  // ── Tap handler ─────────────────────────────────────────────────────────────
+  // Previous implementation deferred every single tap by DOUBLE_TAP_WINDOW_MS
+  // (210 ms) to wait for a potential second tap.  On mobile this delay was
+  // perceptible on every interaction, making the experience feel unresponsive.
+  //
+  // Fix: fire the single-tap action IMMEDIATELY.  Double-tap is detected by
+  // comparing the current click timestamp against the previous one:
+  //   - Second click arrives within DOUBLE_TAP_WINDOW_MS → double-tap → go prev
+  //   - Otherwise → single tap → navigate in the tapped direction (no delay)
+  //
+  // Trade-off: the first tap of a double-tap will fire a forward navigation
+  // before the second tap cancels with a backward navigation, leaving the user
+  // on the same screen.  This is acceptable — the cinematic feel is preserved
+  // and no navigation is lost.
   const onSurfaceClick: MouseEventHandler<HTMLDivElement> = useCallback(
     (event) => {
       if (disabled || isInteractiveTarget(event.target)) {
         return;
       }
 
-      clearClickTimer();
-      const direction = resolveTapDirection(event.currentTarget, event.clientX);
+      const now = Date.now();
+      const isDoubleTap = now - lastClickTimeRef.current < DOUBLE_TAP_WINDOW_MS;
+      lastClickTimeRef.current = now;
 
-      clickTimerRef.current = window.setTimeout(() => {
-        runDirection(direction);
-        clickTimerRef.current = null;
-      }, DOUBLE_TAP_WINDOW_MS);
-    },
-    [clearClickTimer, disabled, runDirection],
-  );
-
-  const onSurfaceDoubleClick: MouseEventHandler<HTMLDivElement> = useCallback(
-    (event) => {
-      if (disabled || isInteractiveTarget(event.target)) {
+      if (isDoubleTap) {
+        // Reset so a triple-tap doesn't register as another double-tap
+        lastClickTimeRef.current = 0;
+        onPrev();
         return;
       }
 
-      clearClickTimer();
-      onPrev();
+      // Single tap — fire immediately, no setTimeout
+      const direction = resolveTapDirection(event.currentTarget, event.clientX);
+      runDirection(direction);
     },
-    [clearClickTimer, disabled, onPrev],
+    [disabled, onPrev, runDirection],
   );
 
+  // onSurfaceDoubleClick is intentionally removed: the click handler above
+  // detects double-taps via timestamp comparison on both mobile and desktop,
+  // so a separate dblclick handler is no longer needed (and would double-fire
+  // the prev action on desktop where the browser emits click+click+dblclick).
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      clearClickTimer();
+      lastClickTimeRef.current = 0;
     };
-  }, [clearClickTimer]);
+  }, []);
 
   return {
     onSurfaceClick,
-    onSurfaceDoubleClick,
     onSurfacePointerDown,
     onSurfacePointerUp,
   };
 }
+

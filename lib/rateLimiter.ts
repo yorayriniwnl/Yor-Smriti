@@ -1,34 +1,8 @@
 import { logger } from './logger';
 import type { Redis as RedisClient } from 'ioredis';
+import { getUpstashConfig, upstashCmd, upstashPipeline } from './upstash';
 
 export type RateLimitEntry = { count: number; first: number };
-
-// ─── Upstash Redis (serverless-compatible, recommended for Vercel) ──────────
-// Uses HTTP API — works in both Edge and Node.js runtimes.
-
-
-function getUpstashConfig(): { url: string; token: string } | null {
-  const url   = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (url && token) return { url, token };
-  return null;
-}
-
-async function upstashCommand(config: { url: string; token: string }, ...args: unknown[]): Promise<unknown> {
-  const res = await fetch(`${config.url}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`Upstash HTTP ${res.status}`);
-  const data = await res.json() as { result?: unknown; error?: string };
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
 
 // ─── Standard ioredis (self-hosted Redis, long-running processes) ──────────
 
@@ -37,6 +11,14 @@ declare global {
 }
 
 const store = new Map<string, RateLimitEntry>();
+
+/** Remove entries whose window has expired to prevent unbounded memory growth. */
+function evictExpired(windowMs: number): void {
+  const now = Date.now();
+  for (const [k, v] of store) {
+    if (now - v.first >= windowMs) store.delete(k);
+  }
+}
 
 let __redisClient: RedisClient | null = globalThis.__yor_redis_client ?? null;
 
@@ -72,21 +54,11 @@ export async function checkAndRecordRateLimit(key: string, limit = 5, windowMs =
       // Use a pipeline (array of commands in one HTTP request) so INCR and
       // EXPIRE are sent atomically — eliminates the race condition where a
       // process crash between the two calls leaves a key that never expires.
-      const results = await fetch(`${upstash.url}/pipeline`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${upstash.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify([
-          ['INCR', redisKey],
-          ['EXPIRE', redisKey, windowSec, 'NX'],  // NX: only set TTL on first write
-          ['TTL', redisKey],
-        ]),
-        cache: 'no-store',
-      });
-      if (!results.ok) throw new Error(`Upstash pipeline HTTP ${results.status}`);
-      const pipeline = await results.json() as Array<{ result?: unknown; error?: string }>;
+      const pipeline = await upstashPipeline(upstash, [
+        ['INCR', redisKey],
+        ['EXPIRE', redisKey, windowSec, 'NX'],  // NX: only set TTL on first write
+        ['TTL', redisKey],
+      ]);
 
       const count  = Number(pipeline[0]?.result ?? 0);
       const ttl    = Number(pipeline[2]?.result ?? windowSec);
@@ -117,6 +89,7 @@ export async function checkAndRecordRateLimit(key: string, limit = 5, windowMs =
   }
 
   // 3. In-memory fallback (single instance, resets on restart)
+  evictExpired(windowMs); // keep map bounded — remove stale entries before reading
   const now = Date.now();
   const entry = store.get(key);
   if (!entry || now - entry.first >= windowMs) {
@@ -135,7 +108,7 @@ export async function getRedisInfo(): Promise<{ available: boolean; pong?: strin
   const upstash = getUpstashConfig();
   if (upstash) {
     try {
-      const pong = await upstashCommand(upstash, 'PING') as string;
+      const pong = await upstashCmd(upstash, 'PING') as string;
       return { available: true, pong, type: 'upstash' };
     } catch {
       return { available: false, type: 'upstash' };

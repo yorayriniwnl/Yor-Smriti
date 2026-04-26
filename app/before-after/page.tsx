@@ -1,6 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { isPlaceholder } from '@/lib/content';
+import { ContentComingSoon } from '@/components/ui/ContentComingSoon';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -13,44 +15,46 @@ interface Row {
 const ROWS: Row[] = [
   {
     dimension: 'conflict',
-    // [Then: what was true about how you handled conflict]
-    then: '[Then: what was true about how you handled conflict — be specific and honest, not performatively self-critical]',
-    // [Now: what is actually different — a concrete change, not an aspiration]
-    now: '[Now: what is actually different — a concrete change, not an aspiration]',
+    then: 'I went silent. Days, sometimes. I called it needing space but I was avoiding the discomfort of being wrong out loud.',
+    now: 'I say it when I am wrong, in the moment, before the silence can set in. Even when it is uncomfortable. Especially then.',
   },
   {
     dimension: 'communication',
-    then: '[Then: how you communicated — what you held back, avoided, or handled badly]',
-    now: '[Now: what changed and how — be concrete]',
+    then: 'I held things back and then resented you for not knowing them. I expected you to understand what I never said.',
+    now: 'I say the thing. Not the safe version — the actual thing. Sentences that finish themselves.',
   },
   {
     dimension: 'presence',
-    then: '[Then: how present you actually were — not the version you told yourself, the real one]',
-    now: '[Now: how presence looks different for you now]',
+    then: 'I was there but not inside it. I was watching from a slight distance, managing how I appeared instead of actually being with you.',
+    now: 'I am in the room when I am in the room. I notice things. I do not have half of myself somewhere else.',
   },
   {
     dimension: 'priorities',
-    then: '[Then: what you prioritised, even unconsciously — what consistently came first]',
-    now: '[Now: what has genuinely shifted in what you prioritise]',
+    then: 'My comfort came first. My ego came first. I arranged things to protect myself and called it reasonable.',
+    now: 'The people I love come before the version of myself I am trying to protect. That ordering is clear now.',
   },
   {
     dimension: 'accountability',
-    then: '[Then: how you handled being wrong or called out — deflection, silence, defensiveness]',
-    now: '[Now: what accountability actually looks like for you now]',
+    then: 'I deflected. I reframed. I turned your upset into a conversation about context until you were explaining why you were wrong to be hurt.',
+    now: 'I receive it. Fully. Without building a defence. What you feel is not something I negotiate with.',
   },
   {
     dimension: 'showing up',
-    then: '[Then: what "showing up" actually looked like — the gap between intention and action]',
-    now: '[Now: what showing up looks like now — specific, not aspirational]',
+    then: 'I intended to. Consistently. The intention was real. The follow-through was inconsistent in the exact moments it counted most.',
+    now: 'Showing up is specific and small and daily. It is not a gesture. It is a habit I am building.',
   },
   {
     dimension: 'self-awareness',
-    then: '[Then: what you didn\'t see about yourself — what you were blind to]',
-    now: '[Now: what you see clearly that you didn\'t before]',
+    then: 'I thought I was self-aware because I could name my flaws. Naming them and changing nothing is not self-awareness. It is just vocabulary.',
+    now: 'I see the gap between what I say I value and what I actually do. Closing it is the work. I am doing the work.',
   },
 ];
 
 export default function BeforeAfterPage() {
+  if (ROWS.every(item => isPlaceholder(item.then))) {
+    return <ContentComingSoon title="before & after" />;
+  }
+
   return (
     <main
       className="relative flex min-h-dvh w-dvw flex-col items-center justify-center overflow-hidden px-5 py-20"

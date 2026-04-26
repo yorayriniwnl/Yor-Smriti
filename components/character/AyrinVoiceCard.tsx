@@ -12,6 +12,10 @@ interface Props {
   recognitionSupported?: boolean;
   speechOutputSupported?: boolean;
   onVoiceButtonClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  // Called when the user explicitly dismisses the error card. This resets phase
+  // to 'idle' so the component is not permanently stuck when recognition is
+  // unsupported or fetch errors repeat.
+  onDismissError: () => void;
   voiceButtonLabel: string;
   voiceButtonDisabled: boolean;
   voiceCardTone: string;
@@ -26,10 +30,13 @@ export function AyrinVoiceCard({
   recognitionSupported = true,
   speechOutputSupported = true,
   onVoiceButtonClick,
+  onDismissError,
   voiceButtonLabel,
   voiceButtonDisabled,
   voiceCardTone,
 }: Props) {
+  const isError = voicePhase === 'error';
+
   return (
     <div
       style={{
@@ -47,6 +54,7 @@ export function AyrinVoiceCard({
     >
       <div
         aria-live="polite"
+        role={isError ? 'alert' : undefined}
         style={{
           padding: '10px 12px',
           borderRadius: '16px',
@@ -76,23 +84,49 @@ export function AyrinVoiceCard({
         ) : null}
       </div>
 
-      <RippleButton
-        type="button"
-        onClick={onVoiceButtonClick}
-        disabled={voiceButtonDisabled}
-        aria-pressed={voicePhase === 'listening' || voicePhase === 'speaking'}
-        className={
-          `px-4 py-2 rounded-full text-xs uppercase tracking-[0.18em] ${
-            voicePhase === 'listening'
-              ? 'bg-[linear-gradient(135deg,#2563eb,#38bdf8)]'
-              : voicePhase === 'speaking'
-              ? 'bg-[linear-gradient(135deg,#7c3aed,#ec4899)]'
-              : 'bg-[linear-gradient(135deg,#1f1630,#4b2f60)]'
-          }`
-        }
-      >
-        {voiceButtonLabel}
-      </RippleButton>
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        {/* Dismiss button — only shown in error phase so the user is never stuck.
+            Covers two cases: (1) recognition unsupported (clicking Talk just re-fires
+            the error), and (2) repeated fetch failures with no recovery path. */}
+        {isError && (
+          <button
+            type="button"
+            onClick={onDismissError}
+            aria-label="Dismiss error"
+            style={{
+              padding: '6px 12px',
+              borderRadius: '999px',
+              fontSize: '10px',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'rgba(244, 237, 231, 0.78)',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.16)',
+              cursor: 'pointer',
+            }}
+          >
+            Dismiss
+          </button>
+        )}
+
+        <RippleButton
+          type="button"
+          onClick={onVoiceButtonClick}
+          disabled={voiceButtonDisabled}
+          aria-pressed={voicePhase === 'listening' || voicePhase === 'speaking'}
+          className={
+            `px-4 py-2 rounded-full text-xs uppercase tracking-[0.18em] ${
+              voicePhase === 'listening'
+                ? 'bg-[linear-gradient(135deg,#2563eb,#38bdf8)]'
+                : voicePhase === 'speaking'
+                ? 'bg-[linear-gradient(135deg,#7c3aed,#ec4899)]'
+                : 'bg-[linear-gradient(135deg,#1f1630,#4b2f60)]'
+            }`
+          }
+        >
+          {voiceButtonLabel}
+        </RippleButton>
+      </div>
     </div>
   );
 }

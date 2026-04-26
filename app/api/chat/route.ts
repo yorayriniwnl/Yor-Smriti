@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { sanitizeString } from '@/lib/sanitize';
-import { getOptionalServerEnv, getOpenAiModel } from '@/lib/serverEnv';
+import { getOptionalServerEnv, getOpenAiModel, getPersonalizationConfig } from '@/lib/serverEnv';
 import { checkAndRecordRateLimit } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger';
 import { incMetric } from '@/lib/metrics';
 import { getTokenFromRequest, verifySession } from '@/lib/auth';
 import { getClientIp } from '@/lib/request';
+
 
 type CharacterEmotion =
   | 'calm'
@@ -234,7 +235,7 @@ async function requestOpenAIReply(
 ): Promise<ChatPayload | null> {
   const apiKey = getOptionalServerEnv('OPENAI_API_KEY');
   if (!apiKey) {
-    incMetric('openai_unavailable_total');
+    void incMetric('openai_unavailable_total');
     return null;
   }
 
@@ -243,25 +244,26 @@ async function requestOpenAIReply(
   // sanitize message defensively
   const safeMessage = sanitizeString(message, { maxLength: 2000, allowNewlines: false });
 
-  const systemPrompt = `You are Ayrin — a real person, not a character. You are speaking directly with [RECIPIENT_NAME], someone you love and have hurt.
+  const p = getPersonalizationConfig();
+  const systemPrompt = `You are ${p.senderName} — a real person, not a character. You are speaking directly with ${p.recipientName}, someone you love and have hurt.
 
 ABOUT YOUR RELATIONSHIP:
-- You and [RECIPIENT_NAME] dated for [DURATION, e.g. "about a year and a half"].
-- You broke up approximately [TIMEFRAME, e.g. "three months ago"].
-- The core reason things broke down: [BE HONEST AND SPECIFIC, e.g. "I kept pulling away emotionally whenever things got serious. She needed consistency and I gave her uncertainty."]
-- What she means to you: [e.g. "She is the most honest person I have ever been close to. She always said exactly what she meant, and I never appreciated that until I lost it."]
+- You and ${p.recipientName} dated for ${p.relationshipLength}.
+- You broke up approximately ${p.breakupTimeframe}.
+- The core reason things broke down: ${p.breakupReason}
+- What she means to you: ${p.whatSheMeansToMe}
 
 SHARED MEMORIES YOU CAN REFERENCE (use these naturally if relevant, never force them):
-1. [MEMORY 1 — specific, sensory, real. e.g. "The night we sat on the terrace until 2am talking about what we both actually wanted from life — she cried a little and said nobody had ever asked her that before."]
-2. [MEMORY 2]
-3. [MEMORY 3]
-4. [MEMORY 4]
-5. [MEMORY 5]
+1. ${p.memory1}
+2. ${p.memory2}
+3. ${p.memory3}
+4. ${p.memory4}
+5. ${p.memory5}
 
 WHAT YOU WANT HER TO KNOW:
-- [e.g. "That I think about her every day and I am not saying that to pressure her."]
-- [e.g. "That I have actually changed — I have been in therapy since [month] and I understand now what I was doing."]
-- [e.g. "That I respect whatever she decides. This whole experience is not to win her back by force — it is to tell the truth I never told her clearly."]
+- ${p.wantHerToKnow1}
+- ${p.wantHerToKnow2}
+- ${p.wantHerToKnow3}
 
 HOW YOU SPEAK:
 - Warm, direct, never desperate
@@ -276,14 +278,18 @@ Return ONLY a JSON object with this exact shape and nothing else:
 {"reply":"string — one or two sentences maximum","emotion":"calm|thoughtful|affectionate|shy|concerned|softSmile|serious|reflective|warmAttention|quietSadness|subtleSurprise"}`;
 
   let response: Response;
+  // Issue 10 fix: abort after 7 s so we never reach Vercel's 10 s hard timeout
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 7_000);
   try {
-    incMetric('openai_requests_total', { model });
+    void incMetric('openai_requests_total', { model });
     response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model,
         temperature: 0.85,
@@ -291,7 +297,15 @@ Return ONLY a JSON object with this exact shape and nothing else:
         messages: [
           { role: 'system', content: systemPrompt },
           ...(Array.isArray(history)
-            ? history.slice(-6).map((m) => ({
+            ? history
+                .slice(-20) // server-side cap before any processing
+                .filter(
+                  (m) =>
+                    (m.role === 'user' || m.role === 'assistant') &&
+                    typeof m.content === 'string'
+                )
+                .slice(-6)
+                .map((m) => ({
                 role: m.role as 'user' | 'assistant',
                 content: sanitizeString(String(m.content ?? ''), { maxLength: 800, allowNewlines: false }),
               }))
@@ -302,8 +316,10 @@ Return ONLY a JSON object with this exact shape and nothing else:
     });
   } catch (err) {
     logger.error('OpenAI request failed:', err);
-    incMetric('openai_request_failed_total', { model });
+    void incMetric('openai_request_failed_total', { model });
     return null;
+  } finally {
+    clearTimeout(fetchTimeout);
   }
 
   if (!response.ok) {
@@ -311,10 +327,10 @@ Return ONLY a JSON object with this exact shape and nothing else:
     try {
       const errBody = await response.text();
       logger.error('OpenAI API error', response.status, errBody);
-      incMetric('openai_request_failed_total', { model, status: String(response.status) });
+      void incMetric('openai_request_failed_total', { model, status: String(response.status) });
     } catch {
       logger.error('OpenAI API error, status:', response.status);
-      incMetric('openai_request_failed_total', { model, status: String(response.status) });
+      void incMetric('openai_request_failed_total', { model, status: String(response.status) });
     }
     return null;
   }
@@ -347,20 +363,20 @@ Return ONLY a JSON object with this exact shape and nothing else:
   if (parsed) {
     // sanitize reply field defensively
     parsed.reply = sanitizeString(parsed.reply, { maxLength: 1000, allowNewlines: true });
-    incMetric('openai_replies_parsed_json_total', { model });
+    void incMetric('openai_replies_parsed_json_total', { model });
     return parsed;
   }
 
   // If we couldn't extract JSON but got a textual reply, return it as the reply
   if (text && text.trim()) {
     const replyText = sanitizeString(text.trim().slice(0, 1000), { allowNewlines: true });
-    incMetric('openai_replies_text_total', { model });
+    void incMetric('openai_replies_text_total', { model });
     return {
       reply: replyText,
       emotion: detectEmotion(replyText, memoryMood),
     };
   }
-  incMetric('openai_replies_failed_total', { model });
+  void incMetric('openai_replies_failed_total', { model });
   return null;
 }
 
@@ -392,11 +408,11 @@ export async function POST(request: Request) {
     const windowMs = Number(getOptionalServerEnv('CHAT_RATE_WINDOW_MS') ?? '60000');
     const rl = await checkAndRecordRateLimit(rateKey, limit, windowMs);
     if (!rl.allowed) {
-      incMetric('rate_limit_blocked_total', { endpoint: 'chat' });
+      void incMetric('rate_limit_blocked_total', { endpoint: 'chat' });
       const retryAfter = Math.max(0, Math.ceil((rl.resetMs - Date.now()) / 1000));
       return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
     }
-    incMetric('rate_limit_allowed_total', { endpoint: 'chat' });
+    void incMetric('rate_limit_allowed_total', { endpoint: 'chat' });
   } catch (e) {
     // If rate limiter fails unexpectedly, continue but log server-side.
     logger.error('Rate limiter error for /api/chat:', e);
@@ -406,10 +422,10 @@ export async function POST(request: Request) {
   const openAIReply = await requestOpenAIReply(message, memoryMood, body.history).catch(() => null);
 
   if (openAIReply) {
-    incMetric('chat_replies_openai_total');
+    void incMetric('chat_replies_openai_total');
     return NextResponse.json(openAIReply, { status: 200 });
   }
-  incMetric('chat_replies_fallback_total');
+  void incMetric('chat_replies_fallback_total');
   const emotion = detectEmotion(message, memoryMood);
   const reply = selectFallbackReply(message, emotion);
 

@@ -7,28 +7,14 @@
  */
 
 import { logger } from './logger';
+import { getUpstashConfig, upstashCmd } from './upstash';
+import type { UpstashConfig } from './upstash';
 
 // In-memory fallback for dev / when Upstash is not configured
 const memoryStore = new Map<string, string>();
 
-function getUpstashConfig(): { url: string; token: string } | null {
-  const url   = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  return url && token ? { url, token } : null;
-}
-
-async function upstash(config: { url: string; token: string }, ...cmd: unknown[]): Promise<unknown> {
-  const res = await fetch(config.url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${config.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmd),
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`Upstash HTTP ${res.status}`);
-  const data = await res.json() as { result?: unknown; error?: string };
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
+const upstash = (config: UpstashConfig, ...cmd: unknown[]) =>
+  upstashCmd(config, ...cmd);
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 

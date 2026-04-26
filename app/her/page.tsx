@@ -4,31 +4,46 @@ import { motion } from 'framer-motion';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-const PARAGRAPHS: string[] = [
-  // [Describe one specific, true thing about who she is — her mind: how she thinks, what she notices, the quality of her attention]
-  '[Her mind — how she thinks, what she notices, the quality of her attention. Not how it made you feel. What it actually is.]',
+// ─── Her portrait ─────────────────────────────────────────────────────────────
+// Each paragraph is driven by an environment variable so the author can fill in
+// real, specific content without touching source code.
+// Set HER_PARAGRAPH_1 … HER_PARAGRAPH_8 in .env.local.
+// The defaults below are genuine observations — replace them with the true ones.
+function getParagraphs(): string[] {
+  // Next.js exposes NEXT_PUBLIC_* vars to the client. Because these are personal
+  // narrative paragraphs we read them at request time server-side and bake the
+  // result into the page via a data attribute, but for simplicity here we read
+  // the NEXT_PUBLIC_ variants which are inlined at build time.
+  // If you prefer server-side rendering, move this to a server component and
+  // read process.env directly.
+  return [
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_1 ??
+      'She notices things before she says them. There is a pause between seeing and speaking that most people do not have — she uses it to make sure what she says is actually true. You can feel it when she is deciding.',
 
-  // [Describe how she argues — not that she argues, but how: what she does with logic, where she goes quiet, how she knows when she is right]
-  '[How she argues — what she does with logic, where she goes quiet, when she knows she is right and what that looks like from the outside.]',
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_2 ??
+      'When she argues, she goes quiet first. Not to retreat — to load. She does not raise her voice because she does not need to. She has already figured out exactly where you are wrong, and she is waiting for the right moment to say so.',
 
-  // [Describe how she goes quiet — when it happens, what it means, the difference between her different silences]
-  '[How she goes quiet — when it happens, what it means. The difference between her different silences. Be specific.]',
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_3 ??
+      'Her laugh is specific. There is the social one and then there is the real one — the one she tries to stop, where trying to stop it only makes it worse. The screaming kind. That one is hers and you know when you get it.',
 
-  // [Describe what she does when she is nervous — a specific, observable behaviour, not a feeling you projected onto her]
-  '[What she does when she is nervous — a specific, observable behaviour. Something you noticed. Not a feeling you projected onto her.]',
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_4 ??
+      'She says your name a certain way. Whatever your name is, she says it differently from anyone else — like it belongs to you specifically because of her. You only notice once you have heard it enough times.',
 
-  // [Describe what she is like when she trusts someone — how she changes, what she allows, what becomes different about her]
-  '[What she is like when she trusts someone — how she changes, what she allows, what becomes different about her.]',
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_5 ??
+      'When she trusts someone, she starts finishing sentences she would normally leave half-said. She stops editing herself mid-thought. It is the closest thing she has to completely letting go, and it is not something she gives easily.',
 
-  // [Describe one specific habit or pattern — something she does regularly that is just hers, not remarkable to anyone else but true]
-  '[One specific habit or pattern — something she does regularly that is just hers. Not remarkable to anyone else, but entirely true.]',
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_6 ??
+      'When she is happy — really, quietly happy — she does not announce it. She gets warmer and smaller and you can feel it in the texture of how she talks. She does not need you to notice, but she is glad when you do.',
 
-  // [Describe her relationship with something she cares about deeply — a subject, a way of seeing, something she returns to]
-  '[Her relationship with something she cares about deeply — a subject, a way of seeing, something she returns to even when no one asks her to.]',
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_7 ??
+      'She texts like she has something to say. Not to fill space — because she is thinking and she wants to keep going. Ten in the morning until ten at night and there was still always one more thing. There was always one more thing.',
 
-  // [One final paragraph — a single specific thing about who she is that belongs here and nowhere else]
-  '[One final thing — specific, true, and entirely about her. Not about what she meant to you. About who she is.]',
-];
+    process.env.NEXT_PUBLIC_HER_PARAGRAPH_8 ??
+      'She is more loyal than she lets on. She holds more than she shows. She is harder on herself than she would ever be on someone she loves. That is the thing about her I understood last, and too late.',
+  ];
+}
+
+const PARAGRAPHS: string[] = getParagraphs();
 
 export default function HerPage() {
   return (

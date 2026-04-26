@@ -5,7 +5,7 @@
 /* ─── CSS Custom Properties ──────────────────────────────────────────── */
 :root {
   /* Palette */
-  --bg:              #fdf8f0;
+  --bg:              #05030a; /* dark base — all pages use dark radial-gradient backgrounds */
   --bg-lifted:       #fff8fb;
   --bg-surface:      #fff8fb;
 
@@ -48,7 +48,7 @@ html {
 }
 
 body {
-  background-color: var(--bg);
+  background-color: #05030a; /* matches all page dark backgrounds — prevents cream flash on load */
   color: var(--text-primary);
   font-family: var(--font-crimson);
   font-size: 1.1rem;
@@ -56,7 +56,9 @@ body {
   overflow: hidden;
   height: 100dvh;
   width: 100dvw;
-  position: fixed;
+  /* position: fixed removed — it caused scroll-restoration failure on
+     navigation and broke browser back-gesture on iOS. Pages that need
+     a fixed viewport use their own overflow:hidden containers. */
 }
 
 button,

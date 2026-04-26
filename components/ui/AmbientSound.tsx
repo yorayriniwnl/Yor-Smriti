@@ -34,15 +34,11 @@ interface SoundNodes {
   oscillators: OscillatorNode[];
 }
 
-// A cluster of soft sine tones — a low A minor pad
-const CHORD_FREQS = [
-  110,       // A2
-  165,       // E3
-  220,       // A3
-  261.63,    // C4
-  329.63,    // E4
-  440,       // A4
-];
+// Bug 49 fix: frequencies are now imported from lib/ambientChord.ts so that
+// AmbientSound and useAudioEngine share a single definition. Having both
+// components define the same frequencies independently caused pages that
+// mounted both to stack two identical pads and double the volume.
+import { AMBIENT_CHORD_FREQS as CHORD_FREQS } from '@/lib/ambientChord';
 
 function startAmbient(): SoundNodes {
   const ctx = new AudioContext();
@@ -88,10 +84,23 @@ function startAmbient(): SoundNodes {
 export function AmbientSound() {
   const [playing, setPlaying] = useState(false);
   const [supported, setSupported] = useState(true);
+  // Bug 59 fix: AmbientSound builds its own oscillator graph independently from
+  // useAudioEngine (used by ExperienceController). Pages like /for-her-alone,
+  // /one-day, /the-good, and /words-she-said mount <AmbientSound /> and are also
+  // embedded in the sequence runner iframe, which runs useAudioEngine in the
+  // parent. When both mount, two AudioContexts drive the same chord at the same
+  // time — doubled amplitude, no coordination. Fix: detect if we are inside an
+  // iframe and skip rendering entirely; the parent controller owns audio in that
+  // context. AmbientSound is only active for direct page navigation.
+  const [isIframe, setIsIframe] = useState(false);
   const nodesRef = useRef<SoundNodes | null>(null);
 
   useEffect(() => {
-    if (typeof AudioContext === 'undefined' && typeof (window as Window & { webkitAudioContext?: unknown }).webkitAudioContext === 'undefined') {
+    setIsIframe(window.self !== window.top);
+    if (
+      typeof AudioContext === 'undefined' &&
+      typeof (window as Window & { webkitAudioContext?: unknown }).webkitAudioContext === 'undefined'
+    ) {
       setSupported(false);
     }
   }, []);
@@ -142,6 +151,9 @@ export function AmbientSound() {
   }, []);
 
   if (!supported) return null;
+  // When embedded in the sequence runner iframe, AmbientSound defers audio
+  // entirely to the parent ExperienceController (Bug 59 fix).
+  if (isIframe) return null;
 
   return (
     <motion.button

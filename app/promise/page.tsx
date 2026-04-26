@@ -7,6 +7,8 @@ import CharacterPageOverlayClient from '@/components/character/CharacterPageOver
 import { useSequenceMode } from '@/hooks/useSequenceMode';
 import { useEventTracking } from '@/hooks/useEventTracking';
 import SequenceErrorBoundary from '@/app/_components/SequenceErrorBoundary';
+import { isPlaceholder } from '@/lib/content';
+import { ContentComingSoon } from '@/components/ui/ContentComingSoon';
 
 function useIsIframe(): boolean {
   const [isIframe, setIsIframe] = useState(false);
@@ -26,48 +28,47 @@ interface Promise {
   weight: 'light' | 'medium' | 'heavy';
 }
 
-// ─── Replace with your real promises ─────────────────────────────────────────
 const PROMISES: Promise[] = [
   {
     id: 'p1',
     number: 1,
-    title: '[SHORT TITLE — e.g. "I will not disappear."]',
-    body: '[SPECIFIC BODY — not a general statement, but what this actually means in your case. e.g. "Not when things get uncomfortable. Not when I do not know what to say. I used to go quiet for days — that was not giving you space, that was avoiding you. I will not do that again."]',
+    title: 'I will not disappear.',
+    body: 'Not when things get hard. Not when I do not know what to say. Not when I am scared. I used to go silent for days — I told myself it was space. It was not. It was avoidance, and it left you alone in something I should have been in with you. I will not do that again.',
     weight: 'heavy',
   },
   {
     id: 'p2',
     number: 2,
-    title: '[SHORT TITLE]',
-    body: '[SPECIFIC BODY — tied to something real that happened between you]',
+    title: 'I will choose you over my pride.',
+    body: 'There were moments I knew I was wrong and I stayed quiet rather than say it, because saying it felt like losing something. The thing I was protecting was nothing. What I was losing was you. I understand the difference now. I will say it when I am wrong.',
     weight: 'medium',
   },
   {
     id: 'p3',
     number: 3,
-    title: '[SHORT TITLE]',
-    body: '[SPECIFIC BODY]',
+    title: 'I will listen before I reply.',
+    body: 'I used to hear what you were saying and immediately start forming my response, which meant I was never actually inside what you were telling me. I was just waiting for my turn. You deserve to be fully received. I will not be in a hurry to respond.',
     weight: 'medium',
   },
   {
     id: 'p4',
     number: 4,
-    title: '[SHORT TITLE — e.g. "I will choose you intentionally."]',
-    body: '[SPECIFIC BODY — e.g. "Not out of habit, not because it is easier than being alone. Because I want to. Every day as a decision."]',
+    title: 'I will choose you intentionally.',
+    body: 'Not out of comfort. Not because being with you is easier than being alone. Because I want to — as a decision, made clearly, every single day. You are not a default. You never were.',
     weight: 'heavy',
   },
   {
     id: 'p5',
     number: 5,
-    title: '[SHORT TITLE — e.g. "I will earn trust back, not ask for it."]',
-    body: '[SPECIFIC BODY — e.g. "I know I cannot say \'trust me\' and have that mean anything right now. I am not asking you to. I am saying I understand that trust is rebuilt through consistency over months, not through a conversation."]',
+    title: 'I will earn trust back, not ask for it.',
+    body: 'I know I cannot say "trust me" and have it mean anything right now. I am not asking you to. What I am saying is that I understand trust is rebuilt through months of consistency — not through a conversation or a letter or a grand gesture. I will be consistent.',
     weight: 'heavy',
   },
   {
     id: 'p6',
     number: 6,
-    title: '[SHORT TITLE — lighter tone, something personal]',
-    body: '[SPECIFIC BODY — can reference a specific small habit or gesture you know matters to her]',
+    title: 'I will remember what matters to you.',
+    body: 'Not just the big things. The small ones — the ones you mentioned once, half in passing, that I should have been paying closer attention to. I will pay attention.',
     weight: 'light',
   },
 ];
@@ -618,6 +619,9 @@ function PromisePageContent() {
 }
 
 export default function PromisePage() {
+  if (PROMISES.every(p => isPlaceholder(p.title))) {
+    return <ContentComingSoon title="promises" />;
+  }
   return (
     <SequenceErrorBoundary>
       <Suspense fallback={null}>

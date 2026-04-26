@@ -6,14 +6,27 @@ import { NextResponse } from 'next/server';
 export const SESSION_COOKIE = 'yor_session';
 const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7; // 7 days
 
+// ─── Random dev secret (generated once per process) ──────────────────────────
+// Only used when AUTH_SECRET is unset in non-production environments.
+const _devSecret: string = (() => {
+  const secret = crypto.randomBytes(48).toString('hex');
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      '[auth] WARNING: AUTH_SECRET is not set. A random secret has been generated for this ' +
+      'process. Sessions will be invalidated on every restart. Set AUTH_SECRET in .env.local ' +
+      'to persist sessions across restarts.'
+    );
+  }
+  return secret;
+})();
+
 function getSecret(): string {
   const s = process.env.AUTH_SECRET;
   if (!s || s.length < 32) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('AUTH_SECRET must be set to a random string ≥32 chars in production.');
     }
-    // Dev fallback — deterministic, never used in prod
-    return 'dev-secret-yor-smriti-change-in-production-32';
+    return _devSecret;
   }
   return s;
 }
@@ -85,13 +98,19 @@ export function getTokenFromRequest(request: Request): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// ─── requireSession — throws 401 JSON response if unauthenticated ──────────
-
+// ─── requireSession — throws a plain Error if unauthenticated ──────────────
+/**
+ * Verifies the session cookie on `request`.
+ * Returns the validated SessionPayload on success.
+ * Throws a plain `Error` (with a human-readable message) if no valid session
+ * is found — callers should let it propagate to the Next.js error boundary or
+ * catch it and return an appropriate Response themselves.
+ */
 export function requireSession(request: Request): SessionPayload {
   const token = getTokenFromRequest(request);
-  if (!token) throw unauthorizedResponse('Authentication required.');
+  if (!token) throw new Error('Authentication required.');
   const payload = verifySession(token);
-  if (!payload) throw unauthorizedResponse('Session expired. Please log in again.');
+  if (!payload) throw new Error('Session expired. Please log in again.');
   return payload;
 }
 

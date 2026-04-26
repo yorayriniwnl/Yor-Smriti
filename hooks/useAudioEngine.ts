@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { MutableRefObject } from 'react';
 import type { Emotion } from '@/lib/emotionThemes';
-
+// Bug 49 fix: the A-minor pad frequencies are now imported from the single
+// authoritative definition in lib/ambientChord.ts, shared with AmbientSound.tsx.
+// Both components previously defined the same chord independently — any page
+// mounting both stacked two identical pads and doubled the volume.
+import { AMBIENT_CHORD_FREQS } from '@/lib/ambientChord';
 
 interface BackgroundMusicOptions {
   enabled?: boolean;
@@ -175,14 +179,20 @@ export function useAmbientSound(soundEnabled = false) {
       // Reverb unavailable, skip.
     }
 
+    // Derive oscillator configs from the shared chord constant so this hook
+    // and AmbientSound.tsx always play the same pitches, just with different
+    // gain curves and oscillator types for sonic variety.
+    const gainPerLayer = [0.24, 0.18, 0.14, 0.11, 0.09] as const;
+    const typePerLayer: OscillatorType[] = ['sine', 'sine', 'triangle', 'sine', 'triangle'];
     const oscConfigs: Array<{ freq: number; type: OscillatorType; gain: number; detune?: number }> = [
-      { freq: 110.0, type: 'sine', gain: 0.24 },
-      { freq: 164.81, type: 'sine', gain: 0.18 },
-      { freq: 220.0, type: 'triangle', gain: 0.14 },
-      { freq: 261.63, type: 'sine', gain: 0.11 },
-      { freq: 329.63, type: 'triangle', gain: 0.09 },
-      { freq: 110.0, type: 'sine', gain: 0.07, detune: 8 },
-      { freq: 55.0, type: 'sine', gain: 0.2 },
+      ...AMBIENT_CHORD_FREQS.map((freq, i) => ({
+        freq,
+        type: typePerLayer[i] ?? 'sine' as OscillatorType,
+        gain: gainPerLayer[i] ?? 0.1,
+      })),
+      // Sub-bass doubling with slight detune for warmth
+      { freq: AMBIENT_CHORD_FREQS[0], type: 'sine' as OscillatorType, gain: 0.07, detune: 8 },
+      { freq: AMBIENT_CHORD_FREQS[0] / 2, type: 'sine' as OscillatorType, gain: 0.2 },
     ];
 
     const oscillators: OscillatorNode[] = [];
@@ -264,6 +274,10 @@ export function useAmbientSound(soundEnabled = false) {
     });
   }, [fadeOut]);
 
+  // Tracks gesture-listener cleanup so we can cancel a pending resume if sound
+  // is disabled before the user ever interacts with the page.
+  const gestureCleanupRef = useRef<(() => void) | null>(null);
+
   const start = useCallback(async () => {
     if (isStartedRef.current) {
       return;
@@ -274,11 +288,46 @@ export function useAmbientSound(soundEnabled = false) {
       nodesRef.current = nodes;
       isStartedRef.current = true;
 
-      if (nodes.context.state === 'suspended') {
-        await nodes.context.resume();
+      // AudioContext starts suspended when there has been no prior user gesture.
+      // We try resume() first — it works fine when start() itself was triggered
+      // from a user-gesture event handler. If the context is already running
+      // (e.g. a prior gesture unlocked it), we skip straight to fadeIn.
+      if (nodes.context.state !== 'suspended') {
+        fadeIn(nodes);
+        return;
       }
 
-      fadeIn(nodes);
+      try {
+        await nodes.context.resume();
+        if ((nodes.context.state as AudioContext['state']) === 'running') {
+          fadeIn(nodes);
+          return;
+        }
+      } catch {
+        // resume() threw — fall through to gesture-listener fallback.
+      }
+
+      // Still suspended: register one-shot listeners so the context resumes
+      // the moment the user taps or presses a key for the first time.
+      const resumeOnGesture = async () => {
+        gestureCleanupRef.current = null;
+        if (!nodesRef.current) return;
+        try {
+          await nodesRef.current.context.resume();
+          fadeIn(nodesRef.current);
+        } catch {
+          // Permanently unavailable — stay silent.
+        }
+      };
+
+      const cleanup = () => {
+        window.removeEventListener('pointerdown', resumeOnGesture);
+        window.removeEventListener('keydown', resumeOnGesture);
+      };
+
+      gestureCleanupRef.current = cleanup;
+      window.addEventListener('pointerdown', resumeOnGesture, { once: true });
+      window.addEventListener('keydown', resumeOnGesture, { once: true });
     } catch {
       // Audio unavailable silently.
     }
@@ -288,6 +337,10 @@ export function useAmbientSound(soundEnabled = false) {
     if (soundEnabled) {
       void start();
     } else {
+      // Cancel any pending gesture-resume before stopping, so a future user
+      // tap doesn't unexpectedly restart audio that was intentionally muted.
+      gestureCleanupRef.current?.();
+      gestureCleanupRef.current = null;
       stop();
     }
 

@@ -309,7 +309,11 @@ export function AppSidebar() {
                 />
               ))}
 
-              {/* Section: Future */}
+              {/* Section: Personal
+                  Fix #20: was "Future Plans" — incorrect for this slice.
+                  NAV_ITEMS[14..] contains the-good, for-her-alone, words-she-said,
+                  her, questions, small-things, before-after, gratitude, reply —
+                  all personal/reflective pages, none of which are future plans. */}
               <p style={{
                 fontFamily: 'var(--font-dm-mono)',
                 fontSize: '0.52rem',
@@ -319,7 +323,7 @@ export function AppSidebar() {
                 padding: '0 0.5rem 0.4rem',
                 margin: '1rem 0 0.25rem',
               }}>
-                Future Plans
+                Personal
               </p>
               {NAV_ITEMS.slice(14).map((item) => (
                 <NavLink

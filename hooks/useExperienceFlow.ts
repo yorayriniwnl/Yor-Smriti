@@ -98,7 +98,35 @@ export function useExperienceFlow(
   options: UseExperienceFlowOptions = {},
 ): UseExperienceFlowReturn {
   const initialIndex = options.initialIndex ?? 0;
-  const [index, setIndex] = useState<number>(initialIndex);
+
+  // ── Initialise index in a single synchronous pass ──────────────────────────
+  // Using a lazy initializer means sessionStorage is read and clamped BEFORE the
+  // first render, so `current` is never null due to an out-of-bounds index.
+  // Previous code did this in a subsequent effect, leaving a frame where
+  // `index` could exceed `screens.length - 1` and `current` would be null.
+  const [index, setIndex] = useState<number>(() => {
+    const safeMax = Math.max(screens.length - 1, 0);
+
+    // Explicit initialIndex wins over persisted state
+    if (typeof options.initialIndex === 'number') {
+      return Math.min(Math.max(options.initialIndex, 0), safeMax);
+    }
+
+    // Attempt to restore from sessionStorage (not localStorage — flow progress is
+    // private, per-tab state that must not bleed across browser sessions or
+    // shared devices).
+    if (options.persistKey && typeof window !== 'undefined') {
+      const saved = window.sessionStorage.getItem(options.persistKey);
+      if (saved) {
+        const parsed = Number(saved);
+        if (Number.isFinite(parsed)) {
+          return Math.min(Math.max(parsed, 0), safeMax);
+        }
+      }
+    }
+
+    return Math.min(Math.max(initialIndex, 0), safeMax);
+  });
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [emotionPath, setEmotionPath] = useState<Emotion[]>([]);
 
@@ -112,49 +140,19 @@ export function useExperienceFlow(
   const isFirst = index <= 0;
   const isLast = index >= safeLastIndex;
 
+  // Clamp index whenever the screens array shrinks (e.g. after a hot-reload
+  // that reduces the screen count).  The lazy initializer handles the very first
+  // render; this effect handles subsequent changes to `screens.length`.
   useEffect(() => {
     setIndex((currentIndex) => Math.min(Math.max(currentIndex, 0), safeLastIndex));
   }, [safeLastIndex]);
 
   useEffect(() => {
-    if (typeof options.initialIndex !== 'number') {
-      return;
-    }
-
-    const normalized = Math.min(Math.max(options.initialIndex, 0), safeLastIndex);
-    setIndex(normalized);
-  }, [options.initialIndex, safeLastIndex]);
-
-  useEffect(() => {
     if (!persistKey || typeof window === 'undefined') {
       return;
     }
 
-    const hasExplicitInitialIndex = typeof options.initialIndex === 'number';
-    if (hasExplicitInitialIndex) {
-      return;
-    }
-
-    const savedIndex = window.localStorage.getItem(persistKey);
-    if (!savedIndex) {
-      return;
-    }
-
-    const parsed = Number(savedIndex);
-    if (!Number.isFinite(parsed)) {
-      return;
-    }
-
-    const normalized = Math.min(Math.max(parsed, 0), safeLastIndex);
-    setIndex(normalized);
-  }, [options.initialIndex, persistKey, safeLastIndex]);
-
-  useEffect(() => {
-    if (!persistKey || typeof window === 'undefined') {
-      return;
-    }
-
-    window.localStorage.setItem(persistKey, String(index));
+    window.sessionStorage.setItem(persistKey, String(index));
   }, [index, persistKey]);
 
   useEffect(() => {
@@ -204,7 +202,7 @@ export function useExperienceFlow(
     setEmotionPath([]);
 
     if (persistKey && typeof window !== 'undefined') {
-      window.localStorage.removeItem(persistKey);
+      window.sessionStorage.removeItem(persistKey);
     }
   }, [persistKey]);
 

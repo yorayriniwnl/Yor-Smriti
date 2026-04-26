@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
-import { getPersonalizationConfig } from '@/lib/serverEnv';
+import { getClientPersonalizationConfig } from '@/lib/serverEnv';
 import { getTokenFromRequest, verifySession } from '@/lib/auth';
 
 export async function GET(request: Request): Promise<NextResponse> {
-  // Require session
   const token = getTokenFromRequest(request);
   if (!token || !verifySession(token)) {
     return NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 });
   }
 
-  const config = getPersonalizationConfig();
+  // Only the 4 fields the client UI renders. AI system-prompt fields
+  // (breakupReason, memory1-5, whatSheMeansToMe, etc.) stay server-only.
+  const config = getClientPersonalizationConfig();
 
   return NextResponse.json({
     ok: true,
     personalization: config,
   }, {
-    headers: {
-      // Cache on client for 1 hour — personalization rarely changes
-      'Cache-Control': 'private, max-age=3600',
-    },
+    // no-store: sensitive content must not sit in the browser's HTTP cache
+    // (DevTools → Network → Cache) after the session ends.
+    headers: { 'Cache-Control': 'no-store, private' },
   });
 }

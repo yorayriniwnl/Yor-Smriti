@@ -1,8 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ExperienceController } from '@/components/experiences/ExperienceController';
+import dynamic from 'next/dynamic';
+
+// ExperienceController is large (~40KB, 1200+ lines). Dynamic import keeps it
+// out of the initial JS bundle — it loads only when the director experience
+// route is actually visited.
+const ExperienceController = dynamic(
+  () => import('@/components/experiences/ExperienceController').then((m) => m.ExperienceController),
+  { ssr: false, loading: () => null },
+);
+
 import {
   DEFAULT_PERSONALIZATION,
   type ExperienceFlowMode,
@@ -20,9 +29,9 @@ export interface DirectorExperienceClientProps {
   startParam?: string | null;
   pathParam?: string | null;
   endingParam?: string | null;
-  nameParam?: string | null;
-  memoryParam?: string | null;
-  messageParam?: string | null;
+  // nameParam / memoryParam / messageParam intentionally removed — personalization
+  // is fetched from /api/config server-side. Encoding it in URLs leaks private
+  // content into browser history, server logs, and referrer headers.
   moodParam?: string | null;
   modeParam?: string | null;
   privateParam?: string | null;
@@ -99,9 +108,6 @@ export function DirectorExperienceClient({
   startParam,
   pathParam,
   endingParam: _endingParam,
-  nameParam,
-  memoryParam,
-  messageParam,
   moodParam,
   modeParam,
   privateParam,
@@ -111,9 +117,7 @@ export function DirectorExperienceClient({
 
   const queryStartParam = searchParams.get('start');
   const queryPathParam = searchParams.get('path');
-  const queryNameParam = searchParams.get('name');
-  const queryMemoryParam = searchParams.get('memory');
-  const queryMessageParam = searchParams.get('message');
+  // name / memory / message are no longer read from URL params — see interface comment.
   const queryMoodParam = searchParams.get('mood');
   const queryModeParam = searchParams.get('mode');
   const queryPrivateParam = searchParams.get('private');
@@ -126,9 +130,6 @@ export function DirectorExperienceClient({
     ?? startParam
     ?? (hasPathHint ? '6' : null);
 
-  const resolvedNameParam = queryNameParam ?? nameParam;
-  const resolvedMemoryParam = queryMemoryParam ?? memoryParam;
-  const resolvedMessageParam = queryMessageParam ?? messageParam;
   const resolvedMood = parseMood(queryMoodParam ?? moodParam) ?? 'default';
   const resolvedFlowMode = parseFlowMode(queryModeParam ?? modeParam) ?? 'linear';
   const resolvedPrivateMode = parseBooleanFlag(queryPrivateParam ?? privateParam, true);
@@ -136,19 +137,31 @@ export function DirectorExperienceClient({
 
   const initialIndex = parseInitialIndex(resolvedStartParam);
 
-  const personalization: PersonalizationData = useMemo(
-    () => ({
-      name: sanitizePersonalizationValue(resolvedNameParam, DEFAULT_PERSONALIZATION.name, 32),
-      memory: sanitizePersonalizationValue(resolvedMemoryParam, DEFAULT_PERSONALIZATION.memory, 80),
-      message: sanitizePersonalizationValue(resolvedMessageParam, DEFAULT_PERSONALIZATION.message, 180),
-    }),
-    [resolvedMemoryParam, resolvedMessageParam, resolvedNameParam],
-  );
+  // Personalization is fetched from /api/config, not URL params.
+  // This keeps private content (memory, message) out of browser history and logs.
+  const [personalization, setPersonalization] = useState<PersonalizationData>(DEFAULT_PERSONALIZATION);
+  useEffect(() => {
+    fetch('/api/config', { headers: { 'x-yor-csrf': '1' } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const p = data?.personalization;
+        if (p && typeof p.recipientName === 'string') {
+          setPersonalization({
+            name:    sanitizePersonalizationValue(p.recipientName, DEFAULT_PERSONALIZATION.name,    32),
+            memory:  sanitizePersonalizationValue(p.memory,        DEFAULT_PERSONALIZATION.memory,  80),
+            message: sanitizePersonalizationValue(p.message,       DEFAULT_PERSONALIZATION.message, 180),
+          });
+        }
+      })
+      .catch(() => { /* keep DEFAULT_PERSONALIZATION on error */ });
+  }, []);
 
+  // Fix #22: directorInteractionScreen is now Screen | null (module-level throw
+  // was removed). Filter null so a missing screen 85 degrades gracefully.
   const screens: Screen[] = useMemo(
     () => [
       ...directorCoreScreens,
-      directorInteractionScreen,
+      ...(directorInteractionScreen ? [directorInteractionScreen] : []),
       ...directorCinematicScreens,
     ],
     [],

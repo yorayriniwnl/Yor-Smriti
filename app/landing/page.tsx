@@ -57,21 +57,16 @@ export default function LandingPage() {
           I want to show you something I made. No expectations — just everything I have been carrying, laid out honestly.
         </p>
 
-        <div className="mt-7 flex items-center justify-center gap-3">
-          <span className="sr-only">Loading</span>
-          <span
-            className="h-2 w-2 rounded-full animate-pulse"
-            style={{ backgroundColor: 'var(--accent)' }}
-          />
-          <span
-            className="h-2 w-2 rounded-full animate-pulse"
-            style={{ backgroundColor: 'var(--accent)', animationDelay: '180ms' }}
-          />
-          <span
-            className="h-2 w-2 rounded-full animate-pulse"
-            style={{ backgroundColor: 'var(--accent)', animationDelay: '360ms' }}
-          />
-        </div>
+        {/* Decorative accent divider */}
+        <div
+          className="mt-7 mx-auto"
+          aria-hidden="true"
+          style={{
+            height: 1,
+            maxWidth: 80,
+            background: 'linear-gradient(to right, transparent, rgba(247, 85, 144, 0.45), transparent)',
+          }}
+        />
 
         <Link
           href="/apology/1"

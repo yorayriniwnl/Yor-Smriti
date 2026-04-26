@@ -27,7 +27,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   const [rawMetrics, redisInfo, replyEntries] = await Promise.all([
-    Promise.resolve(getPrometheusMetrics()),
+    getPrometheusMetrics(),
     getRedisInfo(),
     getReplyEntries(100).catch(() => [] as Awaited<ReturnType<typeof getReplyEntries>>),
   ]);

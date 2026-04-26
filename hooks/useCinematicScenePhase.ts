@@ -32,7 +32,11 @@ export function useCinematicScenePhase(
     return () => {
       timeoutIds.forEach((id) => window.clearTimeout(id));
     };
-  }, [driftMs, enabled, enterMs, exitMs, revealMs, totalDurationMs]);
+  // Bug 61 fix: totalDurationMs is derived from the other four duration params that
+  // are already listed as deps. Including it explicitly caused a double-trigger
+  // whenever a parent component recomputed the value from the same constants.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driftMs, enabled, enterMs, exitMs, revealMs]);
 
   return {
     phase,

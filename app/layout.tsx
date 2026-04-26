@@ -10,6 +10,9 @@ const cormorant = Cormorant_Garamond({
   style: ['normal', 'italic'],
   variable: '--font-cormorant',
   display: 'swap',
+  // Offline / proxy fallback — prevents build failure when fonts.googleapis.com
+  // is unreachable (restrictive CI environments, Vercel cold-start proxies, etc.)
+  fallback: ['Georgia', 'Times New Roman', 'serif'],
 });
 const crimson = Crimson_Pro({
   subsets: ['latin'],
@@ -17,12 +20,14 @@ const crimson = Crimson_Pro({
   style: ['normal', 'italic'],
   variable: '--font-crimson',
   display: 'swap',
+  fallback: ['Palatino Linotype', 'Book Antiqua', 'Georgia', 'serif'],
 });
 const dmMono = DM_Mono({
   subsets: ['latin'],
   weight: ['300', '400'],
   variable: '--font-dm-mono',
   display: 'swap',
+  fallback: ['Menlo', 'Consolas', 'Courier New', 'monospace'],
 });
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://yorayriniwnl.in';
@@ -82,6 +87,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`${cormorant.variable} ${crimson.variable} ${dmMono.variable}`}
     >

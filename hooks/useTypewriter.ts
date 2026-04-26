@@ -19,16 +19,29 @@ export function useTypewriter({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCompleteRef = useRef(onComplete);
+  // Bug 60 fix: keep speed in a ref so typeNextChar's useCallback does not
+  // need `speed` in its dependency array. Previously, passing `speed` as an
+  // inline number literal (e.g. speed={45}) created a new `typeNextChar`
+  // reference on every render, which was listed in the useEffect deps, causing
+  // the typewriter to reset infinitely rather than only resetting on text change.
+  const speedRef = useRef(speed);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
   const clearTimers = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (startTimerRef.current) clearTimeout(startTimerRef.current);
   }, []);
 
+  // Bug 60 fix: `speed` removed from deps — read from speedRef instead.
+  // `typeNextChar` now only changes reference when `text` changes, which is
+  // exactly when a reset is correct behaviour.
   const typeNextChar = useCallback(() => {
     if (indexRef.current >= text.length) {
       setIsComplete(true);
@@ -41,13 +54,14 @@ export function useTypewriter({
 
     // Variable speed: slightly slower at punctuation for natural rhythm
     const char = text[indexRef.current - 1];
-    let delay = speed;
-    if (char === '.' || char === '…' || char === '?') delay = speed * 5;
-    else if (char === ',') delay = speed * 2.5;
-    else if (char === ' ') delay = speed * 0.6;
+    const s = speedRef.current;
+    let delay = s;
+    if (char === '.' || char === '…' || char === '?') delay = s * 5;
+    else if (char === ',') delay = s * 2.5;
+    else if (char === ' ') delay = s * 0.6;
 
     timerRef.current = setTimeout(typeNextChar, delay);
-  }, [text, speed]);
+  }, [text]);
 
   useEffect(() => {
     // Reset on text change

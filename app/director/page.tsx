@@ -7,23 +7,19 @@ interface DirectorPageProps {
     start?: string | string[];
     path?: string | string[];
     ending?: string | string[];
-    name?: string | string[];
-    memory?: string | string[];
-    message?: string | string[];
+    // name / memory / message removed — personalization is fetched from /api/config
+    // by the client; passing it through URLs leaks private content into browser
+    // history, server logs, and referrer headers.
   }>;
 }
 
 function takeFirst(value?: string | string[]): string | null {
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
 export default async function DirectorPage({ searchParams }: DirectorPageProps) {
   const params = await searchParams;
-
   return (
     <>
       <CharacterPageOverlayClient />
@@ -32,9 +28,6 @@ export default async function DirectorPage({ searchParams }: DirectorPageProps) 
           startParam={takeFirst(params.start)}
           pathParam={takeFirst(params.path)}
           endingParam={takeFirst(params.ending)}
-          nameParam={takeFirst(params.name)}
-          memoryParam={takeFirst(params.memory)}
-          messageParam={takeFirst(params.message)}
         />
       </Suspense>
     </>

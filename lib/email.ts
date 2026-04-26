@@ -12,6 +12,7 @@
  */
 
 import { logger } from './logger';
+import crypto from 'crypto';
 
 /** Escape user-supplied strings before interpolating into HTML email bodies. */
 function escHtml(s: string): string {
@@ -125,11 +126,16 @@ export async function notifyFirstVisit({ ip, timestamp }: { ip: string; timestam
   }
 
   const recipientName = process.env.RECIPIENT_NAME ?? 'Smriti';
+  // Hash the IP before embedding it — avoids exposing the raw address if this
+  // email is ever forwarded or the inbox is compromised (GDPR / privacy).
+  const maskedIp = ip && ip !== 'unknown'
+    ? crypto.createHash('sha256').update(ip).digest('hex').slice(0, 8) + '…'
+    : 'unknown';
 
   await sendEmail({
     to: notifyTo,
     subject: `${recipientName} just opened the experience 💌`,
-    text: `${recipientName} just visited Yor Smriti for the first time.\n\nTime: ${timestamp}\nIP: ${ip}\n\nCheck your admin dashboard for live analytics.`,
+    text: `${recipientName} just visited Yor Smriti for the first time.\n\nTime: ${timestamp}\nIP: ${maskedIp}\n\nCheck your admin dashboard for live analytics.`,
     html: `
       <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px;background:#05030a;color:#ffe8f4;border-radius:16px">
         <h2 style="font-weight:400;color:#f75590;margin-bottom:8px">${recipientName} just opened the experience 💌</h2>
@@ -138,7 +144,7 @@ export async function notifyFirstVisit({ ip, timestamp }: { ip: string; timestam
         </p>
         <p style="font-family:monospace;font-size:12px;color:#c07090;">
           Time: ${timestamp}<br/>
-          IP: ${ip}
+          IP: ${maskedIp}
         </p>
         <p style="font-family:sans-serif;font-size:14px;color:#a06080;">
           Check your admin dashboard for live analytics.

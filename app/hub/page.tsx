@@ -10,6 +10,7 @@ import { useEventTracking } from '@/hooks/useEventTracking';
 import { ScrollReset } from '@/components/ui/ScrollReset';
 import { type BookmarkData } from '@/components/ui/BookmarkButton';
 import { EXPERIENCE_CATALOG } from '@/lib/experienceCatalog';
+import { useSlideComplete } from '@/hooks/useSlideComplete';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -51,6 +52,10 @@ export default function HubPage() {
   const [visited, setVisited] = useState<Set<string>>(new Set());
   const [bookmark, setBookmark] = useState<BookmarkData | null>(null);
   const { track } = useEventTracking();
+
+  // Bug 51 fix: hub is a navigation page, not a scroll page — fire after a
+  // brief dwell time so the sequence advances without waiting for scroll.
+  useSlideComplete({ triggerOnScrollBottom: false, maxWaitMs: 12_000 });
 
   useEffect(() => {
     track('experience_opened');

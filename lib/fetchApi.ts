@@ -18,7 +18,11 @@ export async function fetchApi<T = unknown>(
 
   const headers: Record<string, string> = {
     'x-yor-csrf': '1',
-    'credentials': 'same-origin',
+    // Bug 46 fix: 'credentials' was previously set here inside headers{}.
+    // credentials is a fetch() option, not an HTTP header — it must be at
+    // the top-level options object (already correctly set below).
+    // Placing it in headers sent a literal "credentials: same-origin" HTTP
+    // header that browsers ignore, while polluting DevTools request headers.
   };
   if (options?.body !== undefined) {
     headers['Content-Type'] = 'application/json';

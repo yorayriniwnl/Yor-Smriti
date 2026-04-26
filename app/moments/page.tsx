@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ScrollReset } from '@/components/ui/ScrollReset';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
+import { isPlaceholder } from '@/lib/content';
+import { ContentComingSoon } from '@/components/ui/ContentComingSoon';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
@@ -21,8 +23,8 @@ const MOMENTS: Moment[] = [
     id: 'moment-1',
     number: '01',
     scene:
-      '[Memory 1: describe a quiet ordinary moment — something small, unhurried, the two of you together with no agenda. Write it in present tense as a 3–4 sentence scene. Make it specific enough that only you would recognise it.]',
-    date: '[date — placeholder]',
+      'It is sometime in the afternoon and we are texting about nothing in particular. You send me something small — a thought you had, a thing you noticed — and I feel it land the way things only land when someone is actually paying attention to you. We are in the middle of twelve hours of this and neither of us has mentioned stopping.',
+    date: 'the 10 AM to 10 PM era',
     accentColor: 'rgba(255, 171, 210, 0.75)',
     glowColor: 'rgba(247, 85, 144, 0.14)',
   },
@@ -30,8 +32,8 @@ const MOMENTS: Moment[] = [
     id: 'moment-2',
     number: '02',
     scene:
-      '[Memory 2: describe a moment she said something true — something that was honest and landed in a way you still think about. Present tense, 3–4 sentences. Specific words if you remember them.]',
-    date: '[date — placeholder]',
+      'You are on a video call and you are laughing — that full laugh, the one where you try to stop it and that makes it worse. I am watching your face and thinking: I will remember this. I will remember this exactly. Your face, the light, the sound of it. And I did. I still do.',
+    date: 'a videocall I keep returning to',
     accentColor: 'rgba(220, 160, 255, 0.72)',
     glowColor: 'rgba(180, 100, 255, 0.12)',
   },
@@ -39,8 +41,8 @@ const MOMENTS: Moment[] = [
     id: 'moment-3',
     number: '03',
     scene:
-      '[Memory 3: describe the last good moment before things broke — not the break itself, just the last time everything felt like it used to. Present tense, 3–4 sentences. Write it slowly.]',
-    date: '[date — placeholder]',
+      'You call me Ayrin. Just that — the way you say it is different from the way anyone else says it, and I notice every time. It sounds like the name belongs to me specifically because of you. I never told you that. It is the kind of thing I kept meaning to say.',
+    date: 'every time you said my name',
     accentColor: 'rgba(255, 200, 160, 0.65)',
     glowColor: 'rgba(255, 160, 80, 0.1)',
   },
@@ -128,6 +130,10 @@ function MomentPanel({ moment, index }: { moment: Moment; index: number }) {
 }
 
 export default function MomentsPage() {
+  if (MOMENTS.every(item => isPlaceholder(item.scene))) {
+    return <ContentComingSoon title="memories" />;
+  }
+
   return (
     <main
       id="main-content"

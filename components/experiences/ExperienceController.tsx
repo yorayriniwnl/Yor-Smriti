@@ -5,26 +5,15 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
-import LoadingFallback from '@/components/ui/LoadingFallback';
-
-const AnimatedGradient = dynamic(
-  () => import('@/components/background/AnimatedGradient').then((m) => m.AnimatedGradient),
-  { ssr: false, loading: () => <LoadingFallback compact /> },
-);
-
-const FloatingParticles = dynamic(
-  () => import('@/components/background/FloatingParticles').then((m) => m.FloatingParticles),
-  { ssr: false, loading: () => <LoadingFallback compact /> },
-);
-
-const LightGlow = dynamic(
-  () => import('@/components/background/LightGlow').then((m) => m.LightGlow),
-  { ssr: false, loading: () => <LoadingFallback compact /> },
-);
-
-const RainLayer = dynamic(
-  () => import('@/components/background/RainLayer').then((m) => m.RainLayer),
-  { ssr: false, loading: () => <LoadingFallback compact /> },
+// Fix 31: All four background layers (AnimatedGradient, FloatingParticles,
+// LightGlow, RainLayer) are colocated in BackgroundLayers and loaded as a
+// SINGLE dynamic import. Previously each had its own dynamic() call and its
+// own LoadingFallback, causing four simultaneous loading states and a visible
+// background flash on first mount. Now there is exactly one loading boundary,
+// and its loading state is null (transparent) so no flash occurs.
+const BackgroundLayers = dynamic(
+  () => import('@/components/background/BackgroundLayers').then((m) => m.BackgroundLayers),
+  { ssr: false, loading: () => null },
 );
 
 
@@ -438,10 +427,6 @@ export function ExperienceController({
   const isAfterglowScreen = activeKind === 'afterglow';
   const audioProfile = resolveSceneAudioProfile(activeKind);
 
-  const personalizedName = personalization.name;
-  const personalizedMemory = personalization.memory;
-  const personalizedMessage = personalization.message;
-
   const journeyProgress = total <= 1 ? 0 : index / (total - 1);
 
   const physics = useMemo(
@@ -674,10 +659,14 @@ export function ExperienceController({
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem('yor-smriti-mood', mood);
-    window.localStorage.setItem('yor-smriti-flow-mode', flowMode);
-    window.localStorage.setItem('yor-smriti-private-mode', String(isPrivateMode));
-    window.localStorage.setItem('yor-smriti-silent-mode', String(isSilentMode));
+    // Issue 16 fix: use sessionStorage instead of localStorage so these values
+    // do not persist across browser sessions. On a shared device, localStorage
+    // would leave behind keys that reveal the app was used and the recipient's
+    // emotional state. sessionStorage is cleared automatically when the tab closes.
+    window.sessionStorage.setItem('yor-smriti-mood', mood);
+    window.sessionStorage.setItem('yor-smriti-flow-mode', flowMode);
+    window.sessionStorage.setItem('yor-smriti-private-mode', String(isPrivateMode));
+    window.sessionStorage.setItem('yor-smriti-silent-mode', String(isSilentMode));
   }, [flowMode, isPrivateMode, isSilentMode, mood]);
 
   const handleReplay = useCallback((options?: ExperienceRestartOptions) => {
@@ -735,7 +724,6 @@ export function ExperienceController({
 
   const {
     onSurfaceClick,
-    onSurfaceDoubleClick,
     onSurfacePointerDown,
     onSurfacePointerUp,
   } = useImmersiveNavigation({
@@ -797,9 +785,11 @@ export function ExperienceController({
     shareUrl.searchParams.set('start', String(index));
     shareUrl.searchParams.set('share', token);
     shareUrl.searchParams.set('ending', resolveEndingFromEmotionPath(emotionPath));
-    shareUrl.searchParams.set('name', personalizedName);
-    shareUrl.searchParams.set('memory', personalizedMemory);
-    shareUrl.searchParams.set('message', personalizedMessage);
+    // name / memory / message are intentionally excluded from the share URL.
+    // They contain private personal content that must not appear in browser
+    // history, server access logs, or referrer headers. The recipient is
+    // authenticated and the server already knows her personalization — these
+    // values are fetched from /api/config on load, not reconstructed from URL.
     shareUrl.searchParams.set('mood', mood);
     shareUrl.searchParams.set('mode', flowMode);
     shareUrl.searchParams.set('private', String(isPrivateMode));
@@ -824,9 +814,6 @@ export function ExperienceController({
     isPrivateMode,
     isSilentMode,
     mood,
-    personalizedMemory,
-    personalizedMessage,
-    personalizedName,
   ]);
 
   if (!current) {
@@ -983,10 +970,14 @@ export function ExperienceController({
         }}
       />
 
-      {!shouldFreezeAmbientMotion ? <AnimatedGradient emotion={activeEmotion} /> : null}
-      {showDecorativeLayers ? <FloatingParticles emotion={activeEmotion} /> : null}
-      {showDecorativeLayers ? <LightGlow emotion={activeEmotion} /> : null}
-      {showRainLayer ? <RainLayer count={72} /> : null}
+      {!shouldFreezeAmbientMotion ? (
+        <BackgroundLayers
+          emotion={activeEmotion}
+          showDecorativeLayers={showDecorativeLayers}
+          showRainLayer={showRainLayer}
+          rainCount={72}
+        />
+      ) : null}
 
 
       <div
@@ -1088,7 +1079,6 @@ export function ExperienceController({
       <div
         className="relative z-10 mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-5 py-10 md:px-8 md:py-12"
         onClick={onSurfaceClick}
-        onDoubleClick={onSurfaceDoubleClick}
         onPointerDown={onSurfacePointerDown}
         onPointerUp={onSurfacePointerUp}
         onPointerMove={handleSurfacePointerMove}

@@ -1398,10 +1398,25 @@ function useVoiceFusion({
         return;
       }
 
-      const payload = res.data as { reply?: string; emotion?: string } | undefined;
-      const nextReply = payload && typeof payload.reply === 'string' && payload.reply.trim()
-        ? payload.reply.trim()
-        : "I'm here with you.";
+      // Fix 32: Guard against API responses that are HTTP 200 but carry an
+      // error body instead of the expected { reply, emotion } shape.
+      // The API consistently uses HTTP status codes, but if something slips
+      // through (middleware, proxy, future code path) we catch it here rather
+      // than silently swallowing it with the "I'm here with you." fallback.
+      const raw = res.data as Record<string, unknown> | undefined;
+      if (!raw || typeof raw.reply !== 'string' || !raw.reply.trim()) {
+        const bodyError =
+          typeof raw?.error === 'string' && raw.error
+            ? raw.error
+            : 'Ayrin could not think of a reply.';
+        setPhase('error');
+        setErrorMessage(bodyError);
+        setCaption(bodyError);
+        return;
+      }
+
+      const payload = raw as { reply: string; emotion?: string };
+      const nextReply = payload.reply.trim();
       const nextEmotion = normalizeConversationEmotion(payload?.emotion);
 
       setReply(nextReply);
@@ -1560,6 +1575,14 @@ function useVoiceFusion({
     toggleListening,
     stopSpeaking,
     sampleVoiceFusion,
+    // Resets the voice card from a stuck error state. Called when the user
+    // presses "Dismiss" — needed when recognition is unsupported (the Talk
+    // button would just re-fire the error) or after repeated fetch failures.
+    resetError: useCallback(() => {
+      setPhase('idle');
+      setErrorMessage('');
+      setCaption('Tap the mic and talk to Ayrin.');
+    }, [setPhase, setErrorMessage, setCaption]),
   };
 }
 
@@ -2112,6 +2135,7 @@ export function AyrinCharacter({
     toggleListening,
     sampleVoiceFusion,
     stopSpeaking,
+    resetError: resetVoiceError,
   } = useVoiceFusion({ send, onEmotionChange });
   const animationTarget = useAnimationGraph(characterState, emotionProp);
   const springEmotionRef = useSpringEmotionTarget(animationTarget);
@@ -2347,8 +2371,36 @@ export function AyrinCharacter({
 
   const handleVoiceButtonClick=useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+
+    // iOS Safari blocks speechSynthesis.speak() unless it is called synchronously
+    // from a user gesture event handler. By the time we get a reply back from
+    // /api/chat (async fetch + 300 ms delay), that gesture context is gone and
+    // speak() is silently dropped.
+    //
+    // Workaround: while we are still inside this synchronous click handler, call
+    // speak() with a zero-volume empty utterance to "unlock" the speech engine.
+    // The engine remains unlocked for the lifetime of the page, so the real reply
+    // utterance fires correctly even after the async gap.
+    if (
+      speechOutputSupported &&
+      typeof navigator !== 'undefined' &&
+      /iP(hone|ad|od)/i.test(navigator.userAgent)
+    ) {
+      try {
+        const unlock = new SpeechSynthesisUtterance('');
+        unlock.volume = 0;
+        window.speechSynthesis.cancel();      // clear any stale queue
+        window.speechSynthesis.speak(unlock); // gesture-context unlock
+        // Cancel the empty utterance immediately so it doesn't delay real speech.
+        // The speech engine stays in the "activated" state after this.
+        window.speechSynthesis.cancel();
+      } catch {
+        // Ignore — if this throws, speak() will be silently blocked as before.
+      }
+    }
+
     toggleListening();
-  }, [toggleListening]);
+  }, [toggleListening, speechOutputSupported]);
 
   const voiceButtonLabel=
     voicePhase==='listening'
@@ -2869,6 +2921,7 @@ export function AyrinCharacter({
         recognitionSupported={recognitionSupported}
         speechOutputSupported={speechOutputSupported}
         onVoiceButtonClick={handleVoiceButtonClick}
+        onDismissError={resetVoiceError}
         voiceButtonLabel={voiceButtonLabel}
         voiceButtonDisabled={voiceButtonDisabled}
         voiceCardTone={voiceCardTone}

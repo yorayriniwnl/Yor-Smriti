@@ -1,168 +1,34 @@
-name: Sync Vercel Env
+name: Deploy to Vercel
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
 
-permissions:
-  contents: read
-
-concurrency:
-  group: vercel-production
-  cancel-in-progress: true
-
 jobs:
-  sync-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_PROJECT_NAME: yor-smriti
-      VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
-      AUTH_SECRET_VALUE: ${{ secrets.AUTH_SECRET || '' }}
-      NEXT_PUBLIC_BASE_URL_VALUE: ${{ vars.NEXT_PUBLIC_BASE_URL || 'https://yor-smriti.vercel.app' }}
-      APP_USERNAME_VALUE: ${{ secrets.APP_USERNAME || '' }}
-      APP_PASSWORD_VALUE: ${{ secrets.APP_PASSWORD || '' }}
-      OPENAI_API_KEY_VALUE: ${{ secrets.OPENAI_API_KEY || '' }}
-      OPENAI_CHAT_MODEL_VALUE: ${{ vars.OPENAI_CHAT_MODEL || '' }}
-      REDIS_URL_VALUE: ${{ secrets.REDIS_URL || '' }}
-      UPSTASH_REDIS_REST_URL_VALUE: ${{ secrets.UPSTASH_REDIS_REST_URL || '' }}
-      UPSTASH_REDIS_REST_TOKEN_VALUE: ${{ secrets.UPSTASH_REDIS_REST_TOKEN || '' }}
-      RESEND_API_KEY_VALUE: ${{ secrets.RESEND_API_KEY || '' }}
-      SENDER_EMAIL_VALUE: ${{ vars.SENDER_EMAIL || '' }}
-      NOTIFICATION_EMAIL_VALUE: ${{ secrets.NOTIFICATION_EMAIL || '' }}
-      LOGIN_RATE_LIMIT_VALUE: ${{ secrets.LOGIN_RATE_LIMIT || '' }}
-      LOGIN_RATE_WINDOW_MS_VALUE: ${{ secrets.LOGIN_RATE_WINDOW_MS || '' }}
-      CHAT_RATE_LIMIT_VALUE: ${{ secrets.CHAT_RATE_LIMIT || '' }}
-      CHAT_RATE_WINDOW_MS_VALUE: ${{ secrets.CHAT_RATE_WINDOW_MS || '' }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Skip when Vercel token is missing
-        if: env.VERCEL_TOKEN == ''
-        shell: bash
-        run: |
-          echo "::error title=Missing VERCEL_TOKEN::Set the VERCEL_TOKEN GitHub secret so production deploys can run."
-          exit 1
+      - name: Build
+        run: npm run build
+        env:
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
 
-      - name: Validate required production environment variables
-        if: env.VERCEL_TOKEN != ''
-        shell: bash
-        run: |
-          if [ -z "$AUTH_SECRET_VALUE" ]; then
-            echo "::error title=Missing AUTH_SECRET::Set the AUTH_SECRET GitHub secret before deploying to Vercel."
-            exit 1
-          fi
-
-          if [ "${#AUTH_SECRET_VALUE}" -lt 32 ]; then
-            echo "::error title=AUTH_SECRET too short::AUTH_SECRET must be at least 32 characters."
-            exit 1
-          fi
-
-          if { [ -n "$APP_USERNAME_VALUE" ] && [ -z "$APP_PASSWORD_VALUE" ]; } || { [ -z "$APP_USERNAME_VALUE" ] && [ -n "$APP_PASSWORD_VALUE" ]; }; then
-            echo "::error title=App credentials misconfigured::Set both APP_USERNAME and APP_PASSWORD, or leave both blank for open access."
-            exit 1
-          fi
-
-      - name: Pull Vercel project settings
-        if: env.VERCEL_TOKEN != ''
-        shell: bash
-        run: |
-          args=(pull --yes --environment=production --project "$VERCEL_PROJECT_NAME" --token "$VERCEL_TOKEN")
-
-          if [ -n "$VERCEL_SCOPE" ]; then
-            args+=(--scope "$VERCEL_SCOPE")
-          fi
-
-          vercel "${args[@]}"
-
-      - name: Upsert Vercel environment variables
-        if: env.VERCEL_TOKEN != ''
-        shell: bash
-        run: |
-          node <<'EOF'
-          const token = process.env.VERCEL_TOKEN;
-          const projectName = process.env.VERCEL_PROJECT_NAME;
-          const scope = process.env.VERCEL_SCOPE;
-          const envVars = [
-            ['AUTH_SECRET', process.env.AUTH_SECRET_VALUE],
-            ['NEXT_PUBLIC_BASE_URL', process.env.NEXT_PUBLIC_BASE_URL_VALUE],
-            ['APP_USERNAME', process.env.APP_USERNAME_VALUE],
-            ['APP_PASSWORD', process.env.APP_PASSWORD_VALUE],
-            ['OPENAI_API_KEY', process.env.OPENAI_API_KEY_VALUE],
-            ['OPENAI_CHAT_MODEL', process.env.OPENAI_CHAT_MODEL_VALUE],
-            ['REDIS_URL', process.env.REDIS_URL_VALUE],
-            ['UPSTASH_REDIS_REST_URL', process.env.UPSTASH_REDIS_REST_URL_VALUE],
-            ['UPSTASH_REDIS_REST_TOKEN', process.env.UPSTASH_REDIS_REST_TOKEN_VALUE],
-            ['RESEND_API_KEY', process.env.RESEND_API_KEY_VALUE],
-            ['SENDER_EMAIL', process.env.SENDER_EMAIL_VALUE],
-            ['NOTIFICATION_EMAIL', process.env.NOTIFICATION_EMAIL_VALUE],
-            ['LOGIN_RATE_LIMIT', process.env.LOGIN_RATE_LIMIT_VALUE],
-            ['LOGIN_RATE_WINDOW_MS', process.env.LOGIN_RATE_WINDOW_MS_VALUE],
-            ['CHAT_RATE_LIMIT', process.env.CHAT_RATE_LIMIT_VALUE],
-            ['CHAT_RATE_WINDOW_MS', process.env.CHAT_RATE_WINDOW_MS_VALUE],
-          ];
-
-          const baseUrl = new URL(`https://api.vercel.com/v10/projects/${encodeURIComponent(projectName)}/env`);
-          baseUrl.searchParams.set('upsert', 'true');
-
-          if (scope) {
-            baseUrl.searchParams.set('slug', scope);
-          }
-
-          async function upsertVar(key, value) {
-            const response = await fetch(baseUrl, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                key,
-                value,
-                type: 'sensitive',
-                target: ['production', 'preview'],
-              }),
-            });
-
-            if (!response.ok) {
-              const body = await response.text();
-              throw new Error(`Failed to sync ${key}: ${response.status} ${body}`);
-            }
-          }
-
-          async function main() {
-            for (const [key, value] of envVars) {
-              await upsertVar(key, value);
-              console.log(`Synced ${key} to Vercel.`);
-            }
-          }
-
-          main().catch((error) => {
-            console.error(error.message);
-            process.exit(1);
-          });
-          EOF
-
-      - name: Deploy production build
-        if: env.VERCEL_TOKEN != ''
-        shell: bash
-        run: |
-          args=(deploy --prod --yes --project "$VERCEL_PROJECT_NAME" --token "$VERCEL_TOKEN")
-
-          if [ -n "$VERCEL_SCOPE" ]; then
-            args+=(--scope "$VERCEL_SCOPE")
-          fi
-
-          vercel "${args[@]}"
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'

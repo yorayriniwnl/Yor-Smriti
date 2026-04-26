@@ -203,13 +203,21 @@ export const directorCoreScreens: Screen[] = directorScriptScreens.filter(
   (screen) => screen.id >= 80 && screen.id <= 84,
 );
 
+// Fix #22: The original code threw at module scope, making the error untrappable
+// by React error boundaries (module-load errors happen before React can install
+// any boundary). We export a nullable constant instead — consumers must guard for
+// null — so a missing screen 85 degrades gracefully instead of crashing the app.
 const interactionScreen = directorScriptScreens.find((screen) => screen.id === 85);
 
-if (!interactionScreen) {
-  throw new Error('Missing script interaction screen definition (id 85).');
+if (!interactionScreen && process.env.NODE_ENV !== 'production') {
+  console.error(
+    '[experienceScreens] Missing script interaction screen definition (id 85). ' +
+    'InteractionLayerScreen will not render. Check SCRIPT_NARRATIVE_LINES.',
+  );
 }
 
-export const directorInteractionScreen: Screen = interactionScreen;
+// Consumers must guard: `if (!directorInteractionScreen) return null;`
+export const directorInteractionScreen: Screen | null = interactionScreen ?? null;
 
 export const directorCinematicScreens: Screen[] = directorScriptScreens.filter(
   (screen) => screen.id >= 86 && screen.id <= 87,

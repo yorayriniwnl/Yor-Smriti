@@ -12,33 +12,15 @@
  */
 
 import { logger } from './logger';
-
-interface UpstashConfig {
-  url: string;
-  token: string;
-}
+import { getUpstashConfig, upstashCmd, upstashPipeline } from './upstash';
+import type { UpstashConfig } from './upstash';
 
 function getConfig(): UpstashConfig | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  return url && token ? { url, token } : null;
+  return getUpstashConfig();
 }
 
-async function kv(config: UpstashConfig, ...args: unknown[]): Promise<unknown> {
-  const res = await fetch(config.url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${config.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`Upstash KV HTTP ${res.status}`);
-  const data = (await res.json()) as { result?: unknown; error?: string };
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
+const kv = (config: UpstashConfig, ...args: unknown[]): Promise<unknown> =>
+  upstashCmd(config, ...args);
 
 export interface ReplyEntry {
   id: string;
@@ -83,11 +65,12 @@ export async function getReplyEntries(limit = 50): Promise<ReplyEntry[]> {
     const ids = (await kv(cfg, 'ZREVRANGE', 'reply:index', 0, limit - 1)) as string[];
     if (!ids || ids.length === 0) return [];
 
-    const entries = await Promise.all(
-      ids.map(async (id) => {
-        const raw = (await kv(cfg, 'GET', `reply:${id}`)) as string | null;
-        return raw ? (JSON.parse(raw) as ReplyEntry) : null;
-      })
+    // Issue 13 fix: batch all GETs in a single HTTP round-trip via pipeline
+    // instead of firing N individual upstashCmd calls (N+1 pattern).
+    const pipeline = ids.map((id) => ['GET', `reply:${id}`]);
+    const results = await upstashPipeline(cfg, pipeline);
+    const entries = results.map((r) =>
+      typeof r.result === 'string' ? (JSON.parse(r.result) as ReplyEntry) : null
     );
 
     return entries.filter((entry): entry is ReplyEntry => entry !== null);

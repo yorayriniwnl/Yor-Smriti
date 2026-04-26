@@ -28,7 +28,7 @@ export async function safeFetchJson<T = unknown>(
     }
 
     if (typeof timeoutMs === 'number' && timeoutMs > 0) {
-      timeoutId = window.setTimeout(() => combined.abort(), timeoutMs);
+      timeoutId = setTimeout(() => combined.abort(), timeoutMs) as unknown as number;
     }
 
     const response = await fetch(input, { ...init, signal: combined.signal });

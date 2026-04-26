@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const labels: Record<string, string> = { event: eventName };
   if (screen) labels['screen'] = screen;
 
-  incMetric('experience_event_total', labels);
+  void incMetric('experience_event_total', labels);
   
   // Log for persistence (pipe to external service in prod)
   const ip = getClientIp(request);

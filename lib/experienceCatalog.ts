@@ -7,9 +7,16 @@ export interface ExperienceCatalogItem {
   emoji: string;
   action: string;
   feeling: string;
+  /**
+   * When true, this entry is shown in the hub but excluded from the
+   * automated sequence runner. Use for password-gated pages that cannot
+   * meaningfully play inside a 45-second iframe slot.
+   */
+  skipInSequence?: boolean;
 }
 
 export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
+  // ── Phase 1: Memory & Love (establishing her as the centre) ──────────────
   {
     href: '/timeline',
     eyebrow: 'memory',
@@ -40,34 +47,58 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     action: 'Explore',
     feeling: 'An interactive sky made of things I still think about.',
   },
+  // Portrait comes early — she should know this is about her, fully, before
+  // the apology arc begins.
   {
-    href: '/promise',
-    eyebrow: 'commitments',
-    title: 'My Promises',
-    navLabel: 'Promises',
-    description: 'Things I will do differently. Written to be kept, not forgotten.',
-    emoji: '🕯️',
+    href: '/her',
+    eyebrow: 'portrait',
+    title: 'Who She Is',
+    description: 'A page entirely about her presence, softness, and strength.',
+    emoji: '🌘',
+    action: 'See her',
+    feeling: 'A page that keeps the attention where it belongs.',
+  },
+  // ── Phase 2: What I noticed, what I kept ────────────────────────────────
+  {
+    href: '/words-she-said',
+    eyebrow: 'I was listening',
+    title: 'Things You Said',
+    navLabel: 'Her Words',
+    description: 'Specific phrases she said, and why they stayed with him.',
+    emoji: '🪶',
     action: 'Read',
-    feeling: 'What I am committing to, not as performance, as record.',
+    feeling: 'Proof that he was paying attention.',
   },
   {
-    href: '/panda',
-    eyebrow: 'apology',
-    title: 'Apology Journey',
-    navLabel: 'Apology',
-    description: 'Eight interactive screens shaped around an honest apology.',
-    emoji: '🐼',
-    action: 'Begin',
-    feeling: 'The clearest apology path, screen by screen.',
+    href: '/small-things',
+    eyebrow: 'noticed',
+    title: 'Small Things',
+    navLabel: 'Noticed',
+    description: 'The gestures, habits, and details he noticed but never said.',
+    emoji: '👁️',
+    action: 'Notice',
+    feeling: 'The small things are where the truth usually lives.',
   },
   {
-    href: '/love-sorry',
-    eyebrow: 'love and sorry',
-    title: 'Love & Sorry',
-    description: 'Envelope, cards, letter, playlist, and finale in one flow.',
-    emoji: '💔',
+    href: '/moments',
+    eyebrow: 'moments',
+    title: 'Three Moments',
+    navLabel: 'Moments',
+    description: 'Three full-screen scenes, written as present-tense memory.',
+    emoji: '🕰️',
+    action: 'Replay',
+    feeling: 'Three scenes. The kind you keep replaying.',
+  },
+  // ── Phase 3: The honest reckoning ────────────────────────────────────────
+  {
+    href: '/apology-map',
+    eyebrow: 'accountability',
+    title: 'Where I Went Wrong',
+    navLabel: 'Apology Map',
+    description: 'A chronological map of specific failures, with dates and impact.',
+    emoji: '🗺️',
     action: 'Open',
-    feeling: 'A full little world of cards, music, and the letter.',
+    feeling: 'Harder to read. More honest for it.',
   },
   {
     href: '/unsaid',
@@ -89,25 +120,25 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     action: 'Read',
     feeling: 'Specific. Not sentimental. Just true.',
   },
+  // ── Phase 4: The journey (core emotional experiences) ────────────────────
   {
-    href: '/letter',
-    eyebrow: 'letter',
-    title: 'The Letter',
-    navLabel: 'Letter',
-    description: 'A full-screen, distraction-free letter waiting to be read.',
-    emoji: '💌',
-    action: 'Read',
-    feeling: 'No animations. No characters. Just his words, waiting.',
+    href: '/panda',
+    eyebrow: 'apology',
+    title: 'Apology Journey',
+    navLabel: 'Apology',
+    description: 'Eight interactive screens shaped around an honest apology.',
+    emoji: '🐼',
+    action: 'Begin',
+    feeling: 'The clearest apology path, screen by screen.',
   },
   {
-    href: '/moments',
-    eyebrow: 'moments',
-    title: 'Three Moments',
-    navLabel: 'Moments',
-    description: 'Three full-screen scenes, written as present-tense memory.',
-    emoji: '🕰️',
-    action: 'Replay',
-    feeling: 'Three scenes. The kind you keep replaying.',
+    href: '/love-sorry',
+    eyebrow: 'love and sorry',
+    title: 'Love & Sorry',
+    description: 'Envelope, cards, letter, playlist, and finale in one flow.',
+    emoji: '💔',
+    action: 'Open',
+    feeling: 'A full little world of cards, music, and the letter.',
   },
   {
     href: '/one-day',
@@ -119,16 +150,28 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     action: 'Visit',
     feeling: 'Not a grand gesture. Just a day. The kind we had.',
   },
+  // ── Phase 5: Promises and commitments ────────────────────────────────────
   {
-    href: '/apology-map',
-    eyebrow: 'accountability',
-    title: 'Where I Went Wrong',
-    navLabel: 'Apology Map',
-    description: 'A chronological map of specific failures, with dates and impact.',
-    emoji: '🗺️',
-    action: 'Open',
-    feeling: 'Harder to read. More honest for it.',
+    href: '/promise',
+    eyebrow: 'commitments',
+    title: 'My Promises',
+    navLabel: 'Promises',
+    description: 'Things I will do differently. Written to be kept, not forgotten.',
+    emoji: '🕯️',
+    action: 'Read',
+    feeling: 'What I am committing to, not as performance, as record.',
   },
+  {
+    href: '/letter',
+    eyebrow: 'letter',
+    title: 'The Letter',
+    navLabel: 'Letter',
+    description: 'A full-screen, distraction-free letter waiting to be read.',
+    emoji: '💌',
+    action: 'Read',
+    feeling: 'No animations. No characters. Just his words, waiting.',
+  },
+  // ── Phase 6: Closing arc (growth → gratitude → the end) ─────────────────
   {
     href: '/the-good',
     eyebrow: 'just the good',
@@ -138,53 +181,6 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     emoji: '🌿',
     action: 'Remember',
     feeling: 'It was real. I want you to know I know that.',
-  },
-  {
-    href: '/for-her-alone',
-    eyebrow: 'private',
-    title: 'For Her Alone',
-    description: 'A password-protected page. Only she gets here.',
-    emoji: '🔒',
-    action: 'Unlock',
-    feeling: 'This one is just for you.',
-  },
-  {
-    href: '/words-she-said',
-    eyebrow: 'I was listening',
-    title: 'Things You Said',
-    navLabel: 'Her Words',
-    description: 'Specific phrases she said, and why they stayed with him.',
-    emoji: '🪶',
-    action: 'Read',
-    feeling: 'Proof that he was paying attention.',
-  },
-  {
-    href: '/her',
-    eyebrow: 'portrait',
-    title: 'Who She Is',
-    description: 'A page entirely about her presence, softness, and strength.',
-    emoji: '🌘',
-    action: 'See her',
-    feeling: 'A page that keeps the attention where it belongs.',
-  },
-  {
-    href: '/questions',
-    eyebrow: 'wondering',
-    title: 'Questions',
-    description: 'Honest questions he still carries without demanding answers.',
-    emoji: '❓',
-    action: 'Read',
-    feeling: 'Curiosity without accusation. Tender, careful, unfinished.',
-  },
-  {
-    href: '/small-things',
-    eyebrow: 'noticed',
-    title: 'Small Things',
-    navLabel: 'Noticed',
-    description: 'The gestures, habits, and details he noticed but never said.',
-    emoji: '👁️',
-    action: 'Notice',
-    feeling: 'The small things are where the truth usually lives.',
   },
   {
     href: '/before-after',
@@ -197,6 +193,15 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     feeling: 'A quiet map of who he was, and who he wants to be.',
   },
   {
+    href: '/questions',
+    eyebrow: 'wondering',
+    title: 'Questions',
+    description: 'Honest questions he still carries without demanding answers.',
+    emoji: '❓',
+    action: 'Read',
+    feeling: 'Curiosity without accusation. Tender, careful, unfinished.',
+  },
+  {
     href: '/gratitude',
     eyebrow: 'gratitude',
     title: 'Gratitude',
@@ -204,5 +209,19 @@ export const EXPERIENCE_CATALOG: readonly ExperienceCatalogItem[] = [
     emoji: '🙏',
     action: 'Thank her',
     feeling: 'Some people leave gifts inside you. This names them.',
+  },
+  // ── Hub-only (password-gated — excluded from automated sequence) ─────────
+  // skipInSequence: the page sits behind a password gate that cannot play
+  // meaningfully in a 45-second iframe slot. It is discoverable from the hub
+  // and is meant to be opened intentionally, not auto-advanced through.
+  {
+    href: '/for-her-alone',
+    eyebrow: 'private',
+    title: 'For Her Alone',
+    description: 'A password-protected page. Only she gets here.',
+    emoji: '🔒',
+    action: 'Unlock',
+    feeling: 'This one is just for you.',
+    skipInSequence: true,
   },
 ];

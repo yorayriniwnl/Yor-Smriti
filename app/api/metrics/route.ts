@@ -32,7 +32,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     });
   }
 
-  const body = getPrometheusMetrics();
+  const body = await getPrometheusMetrics();
 
   if (wantsJson) {
     return NextResponse.json({ ok: true, metrics: parseMetrics(body) });

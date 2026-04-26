@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Emotion } from '@/lib/emotionThemes';
 
-const TEXT_REVEAL_EVENT = 'yor:text-reveal';
+// Bug 53 fix: renamed from yor:text-reveal; useSubconsciousSoundDesign listens for this
+const TEXT_REVEAL_EVENT = 'yor:screen-reveal';
 
 interface TextRevealProps {
   text: string;
@@ -190,12 +191,15 @@ export function TextReveal({
 
     const triggerDelayMs = Math.max(0, delay * 1000 + humanTexture.delayJitterMs);
     const timer = window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent(TEXT_REVEAL_EVENT));
+      // Bug 53 fix: dispatch on document (not window) so useSubconsciousSoundDesign
+      // receives the event on every screen transition, not just initial mount.
+      document.dispatchEvent(new CustomEvent(TEXT_REVEAL_EVENT, { detail: { text } }));
     }, triggerDelayMs);
 
     return () => {
       window.clearTimeout(timer);
     };
+  // text in deps ensures event fires on every new screen, not just first mount
   }, [delay, humanTexture.delayJitterMs, text]);
 
   const displayedText = mode === 'typewriter' ? text.slice(0, visibleChars) : text;

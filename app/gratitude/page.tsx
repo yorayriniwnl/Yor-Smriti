@@ -1,6 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { isPlaceholder } from '@/lib/content';
+import { ContentComingSoon } from '@/components/ui/ContentComingSoon';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -10,20 +12,22 @@ interface GratitudeItem {
 }
 
 const ITEMS: GratitudeItem[] = [
-  // Each item begins with "Because of you…", "You made me…", or "I understand now…"
-  // [Fill each with something specific — not a lesson, but a gratitude for impact]
-  { n: '01', text: '[Because of you… — something specific she changed about how you see the world or yourself]' },
-  { n: '02', text: '[You made me… — a concrete way she changed who you are, not who you wanted to be]' },
-  { n: '03', text: '[I understand now… — something you genuinely understand now that you didn\'t before she was in your life]' },
-  { n: '04', text: '[Because of you… — something she gave you that has nothing to do with the relationship ending]' },
-  { n: '05', text: '[You made me… — something about your character or values that is different because of her]' },
-  { n: '06', text: '[I understand now… — something about other people, or life, or yourself that she helped you see]' },
-  { n: '07', text: '[Because of you… — a specific thing you value differently now because of her]' },
-  { n: '08', text: '[You made me… — something you do or approach differently because of who she was to you]' },
-  { n: '09', text: '[I understand now… — one last thing. The one that took the longest to see clearly.]' },
+  { n: '01', text: 'Because of you, I understand what it means to be genuinely seen by someone. Not performed for — seen. You did that without making it a thing, and now I know the difference between that and everything else.' },
+  { n: '02', text: 'You made me more precise. About what I think. About what I say. You did not accept vague. You waited for the actual thing, and that habit stayed.' },
+  { n: '03', text: 'I understand now that presence is something you do, not something you are. You were present. Fully. I watched you do it and I finally understood what it looks like from the outside.' },
+  { n: '04', text: 'Because of you, I know what 10 AM to 10 PM of a person feels like. What it means to want to keep giving someone your afternoon, and your evening, and still have more.' },
+  { n: '05', text: 'You made me aware of my silences. Not proud of them — aware. That is the first step in changing something. I had not taken that step before you.' },
+  { n: '06', text: 'I understand now that when someone calls your name a certain way, and it sounds different from anyone else — that is something. That is not nothing. I understand that now.' },
+  { n: '07', text: 'Because of you, I take people more seriously when they laugh at something they find genuinely funny. Not the social laugh. The real one. Yours taught me to look for it.' },
+  { n: '08', text: 'You made me want to be a more careful person. Not better in the abstract. Careful — with what I say, with what I leave unsaid, with other people who trust me.' },
+  { n: '09', text: 'I understand now, clearly, what I had. That is the last thing. The one that took the longest. I understand exactly what I was holding and what I did with it, and that understanding is yours.' },
 ];
 
 export default function GratitudePage() {
+  if (ITEMS.every(item => isPlaceholder(item.text))) {
+    return <ContentComingSoon title="gratitude" />;
+  }
+
   return (
     <main
       className="relative flex min-h-dvh w-dvw flex-col items-center justify-center overflow-hidden px-5 py-20"

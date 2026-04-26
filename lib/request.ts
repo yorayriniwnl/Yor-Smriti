@@ -9,8 +9,20 @@
  * a trusted reverse proxy (Vercel, Cloudflare, your own nginx with
  * proxy_set_header directives). Leave it unset for local dev.
  */
+import { logger } from './logger';
+
+let _trustProxyWarned = false;
+
 export function getClientIp(request: Request): string {
   const trustProxy = process.env.TRUST_PROXY === '1';
+
+  if (!trustProxy && !_trustProxyWarned) {
+    _trustProxyWarned = true;
+    logger.warn(
+      '[request] TRUST_PROXY not set — all requests will share rate-limit bucket "unknown". ' +
+      'Set TRUST_PROXY=1 in production.'
+    );
+  }
 
   if (trustProxy) {
     const cfIp   = request.headers.get('cf-connecting-ip');
@@ -53,8 +65,8 @@ export function verifyCsrfHeader(request: Request): boolean {
     } catch { /* invalid origin */ }
   }
 
-  // Allow in development without the header
-  if (process.env.NODE_ENV !== 'production') return true;
+  // Allow in test environment so Vitest suites pass without a CSRF header
+  if (process.env.NODE_ENV === 'test') return true;
 
   return false;
 }

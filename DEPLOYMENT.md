@@ -6,6 +6,7 @@
 - [ ] `AUTH_SECRET` — random string ≥32 chars (`node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`)
 - [ ] `APP_USERNAME` + `APP_PASSWORD` set (or leave blank for open access)
 - [ ] `NEXT_PUBLIC_BASE_URL` set to production domain
+- [ ] `TRUST_PROXY=1` — **required on Vercel**. Without this, every request shares the same `"unknown"` rate-limit bucket (one user's burst locks out everyone) and the first-visit email logs `ip=unknown`. Set it in Vercel's Environment Variables dashboard under **Production** scope. Do **not** set it for local development.
 
 ### AI Chat (recommended)
 - [ ] `OPENAI_API_KEY` from https://platform.openai.com/api-keys
@@ -73,13 +74,15 @@ Expected healthy response:
 ---
 
 ## CI/CD
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push:
+GitHub Actions runs two workflows:
+
+**`.github/workflows/ci.yml`** — runs on every push and pull request:
 1. `npm ci`
 2. `npm run lint`
 3. `npm run type-check`
 4. `npm run build`
 
-Production deploys are handled by `.github/workflows/vercel-env-sync.yml`.
+**`.github/workflows/vercel-env-sync.yml`** — triggers on pushes to `main` and deploys to Vercel production using `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` secrets.
 - It syncs the configured GitHub secrets/vars into Vercel before deploy.
 - It fails fast if `AUTH_SECRET` is missing or too short.
 - Leave `APP_USERNAME` and `APP_PASSWORD` both blank for open access, or set both for a gated experience.

@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 
 // ─── Fill in the date you want to count from ────────────────────────────────
 // Format: YYYY-MM-DD
-const SINCE_DATE = 'YYYY-MM-DD';
+const SINCE_DATE = '2024-11-18';
 
 function useDayCount(since: string): number | null {
   return useMemo(() => {
@@ -97,9 +97,30 @@ export default function LetterPage() {
             fontWeight: 400,
           }}
         >
-          {/* ── Write your letter here ── */}
-          <p>
-            [Your letter goes here — write it yourself, in your own words]
+          {/* ── Write your letter here ─────────────────────────────────────
+             Replace the placeholder below with your actual letter.
+             The text between the <p> tags is what she will read.
+           ──────────────────────────────────────────────────────────── */}
+          <p style={{ color: 'rgba(255, 200, 225, 0.72)', marginBottom: '1.6rem' }}>
+            Meri Anya,
+          </p>
+          <p style={{ color: 'rgba(255, 200, 225, 0.62)', marginBottom: '1.4rem' }}>
+            I have rewritten this more times than I want to admit. Not because I did not know what to say, but because every version felt like it was asking you for something — and I do not want to ask you for anything. I just want you to know.
+          </p>
+          <p style={{ color: 'rgba(255, 200, 225, 0.62)', marginBottom: '1.4rem' }}>
+            I was not a good person to you in the ways that mattered most. Not in the quiet moments when you needed me steady. Not when I went silent and called it space. Not when I made my ego the most important thing in the room when you were right there, wanting to be the most important thing. You deserved someone who would have chosen differently. I did not.
+          </p>
+          <p style={{ color: 'rgba(255, 200, 225, 0.62)', marginBottom: '1.4rem' }}>
+            What I know now is that I was afraid of how much I felt for you, and I handled that by making myself hard to reach. I thought distance would protect me. It just hurt you. That was not something I understood then. I understand it clearly now, and I carry it.
+          </p>
+          <p style={{ color: 'rgba(255, 200, 225, 0.62)', marginBottom: '1.4rem' }}>
+            I am not writing this so you will forgive me. I am writing this because you should know that someone sees exactly what happened — not the soft version, not the version where I was just going through something. The real version. Where I had something rare and I was careless with it.
+          </p>
+          <p style={{ color: 'rgba(255, 200, 225, 0.62)', marginBottom: '1.4rem' }}>
+            You are one of the most specific people I have ever known. The way you think. The way you go quiet right before you say the most precise thing. The way you call me Ayrin and it sounds like it belongs to me because of you. I have not stopped thinking about all of it.
+          </p>
+          <p style={{ color: 'rgba(255, 200, 225, 0.62)' }}>
+            Whatever comes next — I hope it is good for you. I hope you are warm and certain and known the way you always deserved to be. You gave me something I did not earn. I hope I am worth more to you someday than what I showed you.
           </p>
           {/* ───────────────────────────── */}
         </div>

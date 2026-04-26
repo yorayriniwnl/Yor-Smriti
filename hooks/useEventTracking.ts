@@ -28,6 +28,10 @@ async function sendEvent(event: EventName, options?: TrackOptions): Promise<void
   try {
     await fetch('/api/events', {
       method: 'POST',
+      // Bug 48 fix: credentials was missing here, so the session cookie was
+      // never sent. /api/events requires a valid session, so every event
+      // returned 401 silently — the entire analytics system tracked nothing.
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'x-yor-csrf': '1' },
       body: JSON.stringify({ event, ...options }),
     });

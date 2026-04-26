@@ -21,6 +21,16 @@ export async function POST(request: Request) {
     // If no credentials are configured, auto-login as guest (open experience)
     const openAccess = !configuredUsername && !configuredPassword;
 
+    // Issue 14 fix: loud warning so misconfigured production deployments are
+    // immediately visible in logs rather than silently open to the world.
+    if (openAccess && process.env.NODE_ENV === 'production') {
+      logger.warn(
+        '[login] OPEN-ACCESS MODE ACTIVE — APP_USERNAME and APP_PASSWORD are not set. ' +
+        'Every request will receive a valid session without any credentials. ' +
+        'Set both variables in your environment to enable authentication.'
+      );
+    }
+
     let body: LoginRequestBody;
     try {
       body = (await request.json()) as LoginRequestBody;

@@ -1,23 +1,28 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { isPlaceholder } from '@/lib/content';
+import { ContentComingSoon } from '@/components/ui/ContentComingSoon';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 const QUESTIONS: string[] = [
-  // [Write an honest question you have for her — something you actually wonder, not rhetorical, not demanding]
-  '[Write an honest question you have for her — something you actually wonder. Not rhetorical. Not demanding.]',
-  '[A question about something you never understood — a choice she made, a moment you still replay and don\'t fully grasp.]',
-  '[A question about who she is now — not as accusation, as genuine curiosity about how she is.]',
-  '[A question you have never asked because you were afraid of what the answer might be.]',
-  '[A question about something she said once that stayed with you, that you\'ve thought about many times since.]',
-  '[A question about what she needed that you didn\'t give her — asked plainly, without self-pity.]',
-  '[A question about her future — something you genuinely wonder about, separate from yourself.]',
-  '[A question about something small — a habit, a preference, a thing you realised you don\'t actually know.]',
-  '[One last question — the one you\'d ask if you only got one.]',
+  'Are you okay? Not in the way people ask without wanting an answer. Actually — how are you doing?',
+  'Was there a moment you knew it was not going to work, and you stayed anyway? I have always wondered what that felt like for you.',
+  'What did you need from me that I never thought to give?',
+  'Did you ever feel like I actually saw you, or was it always a little like I was looking just past?',
+  'The thing you said once about how you go quiet when you decide someone is not worth the argument — did you ever go quiet like that with me?',
+  'Is there something you wanted to say to me that you never did? I am asking because I think there is, and I think you decided I was not worth the risk.',
+  'What does your life look like now? Not the surface of it. The inside of it.',
+  'Do you still laugh the same way? The one where you try to stop it and cannot?',
+  'If you could say one thing to me and know I would actually hear it — what would it be?',
 ];
 
 export default function QuestionsPage() {
+  if (QUESTIONS.every(isPlaceholder)) {
+    return <ContentComingSoon title="questions" />;
+  }
+
   return (
     <main
       className="relative flex min-h-dvh w-dvw flex-col items-center justify-center overflow-hidden px-5 py-24"

@@ -1,93 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { AmbientSound } from '@/components/ui/AmbientSound';
 import { ScrollReset } from '@/components/ui/ScrollReset';
-import { ReadingProgress } from '@/components/ui/ReadingProgress';
 
 const EASE_SOFT = [0.16, 1, 0.3, 1] as const;
 
-// ─── Password is verified server-side via /api/her-unlock ───────────────────
-// Set HER_UNLOCK_PASSWORD in your environment variables.
-// The password is never shipped in the client bundle.
-const SESSION_KEY = 'ys_her_unlocked';
-
-// ─── The private content ─────────────────────────────────────────────────────
-// This is the rawest, most private thing on the site.
-// Replace this placeholder with whatever you actually want to say.
-function PrivateContent() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1.1, ease: EASE_SOFT }}
-      className="relative z-10 mx-auto px-6"
-      style={{ maxWidth: 580, paddingTop: '8vh', paddingBottom: '16vh' }}
-    >
-      <ReadingProgress />
-
-      <p
-        className="mb-12 uppercase tracking-[0.22em]"
-        style={{
-          fontFamily: 'var(--font-dm-mono)',
-          color: 'rgba(255, 193, 223, 0.65)',
-          fontSize: '0.58rem',
-        }}
-      >
-        for her alone
-      </p>
-
-      {/* ── Replace everything below this line with your actual private content ── */}
-      <p
-        style={{
-          fontFamily: 'var(--font-cormorant)',
-          fontStyle: 'italic',
-          fontSize: 'clamp(1.1rem, 2.6vw, 1.35rem)',
-          lineHeight: 1.9,
-          color: 'rgba(255, 220, 240, 0.88)',
-          fontWeight: 400,
-        }}
-      >
-        [This is the private page. Only she gets here. Write what you actually need
-        to say — the thing that does not belong on the other pages. This might be the
-        most honest thing on the whole site. Use that.]
-      </p>
-      {/* ──────────────────────────────────────────────────────────────────────── */}
-
-      <p
-        className="mt-16"
-        style={{
-          fontFamily: 'var(--font-dm-mono)',
-          fontSize: '0.6rem',
-          letterSpacing: '0.14em',
-          color: 'rgba(247, 110, 160, 0.42)',
-        }}
-      >
-        — Ayrin
-      </p>
-
-      <div className="mt-14">
-        <Link
-          href="/hub"
-          style={{
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '0.58rem',
-            letterSpacing: '0.1em',
-            color: 'rgba(255, 171, 210, 0.3)',
-            textTransform: 'uppercase',
-          }}
-        >
-          ← back
-        </Link>
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── Password gate ────────────────────────────────────────────────────────────
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
+// On success, /api/her-unlock sets an HttpOnly `her_unlocked` cookie and this
+// component redirects to /for-her-alone/content — a server component that
+// renders the letter. The letter text is never shipped in this bundle.
+function PasswordGate() {
+  const router = useRouter();
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const [shaking, setShaking] = useState(false);
@@ -108,9 +35,8 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         body: JSON.stringify({ password: value.trim() }),
       });
       if (res.ok) {
-        setError(false);
-        try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
-        onUnlock();
+        // Cookie is now set server-side. Navigate to the server-rendered content.
+        router.push('/for-her-alone/content');
       } else {
         setError(true);
         setShaking(true);
@@ -222,6 +148,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
           <motion.button
             type="button"
             onClick={attempt}
+            disabled={loading}
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.97 }}
             style={{
@@ -235,11 +162,12 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
               fontSize: '0.64rem',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              cursor: 'pointer',
-              transition: 'background 0.3s',
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              transition: 'background 0.3s, opacity 0.2s',
             }}
           >
-            Enter →
+            {loading ? '···' : 'Enter →'}
           </motion.button>
         </motion.div>
       </motion.div>
@@ -269,20 +197,6 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ForHerAlonePage() {
-  const [unlocked, setUnlocked] = useState<boolean | null>(null);
-
-  // Check sessionStorage on mount to persist within the session
-  useEffect(() => {
-    try {
-      setUnlocked(sessionStorage.getItem(SESSION_KEY) === '1');
-    } catch {
-      setUnlocked(false);
-    }
-  }, []);
-
-  // Avoid flash before we've checked storage
-  if (unlocked === null) return null;
-
   return (
     <main
       id="main-content"
@@ -295,7 +209,6 @@ export default function ForHerAlonePage() {
       <ScrollReset />
       <AmbientSound />
 
-      {/* Ambient orb */}
       <div
         className="pointer-events-none fixed"
         aria-hidden="true"
@@ -309,30 +222,7 @@ export default function ForHerAlonePage() {
         }}
       />
 
-      <AnimatePresence mode="wait">
-        {unlocked ? (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            className="w-full"
-          >
-            <PrivateContent />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="gate"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full"
-          >
-            <PasswordGate onUnlock={() => setUnlocked(true)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <PasswordGate />
     </main>
   );
 }

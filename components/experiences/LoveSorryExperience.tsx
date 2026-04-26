@@ -44,7 +44,9 @@ const SONGS = [
     artist: 'Mohit Chauhan',
     note: 'Because this is what mornings felt like with you in them — quiet, unhurried, enough.',
     color: '#f472b6',
-    bar: 0.44,
+    // Bug 52+57 fix: real src for audio element; ytUrl is graceful-degradation fallback
+    src: '/audio/tum-se-hi.mp3',
+    ytUrl: 'https://music.youtube.com/search?q=Tum+Se+Hi',
   },
   {
     id: 's2',
@@ -52,7 +54,8 @@ const SONGS = [
     artist: 'Arijit Singh & Alka Yagnik',
     note: 'I could not get through this song for a long time after. Now I think it is the most honest thing I have.',
     color: '#fb7185',
-    bar: 0.62,
+    src: '/audio/agar-tum-saath-ho.mp3',
+    ytUrl: 'https://music.youtube.com/search?q=Agar+Tum+Saath+Ho',
   },
   {
     id: 's3',
@@ -60,7 +63,8 @@ const SONGS = [
     artist: 'Arijit Singh',
     note: 'Loving someone well means letting them go if that is what they need. This song taught me that.',
     color: '#c084fc',
-    bar: 0.51,
+    src: '/audio/channa-mereya.mp3',
+    ytUrl: 'https://music.youtube.com/search?q=Channa+Mereya',
   },
 ];
 
@@ -110,13 +114,12 @@ export default function LoveSorryExperience() {
   const [sealed, setSealed] = useState(false);
   const [sealAnim, setSealAnim] = useState(false);
   const [activeSong, setActiveSong] = useState<string | null>(SONGS[0]?.id ?? null);
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
+  // Bug 52 fix: playing/progress state removed — real audio is managed inside PlaylistScreen
   const [hearts, setHearts] = useState<HeartParticle[]>([]);
   const [tapCount, setTapCount] = useState(0);
   const [letterLines, setLetterLines] = useState(0);
   const heartIdRef = useRef(0);
-  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Bug 52 fix: progressRef and fake setInterval removed — replaced by real Web Audio API in PlaylistScreen
 
   useEffect(() => {
     if (screen === 'letter') {
@@ -134,28 +137,7 @@ export default function LoveSorryExperience() {
     setAllFlipped(count === SORRY_CARDS.length);
   }, [flipped]);
 
-  useEffect(() => {
-    if (playing) {
-      progressRef.current = setInterval(() => {
-        setProgress((p) => {
-          if (p >= 100) {
-            setPlaying(false);
-            return 0;
-          }
-          return p + 0.4;
-        });
-      }, 80);
-    } else if (progressRef.current) {
-      clearInterval(progressRef.current);
-      progressRef.current = null;
-    }
-
-    return () => {
-      if (progressRef.current) {
-        clearInterval(progressRef.current);
-      }
-    };
-  }, [playing]);
+  // Bug 52 fix: fake setInterval removed — PlaylistScreen owns real audio playback now
 
   const toggleFlip = (id: string) => setFlipped((f) => ({ ...f, [id]: !f[id] }));
 
@@ -202,16 +184,7 @@ export default function LoveSorryExperience() {
 
   const readLetter = () => setScreen('letter');
 
-  const selectSong = (id: string) => {
-    setActiveSong(id);
-    setPlaying(true);
-    setProgress(0);
-  };
-
-  const togglePlay = () => {
-    setPlaying((p) => !p);
-    setProgress(0);
-  };
+  // Bug 52 fix: selectSong and togglePlay removed — PlaylistScreen manages audio internally
 
   const continueToFinal = () => setScreen('final');
 
@@ -223,8 +196,7 @@ export default function LoveSorryExperience() {
     setSealed(false);
     setTapCount(0);
     setHearts([]);
-    setProgress(0);
-    setPlaying(false);
+    // Bug 52 fix: playing/progress reset removed — PlaylistScreen manages its own audio state
   };
 
   const sendKiss = () => alert('Sending birthday kisses 💋');
@@ -318,10 +290,7 @@ export default function LoveSorryExperience() {
           <PlaylistScreen
             songs={SONGS}
             activeSong={activeSong}
-            playing={playing}
-            progress={progress}
-            onTogglePlay={togglePlay}
-            onSelectSong={selectSong}
+            onSelectSong={setActiveSong}
             onContinue={continueToFinal}
           />
         )}

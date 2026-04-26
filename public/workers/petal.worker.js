@@ -1,5 +1,23 @@
 // Petal canvas worker: draws petals/hearts/confetti on an OffscreenCanvas
 // Served from /workers/petal.worker.js — plain JS so it can be loaded as a static worker.
+//
+// USAGE NOTE: When instantiating this worker from a component, always attach an
+// onerror handler so failures surface rather than silently dying:
+//
+//   const worker = new Worker('/workers/petal.worker.js');
+//   worker.onerror = (e) => {
+//     console.warn('[PetalWorker] Worker error, canvas animation disabled:', e.message);
+//     worker.terminate();
+//   };
+
+// Forward unhandled errors inside the worker context to the main thread so
+// they appear in DevTools and can be caught by the host's onerror handler.
+self.addEventListener('error', (e) => {
+  self.postMessage({ type: 'error', message: e.message ?? String(e) });
+});
+self.addEventListener('unhandledrejection', (e) => {
+  self.postMessage({ type: 'error', message: String(e.reason) });
+});
 
 let canvas = null;
 let ctx = null;
