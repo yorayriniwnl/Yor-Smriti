@@ -45,6 +45,9 @@ const REASONS: ReasonCard[] = [
 ];
 
 const SEQUENCE_REASONS: ReasonCard[] = [REASONS[0], REASONS[3], REASONS[8], REASONS[14]];
+const SEQUENCE_REASON_START_MS = 2500;
+const SEQUENCE_REASON_STEP_MS = 7000;
+const SEQUENCE_REASON_FINAL_LINGER_MS = 5000;
 
 const SHADE_STYLES: Record<ReasonCard['shade'], {
   card: string; border: string; number: string; accent: string; glow: string;
@@ -122,14 +125,14 @@ function ReasonsPageContent() {
         window.setTimeout(() => {
           setDirection(1);
           setCurrent(index);
-        }, 1100 + index * 1150),
+        }, SEQUENCE_REASON_START_MS + index * SEQUENCE_REASON_STEP_MS),
       );
     });
 
     timeoutIds.push(
       window.setTimeout(() => {
         setCompleted(true);
-      }, 1100 + visibleReasons.length * 1150),
+      }, SEQUENCE_REASON_START_MS + visibleReasons.length * SEQUENCE_REASON_STEP_MS + SEQUENCE_REASON_FINAL_LINGER_MS),
     );
 
     return () => {

@@ -30,8 +30,8 @@ function withSequenceParam(href: string): string {
   return `${href}${href.includes('?') ? '&' : '?'}sequence=1`;
 }
 
-const EXPERIENCE_PAGE_DURATION_MS = 9000;
-const EXPERIENCE_PAGE_LOAD_TIMEOUT_MS = 10000;
+const EXPERIENCE_PAGE_DURATION_MS = 45000;
+const EXPERIENCE_PAGE_LOAD_TIMEOUT_MS = 15000;
 
 const EXPERIENCE_PAGE_SEQUENCE = EXPERIENCE_CATALOG.map((experience) => ({
   href: withSequenceParam(experience.href),
@@ -407,17 +407,17 @@ export default function HomePage() {
       sequenceRunning = true;
       document.body.classList.add('sequence-running');
       goScene('scene-hub');
-      const CARD_SCROLL_UP_MS = 1600;
+      const CARD_SCROLL_UP_MS = 2200;
       const CARD_SCROLL_DOWN_MS = CARD_SCROLL_UP_MS * 2;
-      const CARD_FOCUS_SETTLE_MS = 450;
+      const CARD_FOCUS_SETTLE_MS = 3600;
       const CARD_FOCUS_STEP_MS = CARD_SCROLL_DOWN_MS + CARD_FOCUS_SETTLE_MS;
-      const STORY_POINT_STEP_MS = 2000;
-      const STORY_END_PAUSE_MS = 1200;
-      const GRATITUDE_HOLD_MS = 5000;
-      const GRATITUDE_SCROLL_UP_MS = 3600;
+      const STORY_POINT_STEP_MS = 5500;
+      const STORY_END_PAUSE_MS = 3500;
+      const GRATITUDE_HOLD_MS = 9000;
+      const GRATITUDE_SCROLL_UP_MS = 5000;
       const GRATITUDE_SCROLL_DOWN_MS = GRATITUDE_SCROLL_UP_MS * 2;
       // Let the scene transition CSS animation finish before sequence scrolling starts.
-      const SCENE_SETTLE_MS = 350;
+      const SCENE_SETTLE_MS = 650;
 
       const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-sequence-card="true"]'));
       const storySection = document.querySelector<HTMLElement>('[data-sequence-story="true"]');

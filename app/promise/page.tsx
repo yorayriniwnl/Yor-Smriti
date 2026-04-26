@@ -73,6 +73,9 @@ const PROMISES: Promise[] = [
 ];
 
 const SEQUENCE_PROMISES: Promise[] = [PROMISES[0], PROMISES[1], PROMISES[3], PROMISES[4], PROMISES[5]];
+const SEQUENCE_PROMISE_START_MS = 2000;
+const SEQUENCE_PROMISE_STEP_MS = 7000;
+const SEQUENCE_PROMISE_FINAL_LINGER_MS = 1000;
 
 const WEIGHT_STYLES: Record<Promise['weight'], {
   border: string;
@@ -113,7 +116,7 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
   const startRef = useRef<number | null>(null);
   const progressRef = useRef(0);  // mirrors progress state for use in callbacks
   const autoStartTimeoutRef = useRef<number | null>(null);
-  const holdMs = autoplay ? 1700 : 2800;
+  const holdMs = autoplay ? 3200 : 2800;
 
   const startHold = useCallback(() => {
     if (sealed) return;
@@ -126,13 +129,13 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
       if (pct >= 1) {
         setSealed(true);
         setHolding(false);
-        setTimeout(onSealed, 800);
+        setTimeout(onSealed, autoplay ? 1200 : 800);
         return;
       }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-  }, [holdMs, sealed, onSealed]);
+  }, [autoplay, holdMs, sealed, onSealed]);
 
   const stopHold = useCallback(() => {
     if (sealed) return;
@@ -158,7 +161,7 @@ function SealButton({ onSealed, autoplay = false }: { onSealed: () => void; auto
 
     autoStartTimeoutRef.current = window.setTimeout(() => {
       startHold();
-    }, 240);
+    }, autoplay ? 1000 : 240);
 
     return () => {
       if (autoStartTimeoutRef.current) {
@@ -288,14 +291,14 @@ function PromisePageContent() {
       timeoutIds.push(
         window.setTimeout(() => {
           setCurrent(index);
-        }, 900 + index * 2800),
+        }, SEQUENCE_PROMISE_START_MS + index * SEQUENCE_PROMISE_STEP_MS),
       );
     });
 
     timeoutIds.push(
       window.setTimeout(() => {
         setAllRead(true);
-      }, 900 + visiblePromises.length * 2800 + 200),
+      }, SEQUENCE_PROMISE_START_MS + visiblePromises.length * SEQUENCE_PROMISE_STEP_MS + SEQUENCE_PROMISE_FINAL_LINGER_MS),
     );
 
     return () => {

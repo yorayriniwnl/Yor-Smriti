@@ -72,9 +72,17 @@ const MEMORIES: MemoryBeat[] = [
   },
 ];
 
-const AUTOPLAY_STEP_MS = 1650;
-const AUTOPLAY_FINAL_LINGER_MS = 1200;
-const TIMELINE_SCENE_DURATION_MS = 8000;
+const AUTOPLAY_START_MS = 1200;
+const AUTOPLAY_STEP_MS = 5500;
+const AUTOPLAY_FINAL_LINGER_MS = 5000;
+const TIMELINE_ENTER_MS = 1200;
+const TIMELINE_REVEAL_MS = 2200;
+const TIMELINE_EXIT_MS = 2400;
+const TIMELINE_SCENE_DURATION_MS = AUTOPLAY_START_MS + MEMORIES.length * AUTOPLAY_STEP_MS + AUTOPLAY_FINAL_LINGER_MS;
+const TIMELINE_DRIFT_MS = Math.max(
+  1000,
+  TIMELINE_SCENE_DURATION_MS - TIMELINE_ENTER_MS - TIMELINE_REVEAL_MS - TIMELINE_EXIT_MS,
+);
 
 function TimelinePageContent() {
   const isSequenceMode = useSequenceMode();
@@ -82,7 +90,13 @@ function TimelinePageContent() {
   const { track } = useEventTracking();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFinalBeat, setIsFinalBeat] = useState(false);
-  const scene = useCinematicScenePhase(isSequenceMode, 700, 1200, 3300, 1300);
+  const scene = useCinematicScenePhase(
+    isSequenceMode,
+    TIMELINE_ENTER_MS,
+    TIMELINE_REVEAL_MS,
+    TIMELINE_DRIFT_MS,
+    TIMELINE_EXIT_MS,
+  );
 
   // Fix #13: only fire analytics in direct-navigation mode, not during automated sequence
   useEffect(() => {
@@ -111,20 +125,20 @@ function TimelinePageContent() {
       timeoutIds.push(
         window.setTimeout(() => {
           setActiveIndex(index);
-        }, 480 + index * AUTOPLAY_STEP_MS),
+        }, AUTOPLAY_START_MS + index * AUTOPLAY_STEP_MS),
       );
     });
 
     timeoutIds.push(
       window.setTimeout(() => {
         setIsFinalBeat(true);
-      }, 480 + MEMORIES.length * AUTOPLAY_STEP_MS - 320),
+      }, AUTOPLAY_START_MS + MEMORIES.length * AUTOPLAY_STEP_MS),
     );
 
     timeoutIds.push(
       window.setTimeout(() => {
         setIsFinalBeat(false);
-      }, 480 + MEMORIES.length * AUTOPLAY_STEP_MS + AUTOPLAY_FINAL_LINGER_MS),
+      }, AUTOPLAY_START_MS + MEMORIES.length * AUTOPLAY_STEP_MS + AUTOPLAY_FINAL_LINGER_MS),
     );
 
     return () => {
@@ -172,7 +186,7 @@ function TimelinePageContent() {
               className="h-full origin-left rounded-full bg-[linear-gradient(90deg,rgba(255,165,208,0.95),rgba(255,255,255,0.82))]"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ duration: (TIMELINE_SCENE_DURATION_MS - 700) / 1000, ease: 'linear' }}
+              transition={{ duration: (TIMELINE_SCENE_DURATION_MS - TIMELINE_ENTER_MS) / 1000, ease: 'linear' }}
             />
           </div>
         </div>

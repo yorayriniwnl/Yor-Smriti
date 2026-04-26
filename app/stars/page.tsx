@@ -64,6 +64,9 @@ const CONSTELLATION_LINES: [string, string][] = [
 ];
 
 const SEQUENCE_STAR_IDS = ['s1', 's3', 's9', 's12', 's15'] as const;
+const SEQUENCE_STAR_START_MS = 2500;
+const SEQUENCE_STAR_STEP_MS = 6500;
+const SEQUENCE_STAR_FINAL_LINGER_MS = 6000;
 const SEQUENCE_STARS: Star[] = SEQUENCE_STAR_IDS.map((id) => {
   const star = STARS.find((entry) => entry.id === id);
 
@@ -134,14 +137,14 @@ function StarsPageContent() {
             next.add(star.id);
             return next;
           });
-        }, 950 + index * 1250),
+        }, SEQUENCE_STAR_START_MS + index * SEQUENCE_STAR_STEP_MS),
       );
     });
 
     timeoutIds.push(
       window.setTimeout(() => {
         setActive(null);
-      }, 950 + SEQUENCE_STARS.length * 1250 + 650),
+      }, SEQUENCE_STAR_START_MS + SEQUENCE_STARS.length * SEQUENCE_STAR_STEP_MS + SEQUENCE_STAR_FINAL_LINGER_MS),
     );
 
     return () => {
